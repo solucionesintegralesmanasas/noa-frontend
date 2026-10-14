@@ -32,6 +32,9 @@
                     </div>
                 </div>
                 <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
+                    <button v-if="can('billing_resolutions.index')" class="btn btn-sm btn-outline-secondary me-2" type="button" @click="goToResolutions">
+                        <i class="fad fa-stamp me-1" aria-hidden="true" />Resoluciones
+                    </button>
                     <small>
                         <i class="fad fa-filter me-1" aria-hidden="true" />
                         {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
@@ -214,6 +217,7 @@ const onPageChange = async ({ first, rows }) => {
 };
 
 const goToCreate = () => router.push(store.esCotizacion ? '/facturacion/cotizaciones/nueva' : '/facturacion/facturas/nueva');
+const goToResolutions = () => router.push('/facturacion/resoluciones');
 const goToEdit = (uuid) => uuid && router.push(`/facturacion/editar/${uuid}`);
 const goToDetail = (uuid) => uuid && router.push(`/facturacion/${uuid}`);
 const refreshTable = () => store.fetchItems();

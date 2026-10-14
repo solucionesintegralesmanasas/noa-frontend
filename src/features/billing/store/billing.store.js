@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { toast } from '@/utils/toast.js';
-import billingService from '../services/billing.service.js';
+import billingService, { billingResolutionsService } from '../services/billing.service.js';
 
 /**
  * Store Pinia del módulo de facturación comercial.
@@ -14,6 +14,7 @@ export const useBillingStore = defineStore('billing', {
         error: null,
         tipoFiltro: 'COTIZACION',
         catalogs: { clientes: [], resoluciones: [], metodosPago: [], companies: [] },
+        resolutions: [],
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
     }),
@@ -60,6 +61,24 @@ export const useBillingStore = defineStore('billing', {
                 await toast('Advertencia', 'No se pudieron cargar todas las opciones del formulario', 'warning');
                 throw error;
             }
+        },
+
+        async fetchResolutions() {
+            return this._run(async () => {
+                const response = await billingResolutionsService.list();
+                const body = response?.data ?? response;
+                this.resolutions = body?.data ?? body ?? [];
+            }, 'Error al cargar las resoluciones');
+        },
+
+        async createResolution(data) {
+            return this._run(async () => {
+                const response = await billingResolutionsService.create(data);
+                const item = response?.data?.data ?? response?.data ?? response;
+                await toast('¡Éxito!', 'Resolución registrada correctamente', 'success');
+                try { await this.fetchResolutions(); } catch (_e) { /* silencioso */ }
+                return item;
+            }, 'Error al registrar la resolución');
         },
 
         async _afterCreate(response, mensaje) {

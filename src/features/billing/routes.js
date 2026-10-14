@@ -44,6 +44,17 @@ export const billingRoutes = [
         },
     },
     {
+        path: '/facturacion/resoluciones',
+        name: 'billing.resolutions',
+        component: () => import('./views/BillingResolutionsView.vue'),
+        meta: {
+            title: 'Resoluciones de Facturación',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_resolutions.index'],
+        },
+    },
+    {
         path: '/facturacion/:id',
         name: 'billing.profile',
         component: () => import('./views/BillingDetailView.vue'),
