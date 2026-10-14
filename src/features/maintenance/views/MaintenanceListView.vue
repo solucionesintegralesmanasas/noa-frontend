@@ -142,7 +142,7 @@
                             <Column header="Acciones" class="text-center" style="min-width: 100px; width: 100px;">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="data.vehicle" class="btn btn-falcon-default"
+                                        <button v-if="data.vehicle && can('vehicles.history_pdf')" class="btn btn-falcon-default"
                                             type="button" title="Descargar hoja de vida de mantenimiento (PDF)" :aria-label="`Descargar PDF de mantenimiento de ${data.vehicle?.vehicle_license_plate}`" @click="downloadMaintenanceHistoryPdf(data.vehicle)">
                                             <i class="fad fa-file-pdf text-danger" style="font-size:14px;" />
                                         </button>

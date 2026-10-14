@@ -9,6 +9,7 @@ export const brandsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['brands.index'],
         },
     },
     {
@@ -21,6 +22,7 @@ export const brandsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['brands.create'],
         },
     },
     {
@@ -33,6 +35,7 @@ export const brandsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['brands.update'],
         },
     },
 ];

@@ -159,11 +159,11 @@
                             <Column header="Acciones" class="text-center" style="min-width:100px; width: 100px;">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="can('conveyor_capacities.update')" class="btn btn-falcon-default"
+                                        <button v-if="can('conveyor_capacity.update')" class="btn btn-falcon-default"
                                             type="button" title="Editar" :aria-label="`Editar ${data.vehicle_type}`" @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                         </button>
-                                        <button v-if="can('conveyor_capacities.delete')" class="btn btn-falcon-default"
+                                        <button v-if="can('conveyor_capacity.delete')" class="btn btn-falcon-default"
                                             type="button" title="Eliminar" :aria-label="`Eliminar ${data.vehicle_type}`" @click="handleDelete(data)">
                                             <i class="fad fa-trash text-danger" style="font-size:14px;" />
                                         </button>

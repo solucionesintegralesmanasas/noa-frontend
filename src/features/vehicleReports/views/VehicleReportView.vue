@@ -77,11 +77,11 @@
                         <button class="btn btn-falcon-default" type="button" title="Limpiar todo" @click="clearAll">
                             <i class="fad fa-eraser text-secondary" aria-hidden="true" />
                         </button>
-                        <button class="btn btn-falcon-default text-success" type="button" title="Exportar a Excel"
+                        <button v-if="can('reports.vehicles.export-excel')" class="btn btn-falcon-default text-success" type="button" title="Exportar a Excel"
                             :disabled="!store.filterType || store.exporting" @click="store.exportReport('excel')">
                             <i class="fad fa-file-excel" aria-hidden="true" />
                         </button>
-                        <button class="btn btn-falcon-default text-danger" type="button" title="Exportar a PDF"
+                        <button v-if="can('reports.vehicles.export-pdf')" class="btn btn-falcon-default text-danger" type="button" title="Exportar a PDF"
                             :disabled="!store.filterType || store.exporting" @click="store.exportReport('pdf')">
                             <i class="fad fa-file-pdf" aria-hidden="true" />
                         </button>

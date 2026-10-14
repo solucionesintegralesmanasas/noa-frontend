@@ -77,6 +77,43 @@
                                 <input type="hidden" v-model="formData.contractor.company_uuid" />
                             </div>
 
+                            <div class="col-12" v-if="selectedVehicle" aria-live="polite">
+                                <div class="alert alert-light border d-flex flex-column flex-md-row align-items-md-center gap-3 mb-0">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 flex-shrink-0">
+                                        <i class="fad fa-car text-primary fs-5" aria-hidden="true"></i>
+                                    </div>
+                                    <dl class="row g-2 mb-0 flex-grow-1">
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Placa</dt>
+                                            <dd class="mb-0 fw-semibold">{{ selectedVehicle.vehicle_license_plate || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Marca</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.brand?.description || selectedVehicle.brand || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Línea</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.line || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Modelo</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.model || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Color</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.color || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">N.º interno</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.internal_number || '—' }}</dd>
+                                        </div>
+                                    </dl>
+                                    <button v-if="!isEditMode" type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 flex-shrink-0" @click="cambiarVehiculo">
+                                        <i class="fas fa-exchange-alt me-1" aria-hidden="true"></i> Cambiar
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="col-12">
                                 <h6 class="text-muted fw-medium mb-0 pb-2 border-bottom" style="font-size: 0.9rem;">
                                     <i class="fad fa-building me-2"></i>Datos del Contratante
@@ -493,6 +530,12 @@ const formFuec = ref(true);
 const isFetchingVehicle = ref(false);
 const isSearchingContractor = ref(false);
 const vehiclePaymentLimit = ref('');
+const selectedVehicle = ref(null);
+
+const cambiarVehiculo = () => {
+    selectedVehicle.value = null;
+    formFuec.value = true;
+};
 
 // Estado inicial del formulario
 const formData = reactive({
@@ -1058,6 +1101,7 @@ const consultarVehiculo = async () => {
         if (validationErrorsList.length > 0) {
             formData.vehicle_uuid = '';
             vehiclePaymentLimit.value = null;
+            selectedVehicle.value = null;
 
             await Swal.fire({
                 title: 'Vehículo no Apto',
@@ -1081,6 +1125,7 @@ const consultarVehiculo = async () => {
 
         // El límite máximo del FUEC está regulado estrictamente por el pago de administración (next_payment_date) y convenio de colaboración
         vehiclePaymentLimit.value = calculatedLimit;
+        selectedVehicle.value = vehicle;
 
         // Procedemos con el paso 2
         formData.contractor.vehicle_uuid = formData.vehicle_uuid;
@@ -1588,6 +1633,13 @@ onMounted(async () => {
                     formData.verification_code = await generateVerificationCode(item);
                 }
                 formFuec.value = false; // Ya no mostramos paso 1
+                if (formData.vehicle_uuid) {
+                    const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
+                    selectedVehicle.value = catalogVehicle || null;
+                    store.fetchVehicleValidationData(formData.vehicle_uuid)
+                        .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
+                        .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC.', err?.message));
+                }
             }
         } else {
             let companyUuid = authStore.currentTenant?.id;

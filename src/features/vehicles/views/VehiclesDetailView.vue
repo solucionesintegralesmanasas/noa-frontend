@@ -198,7 +198,7 @@
                 <div class="card-body py-3">
                     <div class="row g-3">
                         <!-- Botón: Ficha Técnica -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div v-if="can('vehicles.technical_sheet_pdf')" class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <button class="btn btn-falcon-default w-100 p-3 justify-content-start text-start" 
                                 @click="handleDownloadTechnicalSheet" 
                                 :disabled="isDownloading || isViewLoading">
@@ -210,7 +210,7 @@
                             </button>
                         </div>
                         <!-- Botón: Hoja de Vida Vehicular -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div v-if="can('vehicles.history_pdf')" class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <button class="btn btn-falcon-default w-100 p-3 justify-content-start text-start" 
                                 @click="handleDownloadVehicleHistory" 
                                 :disabled="isDownloadingHistory || isViewLoading">
@@ -222,7 +222,7 @@
                             </button>
                         </div>
                         <!-- Botón: Historial de Mantenimientos -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div v-if="can('vehicles.history_pdf')" class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <button class="btn btn-falcon-default w-100 p-3 justify-content-start text-start" 
                                 @click="handleDownloadMaintenanceHistory" 
                                 :disabled="isDownloadingMaintenance || isViewLoading">
@@ -234,7 +234,7 @@
                             </button>
                         </div>
                         <!-- Botón: Acta de Entrega -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div v-if="can('vehicles.profile')" class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <button class="btn btn-falcon-default w-100 p-3 justify-content-start text-start" 
                                 @click="handleDownloadHandoverRecord" 
                                 :disabled="isDownloadingHandover || isViewLoading">

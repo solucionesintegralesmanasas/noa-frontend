@@ -203,13 +203,13 @@
                                             <i class="fad fa-share-alt text-primary" style="font-size:14px;" />
                                         </button>
                                         <button
-                                            v-if="can('vehicleInspections.update') && isSameDay(data.inspection_date)"
+                                            v-if="can('vehicle_inspections.update') && isSameDay(data.inspection_date)"
                                             class="btn btn-falcon-default" type="button" title="Editar" :aria-label="`Editar inspección de ${data.vehicle?.vehicle_license_plate}`"
                                             @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                         </button>
                                         <button
-                                            v-if="can('vehicleInspections.delete') && isSameDay(data.inspection_date)"
+                                            v-if="can('vehicle_inspections.delete') && isSameDay(data.inspection_date)"
                                             class="btn btn-falcon-default" type="button" title="Eliminar" :aria-label="`Eliminar inspección de ${data.vehicle?.vehicle_license_plate}`"
                                             @click="handleDelete(data)">
                                             <i class="fad fa-trash text-danger" style="font-size:14px;" />
@@ -238,7 +238,7 @@
             :badge="store.pagination.totalItems ? `${store.pagination.totalItems}` : '0'"
         >
             <template #action>
-                <button v-if="can('vehicleInspections.create')" type="button" class="btn btn-primary btn-sm py-1 px-2 fs-11 rounded-3" @click="goToCreate">
+                <button v-if="can('vehicle_inspections.create')" type="button" class="btn btn-primary btn-sm py-1 px-2 fs-11 rounded-3" @click="goToCreate">
                     <i class="fas fa-plus me-1" aria-hidden="true"></i> Nueva
                 </button>
             </template>
@@ -279,7 +279,7 @@
                         <i class="fad fa-history text-info" aria-hidden="true"></i>
                         <span>Historial</span>
                     </button>
-                    <button v-if="can('vehicleInspections.update') && isSameDay(item.inspection_date)" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
+                    <button v-if="can('vehicle_inspections.update') && isSameDay(item.inspection_date)" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
                         <i class="fad fa-edit text-warning" aria-hidden="true"></i>
                         <span>Editar</span>
                     </button>

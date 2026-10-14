@@ -151,14 +151,14 @@
                             </Column>
 
                             <!-- Acciones -->
-                            <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;" v-if="can('branches.view') || can('branches.edit') || can('branches.delete')">
+                            <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;" v-if="can('branches.profile') || can('branches.update') || can('branches.delete')">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="can('branches.view')" class="btn btn-falcon-default" type="button"
+                                        <button v-if="can('branches.profile')" class="btn btn-falcon-default" type="button"
                                             title="Ver detalle" :aria-label="`Ver ${data.name}`" @click="goToDetail(data.uuid)">
                                             <i class="fad fa-eye text-primary" style="font-size:14px;" />
                                         </button>
-                                        <button v-if="can('branches.edit')" class="btn btn-falcon-default" type="button"
+                                        <button v-if="can('branches.update')" class="btn btn-falcon-default" type="button"
                                             title="Editar" :aria-label="`Editar ${data.name}`" @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                         </button>

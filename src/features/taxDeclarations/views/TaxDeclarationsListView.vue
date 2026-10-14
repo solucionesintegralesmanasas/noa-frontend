@@ -135,15 +135,15 @@
                             <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="can('taxDeclarations.view')" class="btn btn-falcon-default"
+                                        <button v-if="can('tax_declarations.profile')" class="btn btn-falcon-default"
                                             type="button" title="Ver detalle" :aria-label="`Ver detalle de ${data.fiscal_year}`" @click="goToDetail(data.uuid)">
                                             <i class="fad fa-eye text-primary" style="font-size:14px;" />
                                         </button>
-                                        <button v-if="can('taxDeclarations.edit')" class="btn btn-falcon-default"
+                                        <button v-if="can('tax_declarations.update')" class="btn btn-falcon-default"
                                             type="button" title="Editar" :aria-label="`Editar ${data.fiscal_year}`" @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                         </button>
-                                        <button v-if="can('taxDeclarations.delete')" class="btn btn-falcon-default"
+                                        <button v-if="can('tax_declarations.delete')" class="btn btn-falcon-default"
                                             type="button" title="Eliminar" :aria-label="`Eliminar ${data.fiscal_year}`" @click="handleDelete(data)">
                                             <i class="fad fa-trash text-danger" style="font-size:14px;" />
                                         </button>

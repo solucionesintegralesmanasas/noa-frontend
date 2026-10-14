@@ -9,6 +9,7 @@ export const inspectionItemsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['inspection_items.index'],
         },
     },
     {
@@ -21,6 +22,7 @@ export const inspectionItemsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['inspection_items.create'],
         },
     },
     {
@@ -33,6 +35,7 @@ export const inspectionItemsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['inspection_items.update'],
         },
     },
 ];
