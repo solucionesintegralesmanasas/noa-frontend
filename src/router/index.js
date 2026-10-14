@@ -8,6 +8,7 @@ import { authRoutes } from '@/features/auth/routes.js'
 import { dashboardRoutes } from '@/features/dashboard/routes.js'
 import { affiliateAdminChargesRoutes } from '@/features/affiliateAdminCharges/routes.js'
 import { bankDetailsRoutes } from '@/features/bankDetails/routes.js'
+import { billingRoutes } from '@/features/billing/routes.js'
 import { branchesRoutes } from '@/features/branches/routes.js'
 import { brandsRoutes } from '@/features/brands/routes.js'
 import { businessCollaborationAgreementsRoutes } from '@/features/businessCollaborationAgreements/routes.js'
@@ -67,6 +68,7 @@ const routes = [
   ...dashboardRoutes,
   ...affiliateAdminChargesRoutes,
   ...bankDetailsRoutes,
+  ...billingRoutes,
   ...branchesRoutes,
   ...brandsRoutes,
   ...businessCollaborationAgreementsRoutes,

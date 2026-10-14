@@ -39,7 +39,7 @@
                     <!-- SECCIÓN 1: EMPRESA                     -->
                     <!-- ═══════════════════════════════════════ -->
                     <li class="nav-item"
-                        v-if="can('companies.index') || can('companies.show') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index') || can('experiences.index') || can('tax_declarations.index') || can('rup_records.index') || can('financial_statements.index')">
+                        v-if="can('companies.index') || can('companies.profile') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index') || can('experiences.index') || can('tax_declarations.index') || can('rup_records.index') || can('financial_statements.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Empresa</div>
                             <div class="col ps-0">
@@ -359,13 +359,21 @@
                     <!-- SECCIÓN 5: FINANZAS                               -->
                     <!-- (era "Operaciones y Finanzas" — solo Cuotas Adm.) -->
                     <!-- ═══════════════════════════════════════════════════ -->
-                    <li class="nav-item" v-if="can('affiliate_admin_charges.index')">
+                    <li class="nav-item" v-if="can('affiliate_admin_charges.index') || can('commercial_invoices.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Finanzas</div>
                             <div class="col ps-0">
                                 <hr class="mb-0 navbar-vertical-divider" />
                             </div>
                         </div>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion') }"
+                            to="/facturacion" v-if="can('commercial_invoices.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
+                                <span class="nav-link-text ps-1">Facturación</span>
+                            </div>
+                        </router-link>
 
                         <router-link class="nav-link" :class="{ 'active': isActiveLink('/pagos-de-administracion') }"
                             to="/pagos-de-administracion" v-if="can('affiliate_admin_charges.index')">
