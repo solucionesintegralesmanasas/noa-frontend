@@ -172,7 +172,7 @@
                                             @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                         </button>
-                                        <button v-if="can('employmentContracts.destroy')" class="btn btn-falcon-default"
+                                        <button v-if="can('employmentContracts.delete')" class="btn btn-falcon-default"
                                             type="button" title="Eliminar"
                                             :aria-label="`Eliminar ${getEmployeeName(data)}`"
                                             @click="handleDelete(data)">
@@ -284,7 +284,7 @@ const refreshTable = () => fetchContracts(1);
 
 const goToCreate = () => router.push({ name: 'employmentContracts.create' });
 const goToEdit = (uuid) => router.push({ name: 'employmentContracts.edit', params: { id: uuid } });
-const goToDetail = (uuid) => router.push({ name: 'employmentContracts.profile', params: { id: uuid } });
+const goToDetail = (uuid) => router.push({ name: 'employmentContracts.show', params: { id: uuid } });
 
 const handleDelete = async (contract) => {
     const result = await Swal.fire({

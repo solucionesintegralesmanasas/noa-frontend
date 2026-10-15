@@ -9,6 +9,7 @@ export const withholdingsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['withholdings.index'],
         },
     },
     {
@@ -21,6 +22,7 @@ export const withholdingsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['withholdings.create'],
         },
     },
     {
@@ -33,6 +35,7 @@ export const withholdingsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['withholdings.update'],
         },
     },
 ];

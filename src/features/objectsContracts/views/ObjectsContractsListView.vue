@@ -70,7 +70,7 @@
                                     </span>
                                 </template>
                             </Column>
-                            <Column v-if="can('objects_contracts.view') || can('objects_contracts.update') || can('objects_contracts.delete')" header="Acciones" class="text-center" style="min-width:140px; width: 140px;">
+                            <Column v-if="can('objects_contracts.index') || can('objects_contracts.update') || can('objects_contracts.delete')" header="Acciones" class="text-center" style="min-width:140px; width: 140px;">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <button class="btn btn-falcon-default" type="button"

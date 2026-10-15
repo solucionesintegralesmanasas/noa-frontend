@@ -9,6 +9,7 @@ export const vehicleClassesRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['vehicle_classes.index'],
         },
     },
     {
@@ -21,6 +22,7 @@ export const vehicleClassesRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['vehicle_classes.create'],
         },
     },
     {
@@ -33,6 +35,7 @@ export const vehicleClassesRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['vehicle_classes.update'],
         },
     },
 ];

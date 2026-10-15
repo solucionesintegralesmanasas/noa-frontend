@@ -35,7 +35,7 @@ export const authRoutes = [
         path: '/usuarios',
         name: 'users-list',
         component: () => import('./views/UsersListView.vue'),
-        meta: { layout: 'dashboard', title: 'Usuarios', requiresAuth: true }
+        meta: { layout: 'dashboard', title: 'Usuarios', requiresAuth: true, permissions: ['users.index'] }
     },
     {
         path: '/auth/google/callback',

@@ -20,7 +20,7 @@ export const conveyorCapacityRoutes = [
             title: 'Listado de Capacidad de Transporte',
             auth: true,
             layout: 'dashboard',
-            permissions: ['conveyor_capacities.index'],
+            permissions: ['conveyor_capacity.index'],
         },
     },
     {
@@ -31,7 +31,7 @@ export const conveyorCapacityRoutes = [
             title: 'Registrar Capacidad de Transporte',
             auth: true,
             layout: 'dashboard',
-            permissions: ['conveyor_capacities.create'],
+            permissions: ['conveyor_capacity.create'],
         },
     },
     {
@@ -42,7 +42,7 @@ export const conveyorCapacityRoutes = [
             title: 'Editar Capacidad de Transporte',
             auth: true,
             layout: 'dashboard',
-            permissions: ['conveyor_capacities.update'],
+            permissions: ['conveyor_capacity.update'],
         },
     },
 ];

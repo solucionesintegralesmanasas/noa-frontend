@@ -9,6 +9,7 @@ export const objectsContractsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['objects_contracts.index'],
         },
     },
     {
@@ -21,6 +22,7 @@ export const objectsContractsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['objects_contracts.create'],
         },
     },
     {
@@ -33,6 +35,7 @@ export const objectsContractsRoutes = [
             roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
             any: true,
             layout: 'dashboard',
+            permissions: ['objects_contracts.update'],
         },
     },
 ];

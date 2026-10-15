@@ -112,14 +112,14 @@
                             </Column>
 
                             <!-- Acciones -->
-                            <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;" v-if="can('brands.view') || can('brands.edit') || can('brands.delete')">
+                            <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;" v-if="can('brands.index') || can('brands.update') || can('brands.delete')">
                                 <template #body="{ data }">
                                     <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de marca">
-                                        <button v-if="can('brands.view')" class="btn btn-falcon-default" type="button"
+                                        <button v-if="can('brands.index')" class="btn btn-falcon-default" type="button"
                                             title="Ver detalle" :aria-label="`Ver ${data.description}`" @click="goToEdit(data.uuid)">
                                             <i class="fad fa-eye text-primary" style="font-size:14px;" aria-hidden="true" />
                                         </button>
-                                        <button v-if="can('brands.edit')" class="btn btn-falcon-default" type="button"
+                                        <button v-if="can('brands.update')" class="btn btn-falcon-default" type="button"
                                             title="Editar" :aria-label="`Editar ${data.description}`" @click="goToEdit(data.uuid)">
                                             <i class="fad fa-edit text-warning" style="font-size:14px;" aria-hidden="true" />
                                         </button>
