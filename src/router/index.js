@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import axios from 'axios'
-import LicenseInput from '@/components/LicenseInput.vue'
 import LoginView from '@/features/auth/views/LoginView.vue'
 import LicenseView from '@/views/LicenciaView.vue'
 import NotFoundView from '@/views/NotFound.vue'
@@ -48,9 +47,7 @@ import { permissionsGuard } from './guards/permissions.js'
 const routes = [
   {
     path: '/',
-    name: 'license',
-    component: LicenseInput,
-    meta: { requiresAuth: false, title: 'Licencia - NOA API' }
+    redirect: '/login'
   },
   {
     path: '/login',
@@ -136,7 +133,12 @@ const router = createRouter({
   routes
 })
 
+// Puerta de licencia desactivada: ninguna ruta exige licencia.
+// Para reactivarla, poner LICENSE_REQUIRED en true.
+const LICENSE_REQUIRED = false
+
 async function licenseGuard(to, from, next) {
+  if (!LICENSE_REQUIRED) return next()
   if (to.name === 'license' || to.meta?.public) return next()
   const hasLicense = localStorage.getItem('license_accepted') === 'true'
   if (hasLicense) return next()
@@ -164,6 +166,7 @@ async function licenseGuard(to, from, next) {
 
 // Guard de ruta global para verificar licencia después de la aceptada
 router.beforeEach(async (to, from, next) => {
+  if (!LICENSE_REQUIRED) return next()
   const isLicensePage = to.name === 'license'
   const hasLicense = localStorage.getItem('license_accepted') === 'true'
   const storedLicenseKey = localStorage.getItem('stored_license_key')
