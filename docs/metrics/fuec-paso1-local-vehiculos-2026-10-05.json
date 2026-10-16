@@ -1,0 +1,92 @@
+{
+  "fecha": "2026-10-05T21:09:58.219Z",
+  "entorno": "local",
+  "etiqueta": "vehiculos",
+  "ruta": "/vehiculos",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 36,
+  "medianaCalidasMs": 606,
+  "minCalidasMs": 597,
+  "maxCalidasMs": 631,
+  "desglosePeticiones": [
+    {
+      "peticion": "fleet-management/vehicles",
+      "inicioMs": 15,
+      "finMs": 556
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 36,
+      "ultimaRespuestaApiMs": 570,
+      "api": [
+        {
+          "peticion": "/src/services/api/base.service.js",
+          "inicioMs": 39,
+          "finMs": 41
+        },
+        {
+          "peticion": "fleet-management/vehicles",
+          "inicioMs": 57,
+          "finMs": 570
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 604,
+      "ultimaRespuestaApiMs": 535,
+      "api": [
+        {
+          "peticion": "fleet-management/vehicles",
+          "inicioMs": 15,
+          "finMs": 535
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 597,
+      "ultimaRespuestaApiMs": 532,
+      "api": [
+        {
+          "peticion": "fleet-management/vehicles",
+          "inicioMs": 14,
+          "finMs": 532
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 608,
+      "ultimaRespuestaApiMs": 543,
+      "api": [
+        {
+          "peticion": "fleet-management/vehicles",
+          "inicioMs": 16,
+          "finMs": 543
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 631,
+      "ultimaRespuestaApiMs": 556,
+      "api": [
+        {
+          "peticion": "fleet-management/vehicles",
+          "inicioMs": 15,
+          "finMs": 556
+        }
+      ]
+    }
+  ]
+}

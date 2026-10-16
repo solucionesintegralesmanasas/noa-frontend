@@ -1,0 +1,207 @@
+{
+  "fecha": "2026-10-05T21:09:03.440Z",
+  "entorno": "local",
+  "etiqueta": "dashboard",
+  "ruta": "/dashboard",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 72,
+  "medianaCalidasMs": 79,
+  "minCalidasMs": 58,
+  "maxCalidasMs": 82,
+  "desglosePeticiones": [
+    {
+      "peticion": "tracking/active-drivers",
+      "inicioMs": 24,
+      "finMs": 642
+    },
+    {
+      "peticion": "tracking/geofences",
+      "inicioMs": 25,
+      "finMs": 614
+    },
+    {
+      "peticion": "dashboard/summary",
+      "inicioMs": 25,
+      "finMs": 610
+    },
+    {
+      "peticion": "dashboard/recent-activity",
+      "inicioMs": 25,
+      "finMs": 636
+    },
+    {
+      "peticion": "dashboard/alerts",
+      "inicioMs": 25,
+      "finMs": 618
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 72,
+      "ultimaRespuestaApiMs": 643,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 30,
+          "finMs": 643
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 30,
+          "finMs": 641
+        },
+        {
+          "peticion": "dashboard/summary",
+          "inicioMs": 30,
+          "finMs": 636
+        },
+        {
+          "peticion": "dashboard/recent-activity",
+          "inicioMs": 30,
+          "finMs": 635
+        },
+        {
+          "peticion": "dashboard/alerts",
+          "inicioMs": 30,
+          "finMs": 624
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 82,
+      "ultimaRespuestaApiMs": 773,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 27,
+          "finMs": 687
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 27,
+          "finMs": 764
+        },
+        {
+          "peticion": "dashboard/summary",
+          "inicioMs": 28,
+          "finMs": 773
+        },
+        {
+          "peticion": "dashboard/recent-activity",
+          "inicioMs": 28,
+          "finMs": 731
+        },
+        {
+          "peticion": "dashboard/alerts",
+          "inicioMs": 28,
+          "finMs": 733
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 75,
+      "ultimaRespuestaApiMs": 648,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 29,
+          "finMs": 631
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 29,
+          "finMs": 635
+        },
+        {
+          "peticion": "dashboard/summary",
+          "inicioMs": 30,
+          "finMs": 617
+        },
+        {
+          "peticion": "dashboard/recent-activity",
+          "inicioMs": 30,
+          "finMs": 648
+        },
+        {
+          "peticion": "dashboard/alerts",
+          "inicioMs": 30,
+          "finMs": 618
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 82,
+      "ultimaRespuestaApiMs": 660,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 25,
+          "finMs": 660
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 25,
+          "finMs": 617
+        },
+        {
+          "peticion": "dashboard/summary",
+          "inicioMs": 26,
+          "finMs": 621
+        },
+        {
+          "peticion": "dashboard/recent-activity",
+          "inicioMs": 26,
+          "finMs": 613
+        },
+        {
+          "peticion": "dashboard/alerts",
+          "inicioMs": 26,
+          "finMs": 604
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 58,
+      "ultimaRespuestaApiMs": 642,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 24,
+          "finMs": 642
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 25,
+          "finMs": 614
+        },
+        {
+          "peticion": "dashboard/summary",
+          "inicioMs": 25,
+          "finMs": 610
+        },
+        {
+          "peticion": "dashboard/recent-activity",
+          "inicioMs": 25,
+          "finMs": 636
+        },
+        {
+          "peticion": "dashboard/alerts",
+          "inicioMs": 25,
+          "finMs": 618
+        }
+      ]
+    }
+  ]
+}

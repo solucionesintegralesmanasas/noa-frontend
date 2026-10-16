@@ -1,3 +1,18 @@
+# Caché: los bundles de Vite llevan hash en el nombre (p. ej. vendor-vue-B_FkvM0Y.js),
+# así que pueden cachearse un año sin revalidar. index.html nunca se cachea.
+<IfModule mod_headers.c>
+  <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|woff2?|png|jpe?g|svg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Estáticos sin hash (Falcon, vendors): 30 días; no cambian entre despliegues.
+  <FilesMatch "^(theme\.js|lodash\.min\.js|bootstrap\.min\.js|popper\.min\.js|anchor\.min\.js|is\.min\.js|simplebar\.min\.js)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /

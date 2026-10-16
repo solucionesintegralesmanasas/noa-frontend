@@ -10,7 +10,6 @@ import router from "../router/index";
 import { logger } from "@utils/logger.js";
 import { handleGlobalError, setupGlobalErrorHandlers } from "@utils/error-handler.js";
 import { verifyConnection, subscribe, setToastHandler } from "@utils/connectivity.js";
-import { installPrimeVue } from "@components/app/primevue.js";
 import { installI18n } from "@utils/i18n.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { toast } from '@/utils/toast.js';
@@ -25,40 +24,42 @@ export async function registerPlugins(app) {
     try {
         // 1. Inicialización de Estado y UI
         await medirPlugin("Pinia", async () => app.use(pinia));
-        await medirPlugin("PrimeVue", async () => installPrimeVue(app));
-        // 2. Seguridad inicial
-        await medirPlugin("Token Manager", async () => await tokenManager.init());
+        await medirPlugin("PrimeVue", async () => configurarPrimeVue(app));
 
-        // 3. Hidratación de Stores (Crítico: El Router depende de los stores)
-        await medirPlugin("Hidratación de stores", async () => {
-            const authStore = useAuthStore();
-            const permissionsStore = usePermissionsStore();
-            const userStore = useUserStore();
+        // 2-3. Seguridad inicial e hidratación de stores (Crítico: El Router depende de los
+        // stores). Son independientes entre sí, así que corren en paralelo.
+        await Promise.all([
+            medirPlugin("Token Manager", async () => await tokenManager.init()),
+            medirPlugin("Hidratación de stores", async () => {
+                const authStore = useAuthStore();
+                const permissionsStore = usePermissionsStore();
+                const userStore = useUserStore();
 
-            await Promise.all([
-                waitForStoreHydration(authStore),
-                waitForStoreHydration(permissionsStore),
-                waitForStoreHydration(userStore),
-            ]);
+                await Promise.all([
+                    waitForStoreHydration(authStore),
+                    waitForStoreHydration(permissionsStore),
+                    waitForStoreHydration(userStore),
+                ]);
 
-            // Registrar stores en el registry del interceptor (evita dynamic imports inefectivos)
-            storeRegistry.authStore = authStore;
-            storeRegistry.userStore = userStore;
-            storeRegistry.permissionsStore = permissionsStore;
+                // Registrar stores en el registry del interceptor (evita dynamic imports inefectivos)
+                storeRegistry.authStore = authStore;
+                storeRegistry.userStore = userStore;
+                storeRegistry.permissionsStore = permissionsStore;
 
-            // Helpers globales para permisos
-            app.config.globalProperties.$can = (a, s) => permissionsStore.can(a, s);
-            app.config.globalProperties.$hasRole = (r) => permissionsStore.hasRole(r);
+                // Helpers globales para permisos
+                app.config.globalProperties.$can = (a, s) => permissionsStore.can(a, s);
+                app.config.globalProperties.$hasRole = (r) => permissionsStore.hasRole(r);
 
-            // [NUEVO] Refrescar permisos silenciosamente en background
-            // Esto asegura que si se modifican roles en BD, la app los tomará en el próximo F5
-            if (authStore.isAuthenticated) {
-                authStore.fetchProfile().catch(() => {
-                    // Si falla (ej. sin red), la app sigue funcionando con lo cacheado localmente
-                    logger.warn("Fetch silencioso de perfil falló o fue bloqueado.");
-                });
-            }
-        });
+                // [NUEVO] Refrescar permisos silenciosamente en background
+                // Esto asegura que si se modifican roles en BD, la app los tomará en el próximo F5
+                if (authStore.isAuthenticated) {
+                    authStore.fetchProfile().catch(() => {
+                        // Si falla (ej. sin red), la app sigue funcionando con lo cacheado localmente
+                        logger.warn("Fetch silencioso de perfil falló o fue bloqueado.");
+                    });
+                }
+            }),
+        ]);
 
         // 4. Navegación e Internacionalización
         await medirPlugin("Router", async () => {
@@ -99,6 +100,29 @@ export async function registerPlugins(app) {
         logger.error("Error crítico en el registro de plugins:", error);
         throw error;
     }
+}
+
+/**
+ * PrimeVue (config + preset Aura) no lo usa el login, ni App.vue, ni los stores. En la ruta de
+ * login (sin sesión, ver index.html) se instala tras el primer pintado y, como respaldo, antes
+ * de entrar a cualquier otra ruta; en el resto de casos se instala antes de montar, como siempre.
+ */
+async function configurarPrimeVue(app) {
+    let instalado = null;
+    const instalar = () => (instalado ??= import("@components/app/primevue.js").then((m) => m.installPrimeVue(app)));
+
+    if (typeof window === "undefined" || !window.__noaLogin) {
+        await instalar();
+        return;
+    }
+
+    const esLogin = (to) => to.name === "home" || to.name === "login";
+    router.beforeEach(async (to) => {
+        if (!esLogin(to)) await instalar();
+    });
+    const precargar = () => { instalar().catch((e) => logger.error("Error instalando PrimeVue", e)); };
+    if (window.requestIdleCallback) window.requestIdleCallback(precargar, { timeout: 4000 });
+    else setTimeout(precargar, 1500);
 }
 
 /**

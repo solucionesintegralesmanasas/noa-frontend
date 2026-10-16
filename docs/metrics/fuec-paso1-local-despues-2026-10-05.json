@@ -1,0 +1,279 @@
+{
+  "fecha": "2026-10-05T20:49:14.711Z",
+  "entorno": "local",
+  "etiqueta": "despues",
+  "ruta": "/extracto-de-contrato/crear",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 6,
+  "friaMs": 1258,
+  "medianaCalidasMs": 1146,
+  "minCalidasMs": 1064,
+  "maxCalidasMs": 1285,
+  "desglosePeticiones": [
+    {
+      "peticion": "administration/companies/list",
+      "inicioMs": 22,
+      "finMs": 676
+    },
+    {
+      "peticion": "fleet-management/vehicles/list",
+      "inicioMs": 23,
+      "finMs": 688
+    },
+    {
+      "peticion": "third-parties/list",
+      "inicioMs": 23,
+      "finMs": 679
+    },
+    {
+      "peticion": "contract-extract/objects-contracts/list",
+      "inicioMs": 24,
+      "finMs": 660
+    },
+    {
+      "peticion": "catalogs/type-of-documents/list",
+      "inicioMs": 24,
+      "finMs": 600
+    },
+    {
+      "peticion": "contract-extract/contractors/next-consecutive",
+      "inicioMs": 25,
+      "finMs": 1051
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 1258,
+      "api": [
+        {
+          "peticion": "/src/services/api/base.service.js",
+          "inicioMs": 77,
+          "finMs": 80
+        },
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 118,
+          "finMs": 815
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 118,
+          "finMs": 839
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 118,
+          "finMs": 815
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 119,
+          "finMs": 793
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 119,
+          "finMs": 754
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 119,
+          "finMs": 1216
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 1077,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 18,
+          "finMs": 660
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 18,
+          "finMs": 686
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 18,
+          "finMs": 669
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 19,
+          "finMs": 670
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 19,
+          "finMs": 610
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 20,
+          "finMs": 1062
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 1174,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 18,
+          "finMs": 670
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 19,
+          "finMs": 670
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 19,
+          "finMs": 668
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 19,
+          "finMs": 669
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 20,
+          "finMs": 611
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 21,
+          "finMs": 1161
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 1285,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 16,
+          "finMs": 751
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 16,
+          "finMs": 842
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 17,
+          "finMs": 761
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 17,
+          "finMs": 816
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 17,
+          "finMs": 793
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 17,
+          "finMs": 1269
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 714,
+          "finMs": 1225
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 1146,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 18,
+          "finMs": 713
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 18,
+          "finMs": 710
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 18,
+          "finMs": 709
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 18,
+          "finMs": 712
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 19,
+          "finMs": 655
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 19,
+          "finMs": 1131
+        }
+      ]
+    },
+    {
+      "corrida": 6,
+      "tipo": "calida",
+      "pasoUnoMs": 1064,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 22,
+          "finMs": 676
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 23,
+          "finMs": 688
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 23,
+          "finMs": 679
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 24,
+          "finMs": 660
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 24,
+          "finMs": 600
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 25,
+          "finMs": 1051
+        }
+      ]
+    }
+  ]
+}

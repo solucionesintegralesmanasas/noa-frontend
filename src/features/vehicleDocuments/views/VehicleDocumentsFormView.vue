@@ -10,6 +10,7 @@
                 :done-keys="wizardDoneKeys"
                 :incomplete-keys="wizardIncompleteKeys"
                 :disabled-keys="wizardDisabledKeys"
+                :hidden-keys="wizardHiddenKeys"
                 clickable
                 @navigate="onWizardNavigate"
             />
@@ -93,7 +94,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-issue_date">Fecha de
                                     Expedición</label>
-                                <input id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
+                                <DateInput id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
                                     required :class="fieldClass('issue_date')" @blur="markAsTouched('issue_date')" />
                                 <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">
                                     {{ validationErrors.issue_date }}
@@ -102,7 +103,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-effective_date">Fecha inicio
                                     de vigencia</label>
-                                <input id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.effective_date" required :class="fieldClass('effective_date')"
                                     @blur="markAsTouched('effective_date')" />
                                 <div v-if="validationErrors.effective_date" class="invalid-feedback d-block" id="f-effective_date-error" role="alert">
@@ -112,7 +113,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiry_date">Fecha de
                                     Vencimiento</label>
-                                <input id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.expiry_date" required :class="fieldClass('expiry_date')"
                                     @blur="markAsTouched('expiry_date')" />
                                 <div v-if="validationErrors.expiry_date" class="invalid-feedback d-block" id="f-expiry_date-error" role="alert">
@@ -122,7 +123,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'f-vehicle_uuid'" v-model="formData.vehicle_uuid"
-                                    :options="store.catalogs.vehicles" option-value="uuid" option-label="vehicle_license_plate"
+                                    :options="vehiculosConPolizas" option-value="uuid" option-label="vehicle_license_plate"
                                     placeholder="Seleccionar vehículo" showClear filter class="w-100" :disabled="!!wizardUuid"
                                     :invalid="!!validationErrors['vehicle_uuid']" />
                                 <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">
@@ -213,7 +214,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-issue_date">Fecha de
                                     Expedición</label>
-                                <input id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
+                                <DateInput id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
                                     required :class="fieldClass('issue_date')" @blur="markAsTouched('issue_date')" />
                                 <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">
                                     {{ validationErrors.issue_date }}
@@ -222,7 +223,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-effective_date">Fecha inicio
                                     de vigencia</label>
-                                <input id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.effective_date" required :class="fieldClass('effective_date')"
                                     @blur="markAsTouched('effective_date')" />
                                 <div v-if="validationErrors.effective_date" class="invalid-feedback d-block" id="f-effective_date-error" role="alert">
@@ -232,7 +233,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiry_date">Fecha de
                                     Vencimiento</label>
-                                <input id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.expiry_date" required :class="fieldClass('expiry_date')"
                                     @blur="markAsTouched('expiry_date')" />
                                 <div v-if="validationErrors.expiry_date" class="invalid-feedback d-block" id="f-expiry_date-error" role="alert">
@@ -262,7 +263,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'f-vehicle_uuid'" v-model="formData.vehicle_uuid"
-                                    :options="store.catalogs.vehicles" option-value="uuid" option-label="vehicle_license_plate"
+                                    :options="vehiculosConPolizas" option-value="uuid" option-label="vehicle_license_plate"
                                     placeholder="Seleccionar vehículo" showClear filter class="w-100" :disabled="!!wizardUuid"
                                     :invalid="!!validationErrors['vehicle_uuid']" />
                                 <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">
@@ -295,7 +296,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-issue_date">Fecha de
                                     Expedición</label>
-                                <input id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
+                                <DateInput id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
                                     required :class="fieldClass('issue_date')" @blur="markAsTouched('issue_date')" />
                                 <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">
                                     {{ validationErrors.issue_date }}
@@ -304,7 +305,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-effective_date">Fecha inicio
                                     de vigencia</label>
-                                <input id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.effective_date" required :class="fieldClass('effective_date')"
                                     @blur="markAsTouched('effective_date')" />
                                 <div v-if="validationErrors.effective_date" class="invalid-feedback d-block" id="f-effective_date-error" role="alert">
@@ -314,7 +315,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiry_date">Fecha de
                                     Vencimiento</label>
-                                <input id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.expiry_date" required :class="fieldClass('expiry_date')"
                                     @blur="markAsTouched('expiry_date')" />
                                 <div v-if="validationErrors.expiry_date" class="invalid-feedback d-block" id="f-expiry_date-error" role="alert">
@@ -400,7 +401,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-issue_date">Fecha de
                                     Expedición</label>
-                                <input id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
+                                <DateInput id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
                                     required :class="fieldClass('issue_date')" @blur="markAsTouched('issue_date')" />
                                 <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">
                                     {{ validationErrors.issue_date }}
@@ -409,7 +410,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiry_date">Fecha de
                                     Vencimiento</label>
-                                <input id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                                <DateInput id="f-expiry_date" :aria-invalid="!!validationErrors['expiry_date']" :aria-describedby="validationErrors['expiry_date'] ? 'f-expiry_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                     v-model="formData.expiry_date" required :class="fieldClass('expiry_date')"
                                     @blur="markAsTouched('expiry_date')" />
                                 <div v-if="validationErrors.expiry_date" class="invalid-feedback d-block" id="f-expiry_date-error" role="alert">
@@ -450,7 +451,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-status">Estado</label>
                                 <PrimeSelect :input-id="'f-status'" v-model="formData.status"
-                                    :options="[{ label: 'Si', value: 'SI' }, { label: 'No', value: 'NO' }]"
+                                    :options="[{ label: 'VIGENTE', value: 'VIGENTE' }, { label: 'NO VIGENTE', value: 'NO VIGENTE' }]"
                                     option-label="label" option-value="value" placeholder="Seleccione un estado" showClear filter class="w-100"
                                     :invalid="!!validationErrors['status']" />
                                 <div v-if="validationErrors.status" class="invalid-feedback d-block" id="f-status-error" role="alert">
@@ -514,16 +515,18 @@
 
 <script setup>
 import { toast } from '@/utils/toast.js';
+import { normalizarEstadoDocumento } from '@/utils/documentStatus.js';
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useVehicleDocumentsStore } from '../store/vehicleDocuments.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { useNoAutocomplete } from '@/hooks/useNoAutocomplete.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import WizardProgress from '@/components/WizardProgress.vue';
-import { useDocumentWizard } from '@/hooks/useDocumentWizard.js';
+import { useDocumentWizard, esVehiculoParticular, elegirPolizaViva } from '@/hooks/useDocumentWizard.js';
 import { confirmUnsavedChanges } from '@/utils/confirm.js';
 import vehicleDocumentsService from '../services/vehicleDocuments.service.js';
 
@@ -545,6 +548,13 @@ const isNuevo = computed(() => route.query.nuevo === '1');
 const { WIZARD_STEPS, availableSteps, stepRoute, nextStepRoute, prevStepRoute, exitRoute, fetchExistingDocs, getSessionDone, markStepDone, clearSessionDone, toDateInput } = useDocumentWizard();
 const wizardDoneKeys = ref([]);
 const wizardIncompleteKeys = ref([]);
+// Un vehículo particular no tiene pólizas RCC/RCE ni tarjeta de operación: solo SOAT y tecnomecánica.
+const wizardVehiculo = computed(() => (store.catalogs?.vehicles ?? []).find((v) => v.uuid === wizardUuid.value) ?? null);
+const wizardContexto = computed(() => ({ particular: esVehiculoParticular(wizardVehiculo.value) }));
+const wizardHiddenKeys = computed(() => WIZARD_STEPS.filter((s) => wizardContexto.value.particular && s.soloPublico).map((s) => s.key));
+// Vehículos a los que se les pueden registrar pólizas (sin particulares, salvo el ya seleccionado en un historial).
+const vehiculosConPolizas = computed(() => (store.catalogs?.vehicles ?? [])
+    .filter((v) => !esVehiculoParticular(v) || v.uuid === formData.vehicle_uuid));
 // Token de carga por paso: evita que respuestas atrasadas sobrescriban el formulario.
 let stepLoadToken = 0;
 // UUID del documento precargado en el asistente (SOAT/RTM) para actualizar en vez de duplicar
@@ -608,7 +618,7 @@ const cancelLabel = computed(() => {
 
 /** Pasos que no se pueden abrir: vehículo (ya registrado) o sin permiso. */
 const wizardDisabledKeys = computed(() => {
-    const allowed = new Set(availableSteps(permissionsStore).map((s) => s.key));
+    const allowed = new Set(availableSteps(permissionsStore, wizardContexto.value).map((s) => s.key));
     return WIZARD_STEPS
         .filter((s) => s.key === 'vehiculo' || !allowed.has(s.key))
         .map((s) => s.key);
@@ -639,7 +649,7 @@ const navigateAfterSave = () => {
         return;
     }
     if (wizardUuid.value) {
-        const next = nextStepRoute(route.params.documentType, wizardUuid.value, permissionsStore);
+        const next = nextStepRoute(route.params.documentType, wizardUuid.value, permissionsStore, wizardContexto.value);
         if (next?.path?.includes('/vehiculos/perfil/')) {
             goExit();
             return;
@@ -793,7 +803,7 @@ const preloadStepDoc = (found, step) => {
             issue_date: toDateInput(d.issue_date),
             effective_date: toDateInput(d.effective_date),
             expiry_date: toDateInput(d.expiry_date),
-            status: d.status ?? 'VIGENTE',
+            status: normalizarEstadoDocumento(d.status) || 'VIGENTE',
             tariff_code: d.tariff_code ?? '',
             company_uuid: d.company_uuid || formData.company_uuid,
         });
@@ -805,7 +815,7 @@ const preloadStepDoc = (found, step) => {
             issuing_entity: d.issuing_entity ?? '',
             issue_date: toDateInput(d.issue_date),
             expiry_date: toDateInput(d.expiry_date),
-            status: d.status ?? 'SI',
+            status: normalizarEstadoDocumento(d.status) || 'VIGENTE',
             company_uuid: d.company_uuid || formData.company_uuid,
         });
     } else if (step === 'poliza' && (found.rce || found.rcc)) {
@@ -820,7 +830,7 @@ const preloadStepDoc = (found, step) => {
             issue_date: toDateInput(source?.issue_date),
             effective_date: toDateInput(source?.effective_date),
             expiry_date: toDateInput(source?.expiry_date),
-            status: source?.status ?? 'VIGENTE',
+            status: normalizarEstadoDocumento(source?.status) || 'VIGENTE',
             company_uuid: source?.company_uuid || formData.company_uuid,
         });
     }
@@ -886,7 +896,7 @@ const validateForm = () => {
 const getBackRoute = () => {
     // Desde el menú de documentos: volver al origen (perfil) en vez del listado
     if (returnTo.value) return returnTo.value;
-    if (wizardUuid.value) return prevStepRoute(route.params.documentType, wizardUuid.value, permissionsStore);
+    if (wizardUuid.value) return prevStepRoute(route.params.documentType, wizardUuid.value, permissionsStore, wizardContexto.value);
     const type = route.params.documentType;
     if (type) return `/vehiculos-documentos/${type}`;
     return '/vehiculos-documentos';
@@ -996,8 +1006,10 @@ const loadEditDocument = async (type) => {
         const docs = resp?.data ?? resp ?? [];
         const list = Array.isArray(docs) ? docs : (docs.data ?? []);
 
-        const rce = list.find(d => d.document_type === 'RCE');
-        const rcc = list.find(d => d.document_type === 'RCC');
+        // Las reemplazadas (INACTIVA) son historial: se edita la viva más reciente.
+        // Sin viva, al guardar se crea.
+        const rce = elegirPolizaViva(list, 'RCE');
+        const rcc = elegirPolizaViva(list, 'RCC');
 
         editingPolicyUuids.rce = rce?.uuid ?? null;
         editingPolicyUuids.rcc = rcc?.uuid ?? null;
@@ -1031,6 +1043,12 @@ onMounted(async () => {
     try {
         await store.loadFormOptions();
         if (initToken !== stepLoadToken) return;
+
+        if (wizardUuid.value && wizardContexto.value.particular && route.params.documentType === 'poliza') {
+            toast('Atención', 'Un vehículo particular no tiene pólizas RCC/RCE: solo registra SOAT y tecnomecánica.', 'info');
+            router.replace(nextStepRoute('poliza', wizardUuid.value, permissionsStore, wizardContexto.value));
+            return;
+        }
 
         if (!isSuperAdmin.value) {
             formData.company_uuid = userStore.company_uuid;

@@ -11,6 +11,9 @@ on:
 jobs:
   verificar:
     runs-on: ubuntu-latest
+    env:
+      # Las pruebas no tocan red: solo necesitan la variable presente al importar env.js (.env no se versiona).
+      VITE_API_BASE_URL: /api/v1/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

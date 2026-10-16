@@ -138,6 +138,19 @@ export class BaseService {
     // ─── Helpers PDF ──────────────────────────────────────────────────────
 
     /**
+     * Extrae el nombre de archivo del encabezado Content-Disposition.
+     */
+    _fileNameFromDisposition(disposition) {
+        if (!disposition) return null;
+        const starMatch = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition);
+        if (starMatch?.[1]) {
+            try { return decodeURIComponent(starMatch[1].trim().replace(/^"|"$/g, '')); } catch { /* usa respaldo */ }
+        }
+        const match = /filename\s*=\s*"?([^";]+)"?/i.exec(disposition);
+        return match?.[1]?.trim() || null;
+    }
+
+    /**
      * Convierte un Blob a base64 (sin el prefijo data:...).
      */
     _blobToBase64(blob) {
@@ -160,10 +173,9 @@ export class BaseService {
      * - Web: abre el PDF en una nueva pestaña.
      * - Android/iOS: guarda en caché y abre con el visor/app nativa mediante Share API.
      */
-    async _downloadPdf(url, filename = 'documento.pdf') {
+    async _downloadPdf(url, filename = null) {
         const instance = this._getInstance();
         const fullUrl = url.startsWith('http') ? url : `${this.resourcePath}${url}`;
-        const cleanFileName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
 
         let response;
         try {
@@ -171,6 +183,9 @@ export class BaseService {
         } catch (err) {
             throw await this._blobErrorToMessage(err);
         }
+        const serverName = this._fileNameFromDisposition(response?.headers?.['content-disposition']);
+        const resolvedName = filename || serverName || 'documento.pdf';
+        const cleanFileName = resolvedName.endsWith('.pdf') ? resolvedName : `${resolvedName}.pdf`;
         const blob = new Blob([response.data], { type: 'application/pdf' });
 
         // ─── PLATAFORMA NATIVA (Android + iOS) ────────────────────────────
@@ -218,7 +233,6 @@ export class BaseService {
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.target = '_blank';
         link.download = cleanFileName;
         document.body.appendChild(link);
         link.click();
@@ -251,14 +265,42 @@ export class BaseService {
 
     /**
      * Convierte un error blob del backend en un Error con mensaje legible.
+     * Maneja respuestas inesperadas (como errores de servidor HTML) que no son PDFs.
      */
     async _blobErrorToMessage(err) {
         try {
             const data = err?.response?.data;
             if (data instanceof Blob) {
                 const texto = await data.text();
+                // Filtrar mensajes que no son errores de PDF (ej. propiedades CSS aleatorias)
+                if (texto && texto.length < 500) {
+                    const textoLimpo = texto.trim();
+                    // Evitar mostrar propiedades CSS u otros ruidos del servidor como mensaje de error
+                    const patronesNoValidos = [
+                        /object.fit/i,
+                        /not a recognized CSS property/i,
+                    ];
+                    const esMensajeNoValido = patronesNoValidos.some(p => p.test(textoLimpo));
+                    if (!esMensajeNoValido) {
+                        try {
+                            const json = JSON.parse(textoLimpo);
+                            const msg = json?.message || json?.error;
+                            if (msg) {
+                                const e = new Error(msg);
+                                e.response = err.response;
+                                return e;
+                            }
+                        } catch {
+                            // Si no es JSON válido, usar el texto crudo (pero ya filtrado)
+                            const e = new Error(textoLimpo);
+                            e.response = err.response;
+                            return e;
+                        }
+                    }
+                }
+                // Si el mensaje es inválido o ocurrió un error, intentar parseo JSON completo
                 try {
-                    const json = JSON.parse(texto);
+                    const json = JSON.parse(texto || '');
                     const msg = json?.message || json?.error;
                     if (msg) {
                         const e = new Error(msg);
@@ -266,11 +308,7 @@ export class BaseService {
                         return e;
                     }
                 } catch {
-                    if (texto && texto.length < 500) {
-                        const e = new Error(texto);
-                        e.response = err.response;
-                        return e;
-                    }
+                    // Ignorar y caer al error original
                 }
             }
         } catch {

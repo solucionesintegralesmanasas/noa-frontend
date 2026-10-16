@@ -2,7 +2,18 @@
     <div class="row gx-3">
         <div class="col-12 col-xxl-10 offset-xxl-1 col-xl-12">
             <BasePageHeader :title="pageTitle" :subtitle="pageSubtitle" icon="fad fa-clipboard-list text-primary"
-                :breadcrumbs="breadcrumbs" :show-back="true" @back="goBack" />
+                :breadcrumbs="breadcrumbs" :show-back="true" @back="goBack">
+                <template #title-after>
+                    <span v-if="selectedVehiclePlate" class="badge rounded-pill bg-primary text-white fw-bold d-inline-flex align-items-center gap-1 px-2 py-1 shadow-sm" style="font-size: 0.7rem;" role="status">
+                        <i class="fas fa-truck" aria-hidden="true"></i>
+                        Vehículo: {{ selectedVehiclePlate }}
+                    </span>
+                    <span v-else class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size: 0.7rem;" role="status">
+                        <i class="fas fa-truck" aria-hidden="true"></i>
+                        Vehículo: sin seleccionar
+                    </span>
+                </template>
+            </BasePageHeader>
 
             <div class="card border-0 shadow-sm fade-in-up" style="animation-delay: 0.1s;">
                 <div class="card-header border-bottom border-200 px-0">
@@ -75,6 +86,43 @@
                                 <input type="hidden" v-model="formData.contract_number_display" />
                                 <input type="hidden" v-model="formData.company_uuid" />
                                 <input type="hidden" v-model="formData.contractor.company_uuid" />
+                            </div>
+
+                            <div class="col-12" v-if="selectedVehicle" aria-live="polite">
+                                <div class="alert alert-light border d-flex flex-column flex-md-row align-items-md-center gap-3 mb-0">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 flex-shrink-0">
+                                        <i class="fad fa-car text-primary fs-5" aria-hidden="true"></i>
+                                    </div>
+                                    <dl class="row g-2 mb-0 flex-grow-1">
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Placa</dt>
+                                            <dd class="mb-0 fw-semibold">{{ selectedVehicle.vehicle_license_plate || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Marca</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.brand?.description || selectedVehicle.brand || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Línea</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.line || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Modelo</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.model || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">Color</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.color || '—' }}</dd>
+                                        </div>
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <dt class="text-muted small fw-medium">N.º interno</dt>
+                                            <dd class="mb-0">{{ selectedVehicle.internal_number || '—' }}</dd>
+                                        </div>
+                                    </dl>
+                                    <button v-if="!isEditMode" type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 flex-shrink-0" @click="cambiarVehiculo">
+                                        <i class="fas fa-exchange-alt me-1" aria-hidden="true"></i> Cambiar
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="col-12">
@@ -250,7 +298,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-effective_date">Fecha de
                                     Inicio</label>
-                                <input id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" type="date" class="form-control" placeholder="YYYY-MM-DD" :class="{
+                                <DateInput id="f-effective_date" :aria-invalid="!!validationErrors['effective_date']" :aria-describedby="validationErrors['effective_date'] ? 'f-effective_date-error' : undefined" class="form-control" placeholder="YYYY-MM-DD" :class="{
                                     'is-invalid': validationErrors['effective_date'],
                                     'is-valid': formData.effective_date && !validationErrors['effective_date']
                                 }" v-model="formData.effective_date"
@@ -264,7 +312,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiration_date">Fecha de
                                     Vencimiento</label>
-                                <input id="f-expiration_date" :aria-invalid="!!validationErrors['expiration_date']" :aria-describedby="validationErrors['expiration_date'] ? 'f-expiration_date-error' : undefined" type="date" class="form-control" placeholder="YYYY-MM-DD" :class="{
+                                <DateInput id="f-expiration_date" :aria-invalid="!!validationErrors['expiration_date']" :aria-describedby="validationErrors['expiration_date'] ? 'f-expiration_date-error' : undefined" class="form-control" placeholder="YYYY-MM-DD" :class="{
                                     'is-invalid': validationErrors['expiration_date'],
                                     'is-valid': formData.expiration_date && !validationErrors['expiration_date']
                                 }" v-model="formData.expiration_date" :max="vehiclePaymentLimit"
@@ -453,11 +501,13 @@ import { useAuthStore } from '@store';
 import { useSystemConfigurationStore } from '@/features/systemConfiguration/store/systemConfiguration.store.js';
 import { useThirdPartiesStore } from '@/features/thirdParties/store/thirdParties.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import Swal from 'sweetalert2';
 import { dateUtils } from '@utils/date.js';
 import { logger } from '@utils/logger.js';
+import { masReciente } from '@/hooks/useDocumentWizard.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -492,6 +542,12 @@ const formFuec = ref(true);
 const isFetchingVehicle = ref(false);
 const isSearchingContractor = ref(false);
 const vehiclePaymentLimit = ref('');
+const selectedVehicle = ref(null);
+
+const cambiarVehiculo = () => {
+    selectedVehicle.value = null;
+    formFuec.value = true;
+};
 
 // Estado inicial del formulario
 const formData = reactive({
@@ -531,6 +587,14 @@ const formData = reactive({
 });
 
 const passengers = computed(() => formData.passengers);
+
+/** Placa del vehículo seleccionado para generar el FUEC */
+const selectedVehiclePlate = computed(() => {
+    const uuid = formData.vehicle_uuid;
+    if (!uuid) return '';
+    const v = (store.catalogs.vehicles ?? []).find((item) => item.uuid === uuid);
+    return v?.vehicle_license_plate || '';
+});
 
 const passengerErrors = computed(() =>
     Object.entries(validationErrors)
@@ -880,18 +944,27 @@ const consultarVehiculo = async () => {
 
         // 3. Validar SOAT
         const docs = vehicle.vehicle_documents || vehicle.vehicleDocuments || [];
+        // Un documento cubre hoy si no está descartado y su vencimiento no pasó.
+        const cubreHoy = (d) => {
+            if (!d || d.status === 'NO VIGENTE' || d.status === 'INACTIVA') return false;
+            if (!d.expiry_date) return true;
+            const expiry = d.expiry_date.toString().substring(0, 10);
+            return !dateUtils.dayjs(expiry, 'YYYY-MM-DD').isBefore(today, 'day');
+        };
+        // La más reciente entre las que cubren hoy (el historial no cuenta).
+        const vigenteHoy = (lista) => masReciente(lista.filter(cubreHoy), () => true);
+        // El vencimiento válido más próximo (para topar la vigencia del FUEC).
+        const minimaValida = (lista) => {
+            const fechas = lista.filter((d) => d.expiry_date && cubreHoy(d))
+                .map((d) => d.expiry_date.toString().substring(0, 10)).sort();
+            return fechas[0];
+        };
         const soatDocs = docs.filter(d => d.document_type && d.document_type.toUpperCase().includes('SOAT'));
 
         if (soatDocs.length === 0) {
             validationErrorsList.push('El vehículo no tiene un SOAT registrado.');
         } else {
-            const validSoat = soatDocs.find(d => {
-                const isStatusValid = d.status !== 'NO VIGENTE' && d.status !== 'INACTIVA';
-                if (!isStatusValid) return false;
-                if (!d.expiry_date) return true;
-                const expiry = d.expiry_date.toString().substring(0, 10);
-                return !dateUtils.dayjs(expiry, 'YYYY-MM-DD').isBefore(today, 'day');
-            });
+            const validSoat = vigenteHoy(soatDocs);
 
             if (!validSoat) {
                 const latest = soatDocs.sort((a, b) => {
@@ -929,13 +1002,7 @@ const consultarVehiculo = async () => {
                     validationErrorsList.push('No se encontró fecha de matrícula ni RTM registrada para el vehículo.');
                 }
             } else {
-                const validRtm = rtmDocs.find(d => {
-                    const isStatusValid = d.status !== 'NO VIGENTE' && d.status !== 'INACTIVA';
-                    if (!isStatusValid) return false;
-                    if (!d.expiry_date) return true;
-                    const expiry = d.expiry_date.toString().substring(0, 10);
-                    return !dateUtils.dayjs(expiry, 'YYYY-MM-DD').isBefore(today, 'day');
-                });
+                const validRtm = vigenteHoy(rtmDocs);
 
                 if (!validRtm) {
                     const latest = rtmDocs.sort((a, b) => {
@@ -981,49 +1048,30 @@ const consultarVehiculo = async () => {
         }
 
         // 6. Validar Seguros (RCE y RCC)
-        const validRce = docs.find(d => {
-            if (!d.document_type || !d.document_type.toUpperCase().includes('RCE')) return false;
-            if (d.status === 'NO VIGENTE' || d.status === 'INACTIVA') return false;
-            if (!d.expiry_date) return true;
-            const expiry = d.expiry_date.toString().substring(0, 10);
-            return !dateUtils.dayjs(expiry, 'YYYY-MM-DD').isBefore(today, 'day');
-        });
-        const validRcc = docs.find(d => {
-            if (!d.document_type || !d.document_type.toUpperCase().includes('RCC')) return false;
-            if (d.status === 'NO VIGENTE' || d.status === 'INACTIVA') return false;
-            if (!d.expiry_date) return true;
-            const expiry = d.expiry_date.toString().substring(0, 10);
-            return !dateUtils.dayjs(expiry, 'YYYY-MM-DD').isBefore(today, 'day');
-        });
+        const rceDocs = docs.filter(d => d.document_type && d.document_type.toUpperCase().includes('RCE'));
+        const rccDocs = docs.filter(d => d.document_type && d.document_type.toUpperCase().includes('RCC'));
+        const validRce = vigenteHoy(rceDocs);
+        const validRcc = vigenteHoy(rccDocs);
 
         if (!validRce || !validRcc) {
             validationErrorsList.push('El vehículo debe tener vigentes los seguros de Responsabilidad Civil (RCE y RCC).');
         }
 
-        // Limitar expiration_date del FUEC según vencimientos de documentos VIGENTES del vehículo
-        const isDocValid = (d) => d.status !== 'NO VIGENTE' && d.status !== 'INACTIVA';
+        // Limitar expiration_date del FUEC según vencimientos de documentos que cubren hoy
         const docLimits = [];
-        // SOAT vigente más próximo a vencer
-        const validSoatDocs = soatDocs.filter(d => d.expiry_date && isDocValid(d));
-        if (validSoatDocs.length > 0) {
-            const soatExpiries = validSoatDocs.map(d => d.expiry_date.toString().substring(0, 10)).sort();
-            docLimits.push(soatExpiries[0]);
-        }
-        // RTM vigente más próxima a vencer
+        // SOAT válido más próximo a vencer
+        const minSoat = minimaValida(soatDocs);
+        if (minSoat) docLimits.push(minSoat);
+        // RTM válida más próxima a vencer
         if (!isRtmExempt) {
-            const validRtmDocs = rtmDocs.filter(d => d.expiry_date && isDocValid(d));
-            if (validRtmDocs.length > 0) {
-                const rtmExpiries = validRtmDocs.map(d => d.expiry_date.toString().substring(0, 10)).sort();
-                docLimits.push(rtmExpiries[0]);
-            }
+            const minRtm = minimaValida(rtmDocs);
+            if (minRtm) docLimits.push(minRtm);
         }
-        // Pólizas RCE y RCC vigentes más próximas a vencer
-        if (validRce && validRce.expiry_date && isDocValid(validRce)) {
-            docLimits.push(validRce.expiry_date.toString().substring(0, 10));
-        }
-        if (validRcc && validRcc.expiry_date && isDocValid(validRcc)) {
-            docLimits.push(validRcc.expiry_date.toString().substring(0, 10));
-        }
+        // Pólizas RCE y RCC válidas más próximas a vencer
+        const minRce = minimaValida(rceDocs);
+        if (minRce) docLimits.push(minRce);
+        const minRcc = minimaValida(rccDocs);
+        if (minRcc) docLimits.push(minRcc);
 
         // Calcular límite final: el mínimo entre admin/convenio y los documentos
         if (docLimits.length > 0) {
@@ -1057,6 +1105,7 @@ const consultarVehiculo = async () => {
         if (validationErrorsList.length > 0) {
             formData.vehicle_uuid = '';
             vehiclePaymentLimit.value = null;
+            selectedVehicle.value = null;
 
             await Swal.fire({
                 title: 'Vehículo no Apto',
@@ -1080,6 +1129,7 @@ const consultarVehiculo = async () => {
 
         // El límite máximo del FUEC está regulado estrictamente por el pago de administración (next_payment_date) y convenio de colaboración
         vehiclePaymentLimit.value = calculatedLimit;
+        selectedVehicle.value = vehicle;
 
         // Procedemos con el paso 2
         formData.contractor.vehicle_uuid = formData.vehicle_uuid;
@@ -1522,6 +1572,14 @@ watch(
     { immediate: true }
 );
 
+// El consecutivo llega después del primer pintado (SPEC-006: sale del camino crítico del paso 1).
+watch(() => store.catalogs.nextContractNumber, (siguiente) => {
+    if (isEditMode.value || !siguiente || formData.contractor.contract_number) return;
+    const formatted = siguiente.formatted || '';
+    formData.contractor.contract_number = formatted;
+    formData.contract_number_display = formatted;
+});
+
 onMounted(async () => {
     isViewLoading.value = true;
     try {
@@ -1579,6 +1637,13 @@ onMounted(async () => {
                     formData.verification_code = await generateVerificationCode(item);
                 }
                 formFuec.value = false; // Ya no mostramos paso 1
+                if (formData.vehicle_uuid) {
+                    const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
+                    selectedVehicle.value = catalogVehicle || null;
+                    store.fetchVehicleValidationData(formData.vehicle_uuid)
+                        .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
+                        .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC.', err?.message));
+                }
             }
         } else {
             let companyUuid = authStore.currentTenant?.id;
@@ -1602,18 +1667,21 @@ onMounted(async () => {
 
         // Cargar configuración de sistema para la empresa activa
         if (formData.company_uuid) {
-            try {
-                await systemConfigStore.fetchByCompany(formData.company_uuid);
-            } catch (err) {
+            // Sin await (SPEC-006): una configuración lenta o fallida no debe bloquear el paso 1;
+            // la validación local la usa en cuanto llega (es un computed sobre el store).
+            systemConfigStore.fetchByCompany(formData.company_uuid).catch((err) => {
                 logger.warn('No se pudo cargar la configuración de sistema para la validación local.', err?.message);
-            }
+            });
         }
 
     } finally {
+        // En edición se conserva la espera: `isLoaded` evita que las validaciones asíncronas de licencia y
+        // seguridad social borren conductores ya guardados mientras se asignan los datos. En creación no hay
+        // nada que proteger y la espera de 400 ms solo retrasaba el paso 1.
         setTimeout(() => {
             isViewLoading.value = false;
             isLoaded.value = true;
-        }, 400);
+        }, isEditMode.value ? 400 : 0);
     }
 });
 </script>

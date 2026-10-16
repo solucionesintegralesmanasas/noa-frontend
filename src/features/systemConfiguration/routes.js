@@ -8,7 +8,8 @@ export const systemConfigurationRoutes = [
             title: 'Configuración de Sistema',
             auth: true,
             layout: 'dashboard',
-            permissions: ['system_configurations.index'],
+            roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
+            any: true,
         },
     },
     {
@@ -19,7 +20,8 @@ export const systemConfigurationRoutes = [
             title: 'Tarifas de Plataforma',
             auth: true,
             layout: 'dashboard',
-            permissions: ['system_configurations.index'],
+            roles: ['SUPERADMIN', 'ADMINISTRADOR', 'ADMIN_EMPRESA'],
+            any: true,
         },
     },
 ];

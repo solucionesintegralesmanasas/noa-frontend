@@ -20,6 +20,16 @@ class ThirdPartiesService extends BaseService {
     list(params = {}) { return this._request('GET', '', { params }); }
 
     /**
+     * Avisa si un correo ya es el usuario de otro tercero (no bloquea el guardado).
+     * @param {string} email - Correo a verificar.
+     * @param {string|null} excludeUuid - Tercero que se está editando.
+     * @returns {Promise<Object>} { data: { en_uso, tercero: { nombre, roles } | null } }
+     */
+    checkEmail(email, excludeUuid = null) {
+        return this._request('GET', '/email-check', { params: { email, ...(excludeUuid ? { exclude_uuid: excludeUuid } : {}) } });
+    }
+
+    /**
      * Obtiene un tercero específico por su UUID.
      * @param {string} uuid - UUID del tercero.
      * @returns {Promise<Object>} Datos del tercero.

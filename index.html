@@ -11,16 +11,63 @@
 
   <!-- Falcon Config + SimpleBar (lo usa theme.js: `new window.SimpleBar`) -->
   <script src="/assets/js/config.js" defer></script>
-  <script src="/vendors/simplebar/simplebar.min.js" defer></script>
 
   <!-- Falcon Theme Styles -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="/vendors/simplebar/simplebar.min.css" rel="stylesheet" />
-  <link href="/vendors/FontAwesome-pro/css/all.min.css" rel="stylesheet" />
-  <link href="/assets/css/theme.min.css" rel="stylesheet" id="style-default">
-  <link href="/assets/css/user.min.css" rel="stylesheet" id="user-style-default">
+  <!-- Fuentes no bloqueantes (display=swap): el texto se pinta con la fuente del sistema y cambia al cargar -->
+  <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap"></noscript>
+  <!--CRITICAL_LOGIN_CSS-->
+  <script>
+    // CSS crítico del login inline (critical/login.css). En el login (sin sesión) los CSS
+    // completos y los scripts heredados de Falcon se cargan DESPUÉS del primer pintado para
+    // no competir por ancho de banda con el JS de la app; en cualquier otra ruta o con
+    // sesión activa se cargan bloqueantes como siempre, para no mostrar pantallas sin estilos.
+    (function () {
+      var h = location.hash, sesion = false;
+      // App nativa (Capacitor): el token no vive en localStorage y los archivos son locales
+      // (carga instantánea), así que no se difiere nada.
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) sesion = true;
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          if (localStorage.key(i).indexOf('secure_') > -1) { sesion = true; break; }
+        }
+      } catch (e) { sesion = true; }
+      var login = !sesion && (h === '' || h === '#' || h === '#/' || h === '#/login');
+      window.__noaLogin = login;
+      var hojas = [
+        ['/vendors/simplebar/simplebar.min.css', ''],
+        ['/vendors/FontAwesome-pro/css/all.min.css', ''],
+        ['/assets/css/theme.min.css', ' id="style-default"'],
+        ['/assets/css/user.min.css', ' id="user-style-default"']
+      ];
+      if (!login) {
+        for (var j = 0; j < hojas.length; j++) {
+          document.write('<link rel="stylesheet" href="' + hojas[j][0] + '"' + hojas[j][1] + '>');
+        }
+        return;
+      }
+      // Login: se insertan tras el <style> crítico para conservar el orden de la cascada
+      // (Falcon antes que el CSS de la app que Vite añade después).
+      window.__noaCargarHojas = function () {
+        var ancla = document.getElementById('critical-login');
+        for (var k = hojas.length - 1; k >= 0; k--) {
+          var l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = hojas[k][0];
+          if (hojas[k][1]) l.id = /id="([^"]+)"/.exec(hojas[k][1])[1];
+          if (ancla) ancla.insertAdjacentElement('afterend', l); else document.head.appendChild(l);
+        }
+      };
+    })();
+  </script>
+  <noscript>
+    <link href="/vendors/simplebar/simplebar.min.css" rel="stylesheet" />
+    <link href="/vendors/FontAwesome-pro/css/all.min.css" rel="stylesheet" />
+    <link href="/assets/css/theme.min.css" rel="stylesheet" />
+    <link href="/assets/css/user.min.css" rel="stylesheet" />
+  </noscript>
 
 
 
@@ -133,16 +180,54 @@
   </main>
   <script type="module" src="/src/main.js"></script>
 
-  <!-- Falcon Scripts (diferidos: no bloquean el parser, mantienen orden).
-       Requeridos por theme.js y vistas: popper+bootstrap (window.bootstrap),
-       anchorjs, is, lodash (window._ ×11) y theme.js. No quitar sin auditar
-       theme.js (ARQ-012: auditado 2026-09-23, todo en uso). -->
-  <script src="/vendors/popper/popper.min.js" defer></script>
-  <script src="/vendors/bootstrap/bootstrap.min.js" defer></script>
-  <script src="/vendors/anchorjs/anchor.min.js" defer></script>
-  <script src="/vendors/is/is.min.js" defer></script>
-  <script src="/vendors/lodash/lodash.min.js" defer></script>
-  <script src="/assets/js/theme.js" defer></script>
+  <!-- Falcon Scripts (heredados). Requeridos por theme.js y vistas: simplebar, popper+bootstrap
+       (window.bootstrap), anchorjs, is, lodash (window._ ×11) y theme.js. No quitar sin auditar
+       theme.js (ARQ-012: auditado 2026-09-23, todo en uso).
+       Fuera del login se cargan diferidos como siempre (mantienen orden, tras main.js);
+       en el login se cargan tras el primer pintado y en el mismo orden. -->
+  <script>
+    (function () {
+      var scripts = [
+        '/vendors/simplebar/simplebar.min.js',
+        '/vendors/popper/popper.min.js',
+        '/vendors/bootstrap/bootstrap.min.js',
+        '/vendors/anchorjs/anchor.min.js',
+        '/vendors/is/is.min.js',
+        '/vendors/lodash/lodash.min.js',
+        '/assets/js/theme.js'
+      ];
+      if (!window.__noaLogin) {
+        for (var i = 0; i < scripts.length; i++) {
+          document.write('<script src="' + scripts[i] + '" defer><\/script>');
+        }
+        return;
+      }
+      function cargar() {
+        if (window.__noaCargarHojas) window.__noaCargarHojas();
+        for (var j = 0; j < scripts.length; j++) {
+          var e = document.createElement('script');
+          e.src = scripts[j];
+          e.async = false; // conserva el orden de ejecución
+          document.body.appendChild(e);
+        }
+      }
+      function alTerminar() {
+        if (window.requestIdleCallback) window.requestIdleCallback(cargar, { timeout: 3000 });
+        else setTimeout(cargar, 300);
+      }
+      if (document.readyState === 'complete') alTerminar();
+      else window.addEventListener('load', alTerminar);
+    })();
+  </script>
+  <noscript>
+    <script src="/vendors/simplebar/simplebar.min.js"></script>
+    <script src="/vendors/popper/popper.min.js"></script>
+    <script src="/vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="/vendors/anchorjs/anchor.min.js"></script>
+    <script src="/vendors/is/is.min.js"></script>
+    <script src="/vendors/lodash/lodash.min.js"></script>
+    <script src="/assets/js/theme.js"></script>
+  </noscript>
 </body>
 
 </html>

@@ -46,4 +46,29 @@ export const dateUtils = {
     dayjs: (...args) => dayjs(...args),
 };
 
+/**
+ * Parsea un texto pegado o escrito a ISO (YYYY-MM-DD).
+ * Acepta los formatos de las páginas del gobierno y el RUNT (día/mes/año,
+ * año/mes/día, año corto, fecha compacta) y el ISO del input nativo;
+ * tolera hora al final ("2026-09-14 00:00:00"). Día/mes conserva prioridad.
+ * Devuelve null si no es una fecha válida.
+ * @param {string|null|undefined} texto
+ * @returns {string|null}
+ */
+export function parsearFechaFlexible(texto) {
+    if (texto === null || texto === undefined) return null;
+    // Solo importa la parte de fecha: recorta hora ("... 00:00:00") e ISO con T.
+    const limpio = String(texto).trim().split(/\s+/)[0].split('T')[0];
+    if (!limpio) return null;
+    const formatos = [
+        'DD/MM/YYYY', 'D/M/YYYY', 'DD-MM-YYYY', 'D-M-YYYY',
+        'DD.MM.YYYY', 'D.M.YYYY', 'YYYY-MM-DD',
+        'YYYY/MM/DD', 'YYYY/M/D', 'YYYY.MM.DD', 'YYYY.M.D',
+        'DD/MM/YY', 'D/M/YY', 'DD-MM-YY', 'DD.MM.YY',
+        'YYYYMMDD',
+    ];
+    const m = dayjs(limpio, formatos, true);
+    return m.isValid() ? m.format('YYYY-MM-DD') : null;
+}
+
 export default dateUtils;

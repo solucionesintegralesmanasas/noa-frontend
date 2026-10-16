@@ -236,7 +236,7 @@ import { useProjectsStore } from '../store/projects.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import { getMediaUrl } from '@/utils/media.js';
 

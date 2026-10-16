@@ -90,6 +90,19 @@ class SecureStorage {
         await this._deriveKey(salt);
     }
 
+    /**
+     * Indica si hay algún dato cifrado guardado. Sin datos (visitante sin sesión) no hace falta
+     * derivar la clave PBKDF2 al arrancar: se deriva al primer setItem.
+     */
+    async hasStoredData() {
+        try {
+            const { keys } = await Preferences.keys();
+            return keys.some((k) => k.startsWith(`${this.prefix}secure_`));
+        } catch {
+            return true; // ante la duda, se calienta la clave como antes
+        }
+    }
+
     async _encrypt(text) {
         if (!_isSecureContext()) {
             return `raw:${btoa(encodeURIComponent(text))}`;

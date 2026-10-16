@@ -249,7 +249,7 @@
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-lg-3">
                             <label class="form-label" for="f-legal_representative_document_issue_date">Fecha Exp. Documento</label>
-                            <input id="f-legal_representative_document_issue_date" :aria-invalid="!!validationErrors['legal_representative_document_issue_date']" :aria-describedby="validationErrors['legal_representative_document_issue_date'] ? 'f-legal_representative_document_issue_date-error' : undefined" type="date" class="form-control"
+                            <DateInput id="f-legal_representative_document_issue_date" :aria-invalid="!!validationErrors['legal_representative_document_issue_date']" :aria-describedby="validationErrors['legal_representative_document_issue_date'] ? 'f-legal_representative_document_issue_date-error' : undefined" class="form-control"
                                 v-model="formData.legal_representative_document_issue_date" placeholder="YYYY-MM-DD" />
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-lg-3">
@@ -357,7 +357,8 @@ import { useCompaniesStore } from '../store/companies.store.js';
 import { usePermissionsStore } from '@store';
 import { useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import RuesLookupPanel from '@/components/RuesLookupPanel.vue';
 

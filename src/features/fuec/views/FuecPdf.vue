@@ -76,9 +76,19 @@ const store = useFuecStore();
 const pdfUrl = ref(null);
 const loading = ref(true);
 const error = ref(null);
+const fileName = ref('FUEC.pdf');
 let rawBlob = null;
 
 const goBack = () => router.push('/extracto-de-contrato');
+
+const construirNombreArchivo = (detalle) => {
+    const placa = detalle?.vehicle?.vehicle_license_plate || detalle?.vehicle_license_plate || detalle?.placa || '';
+    const origen = detalle?.origin_route || detalle?.origin || '';
+    const destino = detalle?.destination_route || detalle?.destination || '';
+    const recorrido = [origen, destino].filter(Boolean).join(' - ');
+    const base = `${placa}${recorrido ? ` ${recorrido}` : ''}`.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, ' ');
+    fileName.value = base ? `${base}.pdf` : `FUEC-${route.params.id}.pdf`;
+};
 
 const loadPdf = async () => {
     loading.value = true;
@@ -92,7 +102,12 @@ const loadPdf = async () => {
 
     try {
         const uuid = route.params.id;
-        const blob = await store.getRawPdf(uuid);
+        const [blob, detalle] = await Promise.all([
+            store.getRawPdf(uuid),
+            store.fetchProfileById(uuid).catch(() => null),
+        ]);
+
+        if (detalle) construirNombreArchivo(detalle);
         
         if (!blob || blob.size === 0) {
             throw new Error('El servidor retornó un documento vacío.');
@@ -122,7 +137,7 @@ const downloadPdf = () => {
     if (!rawBlob) return;
     const a = document.createElement('a');
     a.href = pdfUrl.value;
-    a.download = `FUEC-${route.params.id}.pdf`;
+    a.download = fileName.value;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

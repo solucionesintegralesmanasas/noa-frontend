@@ -2,9 +2,9 @@
     <nav v-if="showSidebar" class="navbar navbar-light navbar-vertical navbar-expand-xl" aria-label="Navegación principal">
         <div class="d-flex align-items-center">
             <router-link class="navbar-brand" to="/dashboard">
-                <div class="d-flex align-items-center py-2 gap-4">
-                    <img loading="lazy" src="/noa.svg" alt="NOA Transportes" class="sidebar-brand-icon" />
-                    <NoaBadge size="40px" class="sidebar-brand-badge" />
+                <div class="d-flex align-items-center py-2 gap-2">
+                    <img loading="lazy" src="/logo-solo-simbolo.svg" alt="Transportes Sin Barreras" class="sidebar-brand-symbol" width="48" height="36" />
+                    <img loading="lazy" src="/logo-solo-letras.svg" alt="Transportes Especiales Sin Barreras" class="sidebar-brand-letters" width="140" height="30" />
                 </div>
             </router-link>
         </div>
@@ -39,7 +39,7 @@
                     <!-- SECCIÓN 1: EMPRESA                     -->
                     <!-- ═══════════════════════════════════════ -->
                     <li class="nav-item"
-                        v-if="can('companies.index') || can('companies.show') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index') || can('experiences.index') || can('tax_declarations.index') || can('rup_records.index') || can('financial_statements.index')">
+                        v-if="can('companies.index') || can('companies.profile') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index') || can('experiences.index') || can('tax_declarations.index') || can('rup_records.index') || can('financial_statements.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Empresa</div>
                             <div class="col ps-0">
@@ -249,7 +249,7 @@
                     <!-- (era "Flota" — sin Planillas de Control)           -->
                     <!-- ═══════════════════════════════════════════════════ -->
                     <li class="nav-item"
-                        v-if="can('vehicles.index') || can('vehicle_inspections.index') || can('maintenance.index') || can('maintenance.forecast')">
+                        v-if="can('vehicles.index') || can('vehicle_inspections.index') || can('maintenance.index') || can('maintenance.forecast') || can('reports.vehicles.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Flota y Mantenimiento</div>
                             <div class="col ps-0">
@@ -288,6 +288,7 @@
                                 <span class="nav-link-text ps-1">Proyección Mantenimiento</span>
                             </div>
                         </router-link>
+
                     </li>
 
                     <!-- ═══════════════════════════════════════════════════════════ -->
@@ -343,17 +344,36 @@
                         </router-link>
                     </li>
 
+                    <!-- RADICACIÓN TO - expedientes y ruta de trámite (incluye Tarjeta de operación) -->
+                    <li class="nav-item" v-if="can('radicacion_to.index')">
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/radicacion') }"
+                            to="/radicacion">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fad fa-file-signature" aria-hidden="true"></span></span>
+                                <span class="nav-link-text ps-1">Radicación TO</span>
+                            </div>
+                        </router-link>
+                    </li>
+
                     <!-- ═══════════════════════════════════════════════════ -->
                     <!-- SECCIÓN 5: FINANZAS                               -->
                     <!-- (era "Operaciones y Finanzas" — solo Cuotas Adm.) -->
                     <!-- ═══════════════════════════════════════════════════ -->
-                    <li class="nav-item" v-if="can('affiliate_admin_charges.index')">
+                    <li class="nav-item" v-if="can('affiliate_admin_charges.index') || can('commercial_invoices.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Finanzas</div>
                             <div class="col ps-0">
                                 <hr class="mb-0 navbar-vertical-divider" />
                             </div>
                         </div>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion') }"
+                            to="/facturacion" v-if="can('commercial_invoices.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
+                                <span class="nav-link-text ps-1">Facturación</span>
+                            </div>
+                        </router-link>
 
                         <router-link class="nav-link" :class="{ 'active': isActiveLink('/pagos-de-administracion') }"
                             to="/pagos-de-administracion" v-if="can('affiliate_admin_charges.index')">
@@ -432,6 +452,72 @@
                         </router-link>
                     </li>
 
+                    <!-- ═══════════════════════════════════════════ -->
+                    <!-- SECCIÓN 8: REPORTES                        -->
+                    <!-- ═══════════════════════════════════════════ -->
+                    <li class="nav-item" v-if="can('reports.vehicles.index')">
+                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+                            <div class="col-auto navbar-vertical-label">Reportes</div>
+                            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+                        </div>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/reportes/vehiculos', true) }"
+                            to="/reportes/vehiculos" v-if="can('reports.vehicles.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-chart-bar"></span></span>
+                                <span class="nav-link-text ps-1">Reporte Vehículos</span>
+                            </div>
+                        </router-link>
+                    </li>
+
+                    <!-- SECCIÓN 9: CONFIGURACIÓN / CATÁLOGOS -->
+                    <li v-if="permissionsStore.hasRole('superadmin') || permissionsStore.hasRole('administrador') || permissionsStore.hasRole('admin_empresa')" class="nav-item">
+                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+                            <div class="col-auto navbar-vertical-label">Configuración</div>
+                            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+                        </div>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/marcas', true) }"
+                            to="/configuracion/marcas">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-tags"></span></span>
+                                <span class="nav-link-text ps-1">Marcas</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/clases-vehiculos', true) }"
+                            to="/configuracion/clases-vehiculos">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-truck"></span></span>
+                                <span class="nav-link-text ps-1">Clases de Vehículos</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/objetos-contrato', true) }"
+                            to="/configuracion/objetos-contrato">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-file-contract"></span></span>
+                                <span class="nav-link-text ps-1">Objetos de Contrato</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/items-inspeccion', true) }"
+                            to="/configuracion/items-inspeccion">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-clipboard-check"></span></span>
+                                <span class="nav-link-text ps-1">Ítems de Inspección</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/retenciones', true) }"
+                            to="/configuracion/retenciones">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-percent"></span></span>
+                                <span class="nav-link-text ps-1">Retenciones</span>
+                            </div>
+                        </router-link>
+                    </li>
+
                 </ul>
                 <div class="settings my-3"></div>
             </div>
@@ -443,7 +529,6 @@
 import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore, usePermissionsStore, useUserStore } from '@store';
-import NoaBadge from '@/components/NoaBadge.vue';
 import { useSidebar } from '@/hooks/useSidebar.js';
 
 const route = useRoute();
@@ -489,9 +574,18 @@ const can = (action, subject) => permissionsStore.can(action, subject);
 </script>
 
 <style scoped>
-.sidebar-brand-icon {
+.sidebar-brand-symbol {
     height: 36px;
     width: auto;
     flex-shrink: 0;
+    background: transparent;
+}
+.sidebar-brand-letters {
+    height: 28px;
+    width: auto;
+    flex-shrink: 1;
+    min-width: 0;
+    background: transparent;
+    mix-blend-mode: multiply;
 }
 </style>

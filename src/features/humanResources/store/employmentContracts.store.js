@@ -39,7 +39,7 @@ export const useEmploymentContractsStore = defineStore('employmentContracts', {
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
                 });
-                const p = response?.data ?? response;
+                const p = Array.isArray(response?.data) ? response : (response?.data ?? response);
                 this.items = p.data ?? [];
                 this.pagination.currentPage = p.current_page ?? 1;
                 this.pagination.totalItems = p.total ?? 0;
@@ -106,6 +106,23 @@ export const useEmploymentContractsStore = defineStore('employmentContracts', {
                 this.selectedItem = r?.data?.data ?? r?.data ?? r;
                 return this.selectedItem;
             }, 'Error al obtener el perfil');
+        },
+
+        downloadPdf(uuid) {
+            return this._run(async () => {
+                const r = await employmentContractsService.downloadPdf(uuid);
+                // Create object URL for the blob
+                const blob = new Blob([r.data], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `Contrato_Laboral_${uuid}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+                return true;
+            }, 'Error al descargar el PDF');
         },
 
         fetchProfileById(uuid) {

@@ -157,7 +157,7 @@
               <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
                 <label class="form-label required fw-medium" for="period_date" style="font-size: 0.9rem;">Fecha del
                   Período</label>
-                <input id="period_date" type="date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.period_date"
+                <DateInput id="period_date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.period_date"
                   @change="handleDateChange('period_date')" :class="{ 'is-invalid': validationErrors.period_date }" />
                 <div v-if="validationErrors.period_date" class="invalid-feedback d-block" id="f-period_date-error" role="alert">{{ validationErrors.period_date }}
                 </div>
@@ -166,7 +166,7 @@
               <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
                 <label class="form-label required fw-medium" for="due_date" style="font-size: 0.9rem;">Fecha de
                   Vencimiento</label>
-                <input id="due_date" type="date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.due_date"
+                <DateInput id="due_date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.due_date"
                   @change="handleDateChange('due_date')" :class="{ 'is-invalid': validationErrors.due_date }" />
                 <div v-if="validationErrors.due_date" class="invalid-feedback d-block" id="f-due_date-error" role="alert">{{ validationErrors.due_date }}</div>
               </div>
@@ -174,7 +174,7 @@
               <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
                 <label class="form-label required fw-medium" for="next_payment_date" style="font-size: 0.9rem;">Próximo
                   Vencimiento</label>
-                <input id="next_payment_date" type="date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.next_payment_date"
+                <DateInput id="next_payment_date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.next_payment_date"
                   @change="handleDateChange('next_payment_date')"
                   :class="{ 'is-invalid': validationErrors.next_payment_date }" />
                 <div v-if="validationErrors.next_payment_date" class="invalid-feedback d-block" id="f-next_payment_date-error" role="alert">{{
@@ -224,7 +224,7 @@
               <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3" v-if="formData.status === 'PAGADO'">
                 <label class="form-label required fw-medium" for="payment_date" style="font-size: 0.9rem;">Fecha de
                   Pago</label>
-                <input id="payment_date" type="date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.payment_date"
+                <DateInput id="payment_date" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.payment_date"
                   :class="{ 'is-invalid': validationErrors.payment_date }" />
                 <div v-if="validationErrors.payment_date" class="invalid-feedback d-block" id="f-payment_date-error" role="alert">{{ validationErrors.payment_date }}
                 </div>
@@ -312,7 +312,8 @@ import { useAffiliateAdminChargesStore } from '../store/affiliateCharges.store.j
 import { usePermissionsStore, useUserStore } from '@store';
 import { useSystemConfigurationStore } from '@/features/systemConfiguration/store/systemConfiguration.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import VehiclesService from '@/features/vehicles/services/vehicles.service.js';
 
 const route = useRoute();

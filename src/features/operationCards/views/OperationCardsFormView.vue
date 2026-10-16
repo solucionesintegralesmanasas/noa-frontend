@@ -10,6 +10,7 @@
                 :done-keys="wizardDoneKeys"
                 :incomplete-keys="wizardIncompleteKeys"
                 :disabled-keys="wizardDisabledKeys"
+                :hidden-keys="WIZARD_STEPS.filter((s) => wizardContexto.particular && s.soloPublico).map((s) => s.key)"
                 clickable
                 @navigate="onWizardNavigate"
             />
@@ -86,7 +87,7 @@
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-issue_date">Fecha de
                                 Expedición</label>
-                            <input id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
+                            <DateInput id="f-issue_date" :aria-invalid="!!validationErrors['issue_date']" :aria-describedby="validationErrors['issue_date'] ? 'f-issue_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control" v-model="formData.issue_date"
                                 :class="{ 'is-invalid': validationErrors.issue_date }" />
                             <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">{{
                                 validationErrors.issue_date }}</div>
@@ -94,7 +95,7 @@
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-expiration_date">Fecha de
                                 Expiración</label>
-                            <input id="f-expiration_date" :aria-invalid="!!validationErrors['expiration_date']" :aria-describedby="validationErrors['expiration_date'] ? 'f-expiration_date-error' : undefined" type="date" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
+                            <DateInput id="f-expiration_date" :aria-invalid="!!validationErrors['expiration_date']" :aria-describedby="validationErrors['expiration_date'] ? 'f-expiration_date-error' : undefined" autocomplete="off" placeholder="YYYY-MM-DD" class="form-control"
                                 v-model="formData.expiration_date"
                                 :class="{ 'is-invalid': validationErrors.expiration_date }" />
                             <div v-if="validationErrors.expiration_date" class="invalid-feedback d-block" id="f-expiration_date-error" role="alert">{{
@@ -213,15 +214,17 @@
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from '@/utils/toast.js';
+import { dateUtils } from '@/utils/date.js';
 import { useOperationCardsStore } from '../store/operationCards.store.js';
 import { useVehiclesStore } from '@/features/vehicles/store/vehicles.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { useNoAutocomplete } from '@/hooks/useNoAutocomplete.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import WizardProgress from '@/components/WizardProgress.vue';
-import { useDocumentWizard } from '@/hooks/useDocumentWizard.js';
+import { useDocumentWizard, esVehiculoParticular } from '@/hooks/useDocumentWizard.js';
 import { confirmUnsavedChanges } from '@/utils/confirm.js';
 
 const route = useRoute();
@@ -243,6 +246,9 @@ const returnTo = computed(() => (route.query.retorno ? String(route.query.retorn
 const isNuevo = computed(() => route.query.nuevo === '1');
 const { WIZARD_STEPS, availableSteps, stepRoute, nextStepRoute, prevStepRoute, exitRoute, fetchExistingDocs, getSessionDone, markStepDone, clearSessionDone, toDateInput } = useDocumentWizard();
 const wizardDoneKeys = ref([]);
+// Un vehículo particular no tiene tarjeta de operación.
+const wizardVehiculo = computed(() => (store.catalogs?.vehicles ?? []).find((v) => v.uuid === wizardUuid.value) ?? null);
+const wizardContexto = computed(() => ({ particular: esVehiculoParticular(wizardVehiculo.value) }));
 const wizardIncompleteKeys = ref([]);
 // UUID de la tarjeta precargada en el asistente para actualizar en vez de duplicar
 const editingCardUuid = ref(null);
@@ -342,7 +348,7 @@ const cancelLabel = computed(() => {
 
 /** Pasos que no se pueden abrir: vehículo (ya registrado) o sin permiso. */
 const wizardDisabledKeys = computed(() => {
-    const allowed = new Set(availableSteps(permissionsStore).map((s) => s.key));
+    const allowed = new Set(availableSteps(permissionsStore, wizardContexto.value).map((s) => s.key));
     return WIZARD_STEPS
         .filter((s) => s.key === 'vehiculo' || !allowed.has(s.key))
         .map((s) => s.key);
@@ -373,7 +379,7 @@ const navigateAfterSave = () => {
         return;
     }
     if (wizardUuid.value) {
-        const next = nextStepRoute('tarjeta', wizardUuid.value, permissionsStore);
+        const next = nextStepRoute('tarjeta', wizardUuid.value, permissionsStore, wizardContexto.value);
         if (next?.path?.includes('/vehiculos/perfil/')) {
             goExit();
             return;
@@ -417,6 +423,8 @@ const uniqueVehicles = computed(() => {
     return (store.catalogs?.vehicles || []).filter((v) => {
         const key = v?.uuid ?? v?.vehicle_license_plate;
         if (!key || seen.has(key)) return false;
+        // Sin particulares (no tienen tarjeta), salvo el vehículo ya seleccionado en un historial.
+        if (esVehiculoParticular(v) && v.uuid !== formData.vehicle_uuid) return false;
         seen.add(key);
         return true;
     });
@@ -477,7 +485,7 @@ const goBack = () => {
     if (returnTo.value) {
         router.push(returnTo.value);
     } else if (wizardUuid.value) {
-        router.push(prevStepRoute('tarjeta', wizardUuid.value, permissionsStore));
+        router.push(prevStepRoute('tarjeta', wizardUuid.value, permissionsStore, wizardContexto.value));
     } else {
         router.push('/tarjetas-de-operacion');
     }
@@ -521,7 +529,9 @@ const persistForm = async () => {
     }
 };
 
-/** Continúa hacia el convenio precargado con los datos de la tarjeta recién guardada. */
+/** Continúa hacia el convenio precargado con los datos de la tarjeta recién guardada.
+ * El convenio rige desde hoy; su expiración no se hereda de la tarjeta de
+ * operación porque no tienen por qué coincidir y se elige en el formulario. */
 const goToAgreementForm = () => {
     const plate = uniqueVehicles.value.find((v) => v?.uuid === wizardUuid.value)?.vehicle_license_plate || '';
     // Conserva el origen real (perfil con panel) si ya venía definido.
@@ -535,8 +545,7 @@ const goToAgreementForm = () => {
             vehicle_uuid: formData.vehicle_uuid,
             company_uuid: formData.company_uuid,
             contracting_entity_name: formData.affiliated_company,
-            effective_date: formData.issue_date,
-            expiry_date: formData.expiration_date,
+            effective_date: dateUtils.now('YYYY-MM-DD'),
             operating_card_number: formData.operating_card_number,
             vehicle_plate: plate,
         },
@@ -594,6 +603,11 @@ onMounted(async () => {
     isViewLoading.value = true;
     try {
         await store.loadFormOptions();
+        if (wizardUuid.value && wizardContexto.value.particular) {
+            toast('Atención', 'Un vehículo particular no tiene tarjeta de operación.', 'info');
+            router.replace(exitRoute(wizardUuid.value));
+            return;
+        }
         if (!isSuperAdmin.value) {
             formData.company_uuid = userStore.company_uuid;
         }
@@ -611,6 +625,9 @@ onMounted(async () => {
         } else if (wizardUuid.value) {
             // Modo asistente: vehículo prefijado y documentos ya registrados
             formData.vehicle_uuid = wizardUuid.value;
+        } else if (route.query.vehicle_uuid && !formData.vehicle_uuid) {
+            // Prefijado neutro desde el reporte de vehículos (sin flujo de asistente)
+            formData.vehicle_uuid = String(route.query.vehicle_uuid);
         }
 
         // Progreso del stepper + precarga de la tarjeta existente (una sola consulta)

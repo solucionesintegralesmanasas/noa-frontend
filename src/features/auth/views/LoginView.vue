@@ -5,17 +5,14 @@
     <div class="shape-bg s3"></div>
     <div class="glass-card">
       <div class="brand-panel">
-        <div class="logo-box">
-          <img src="/logo.svg" alt="NOA Transportes" class="brand-logo-img" width="1010" height="270" fetchpriority="high" decoding="async" />
+        <div class="brand-tsb">
+          <img src="/logo-sin-barreras.svg" alt="Transportes Especiales Sin Barreras" class="brand-tsb-logo" width="269" height="198" fetchpriority="high" decoding="async" />
         </div>
         <p class="brand-desc">Plataforma de gestión ERP diseñada para eficiencia, seguridad y escalabilidad en tu
           operación logística.</p>
-        <div class="brand-badges">
-          <span class="badge badge-blue">ERP</span>
-          <span class="badge badge-green">Seguro</span>
-          <span class="badge badge-sky">Cloud</span>
+        <div class="logo-box logo-box-secondary">
+          <img src="/logo.svg" alt="NOA Transportes" class="brand-logo-img" width="1010" height="270" loading="lazy" decoding="async" />
         </div>
-        <div class="brand-terms">Términos y <span class="brand-terms-link" role="note">Condiciones</span></div>
       </div>
       <div class="form-panel">
         <div class="form-head">
@@ -167,15 +164,11 @@ const handleLogin = async () => {
 .brand-panel::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(44,123,229,0.15),transparent);}
 .logo-box{width:100%;max-width:min(340px,80%);margin:0 auto clamp(0.75rem,2vw,1.5rem);display:flex;align-items:center;justify-content:center;min-height:clamp(72px,10vw,110px);}
 .brand-logo-img{width:clamp(200px,28vw,300px);height:auto;display:block;flex-shrink:0;}
-.brand-desc{color:#475569;font-size:clamp(0.8rem,1.5vw,0.875rem);line-height:1.65;margin:0 0 clamp(1rem,2.5vw,1.75rem);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
-.brand-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:clamp(1rem,2vw,1.5rem);}
-.badge{font-size:0.7rem;font-weight:600;padding:4px 10px;border-radius:20px;letter-spacing:0.3px;}
-.badge-blue{background:rgba(44,123,229,0.1);color:#1a68d1;}
-.badge-green{background:rgba(0,210,122,0.1);color:#0a8a50;}
-.badge-sky{background:rgba(0,210,244,0.1);color:#0899b0;}
-.brand-terms{font-size:0.75rem;color:#64748b;}
-.brand-terms a{color:#1a68d1;text-decoration:none;font-weight:500;}
-.brand-terms-link{color:#1a68d1;font-weight:500;}
+.brand-desc{color:#475569;font-size:clamp(0.8rem,1.5vw,0.875rem);line-height:1.65;margin:0 0 clamp(1rem,2vw,1.5rem);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.brand-tsb{margin:0 auto clamp(0.75rem,2vw,1.25rem);display:flex;justify-content:center;align-items:center;background:transparent;}
+.brand-tsb-logo{width:clamp(160px,22vw,240px);height:auto;display:block;background:transparent;border-radius:0;box-shadow:none;mix-blend-mode:multiply;}
+.logo-box-secondary{margin:0 auto;min-height:auto;}
+.logo-box-secondary .brand-logo-img{width:clamp(80px,10vw,110px);opacity:0.9;}
 .form-panel{padding:clamp(1.5rem,3.5vw,2.5rem) clamp(1rem,3vw,2rem);background:#fff;display:flex;flex-direction:column;justify-content:center;}
 .form-head{margin-bottom:clamp(1rem,2.5vw,1.5rem);}
 .form-title-text{font-size:clamp(1.25rem,2.5vw,1.6rem);font-weight:700;color:#0f172a;margin:0 0 0.35rem;}
@@ -202,7 +195,7 @@ const handleLogin = async () => {
 .alert-error{background:#fef4f4;border:1px solid #f4b8ba;color:#c2222a;font-size:0.82rem;padding:10px 12px;border-radius:8px;}
 .btn-main{width:100%;padding:11px;background:linear-gradient(135deg,#2c7be5,#1a68d1);color:white;border:none;border-radius:10px;font-weight:700;font-size:0.95rem;margin-top:0.5rem;cursor:pointer;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(44,123,229,0.35);font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;}
 .btn-main:disabled{opacity:0.7;cursor:not-allowed;}
-.btn-main:focus-visible,.flink:focus-visible,.pw-toggle:focus-visible,.brand-terms a:focus-visible{outline:2px solid #2c7be5;outline-offset:2px;}
+.btn-main:focus-visible,.flink:focus-visible,.pw-toggle:focus-visible{outline:2px solid #2c7be5;outline-offset:2px;}
 @media (prefers-reduced-motion: reduce){
   .btn-spinner{animation:none;}
   .finput,.btn-main{transition:none;}
@@ -234,8 +227,5 @@ const handleLogin = async () => {
     align-items:flex-start;
   }
   .glass-card{border-radius:16px;}
-  .brand-badges {
-    margin-bottom: 0.75rem;
-  }
 }
 </style>

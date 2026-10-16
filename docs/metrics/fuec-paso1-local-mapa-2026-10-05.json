@@ -1,0 +1,117 @@
+{
+  "fecha": "2026-10-05T21:09:26.461Z",
+  "entorno": "local",
+  "etiqueta": "mapa",
+  "ruta": "/rastreo/mapa-en-vivo",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 64,
+  "medianaCalidasMs": 43,
+  "minCalidasMs": 41,
+  "maxCalidasMs": 46,
+  "desglosePeticiones": [
+    {
+      "peticion": "tracking/active-drivers",
+      "inicioMs": 20,
+      "finMs": 498
+    },
+    {
+      "peticion": "tracking/geofences",
+      "inicioMs": 499,
+      "finMs": 950
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 64,
+      "ultimaRespuestaApiMs": 1016,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 49,
+          "finMs": 536
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 538,
+          "finMs": 1016
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 44,
+      "ultimaRespuestaApiMs": 1000,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 19,
+          "finMs": 531
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 533,
+          "finMs": 1000
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 42,
+      "ultimaRespuestaApiMs": 966,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 19,
+          "finMs": 520
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 522,
+          "finMs": 966
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 46,
+      "ultimaRespuestaApiMs": 1060,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 18,
+          "finMs": 509
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 510,
+          "finMs": 1060
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 41,
+      "ultimaRespuestaApiMs": 950,
+      "api": [
+        {
+          "peticion": "tracking/active-drivers",
+          "inicioMs": 20,
+          "finMs": 498
+        },
+        {
+          "peticion": "tracking/geofences",
+          "inicioMs": 499,
+          "finMs": 950
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { toast } from '@/utils/toast.js';
 import { logger } from '@utils/logger.js';
 import fuecService from '../services/fuec.service.js';
 import { dateUtils } from '@utils/date.js';
+import { elegirLicencia } from '@/utils/driverLicense.js';
 
 /**
  * Muestra una notificación toast usando SweetAlert2.
@@ -74,6 +75,13 @@ export const useFuecStore = defineStore('fuec', {
         async loadCatalogs() {
             try {
                 this.catalogs = await fuecService.getFormOptions();
+                // Consecutivo del contrato: en segundo plano, no bloquea el formulario (la vista lo aplica al llegar).
+                const companyUuid = this.catalogs.companyUuid;
+                if (companyUuid) {
+                    fuecService.getNextContractConsecutive(companyUuid)
+                        .then((siguiente) => { this.catalogs.nextContractNumber = siguiente; })
+                        .catch(() => {});
+                }
                 return this.catalogs;
             } catch (error) {
                 await toast('Advertencia', 'No se pudieron cargar algunas opciones del formulario', 'warning');
@@ -240,9 +248,8 @@ export const useFuecStore = defineStore('fuec', {
                     return { is_expired: true, message: 'El conductor seleccionado no tiene una licencia de conducción registrada.', expiration_date: null };
                 }
                 
-                // Buscamos licencia activa o la primera
-                const activeLicense = licenses.find(l => l.status === 'ACTIVA' || l.status == 1 || l.status === true);
-                const license = activeLicense || licenses[0];
+                // La más reciente entre las ACTIVAs (el endpoint no ordena).
+                const license = elegirLicencia(licenses);
                 
                 if (!license.expiration_date) {
                     return { is_expired: false, expiration_date: null };

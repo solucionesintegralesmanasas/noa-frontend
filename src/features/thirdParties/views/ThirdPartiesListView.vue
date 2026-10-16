@@ -139,17 +139,18 @@
                                         </button>
                                         <button
                                             v-if="store.typeFilter === 'is_driver' || data.is_driver || (data.roles && data.roles.includes('is_driver'))"
-                                            class="btn btn-falcon-default" type="button" title="Gestión de Licencias" :aria-label="`Gestionar licencias de ${data.trade_name}`"
+                                            class="btn btn-falcon-default" type="button"                                             title="Gestión de Licencias" :aria-label="etiquetaBotonLicencias(data)"
                                             @click="openLicensesModal(data.uuid, data.company_uuid)">
-                                            <!-- Icono dinámico basado en las licencias cargadas (eager loaded) -->
-                                            <i v-if="!data.driver_licenses || data.driver_licenses.length === 0"
+                                            <!-- Icono dinámico: verde si tiene licencia ACTIVA y vigente -->
+                                            <i v-if="tieneFilaLicenciaVigente(data)" class="fad fa-id-card text-success"
+                                                style="font-size:14px;" title="Licencia activa y vigente"
+                                                aria-hidden="true" />
+                                            <i v-else-if="!data.driver_licenses || data.driver_licenses.length === 0"
                                                 class="fad fa-id-card text-secondary" style="font-size:14px;"
-                                                title="Sin licencias registradas" />
-                                            <i v-else-if="data.driver_licenses.some(l => l.status === 'ACTIVA')"
-                                                class="fad fa-id-card text-info" style="font-size:14px;"
-                                                title="Licencia Activa" />
+                                                title="Sin licencias registradas" aria-hidden="true" />
                                             <i v-else class="fad fa-exclamation-triangle text-danger"
-                                                style="font-size:14px;" title="Licencia Vencida o Inactiva" />
+                                                style="font-size:14px;" title="Licencia vencida o inactiva"
+                                                aria-hidden="true" />
                                         </button>
                                         <button
                                             v-if="store.typeFilter === 'is_driver' || store.typeFilter === 'is_employee' || data.is_driver || data.is_employee"
@@ -246,13 +247,13 @@
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Expedición *</label>
-                                    <input type="date" v-model="newLicense.issue_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-lic-issue">Fecha Expedición *</label>
+                                    <DateInput :id="'f-lic-issue'" v-model="newLicense.issue_date"
                                         class="form-control form-control-sm" required placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Vencimiento *</label>
-                                    <input type="date" v-model="newLicense.expiration_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-lic-expiry">Fecha Vencimiento *</label>
+                                    <DateInput :id="'f-lic-expiry'" v-model="newLicense.expiration_date"
                                         class="form-control form-control-sm" required placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-1 d-flex align-items-end">
@@ -375,8 +376,8 @@
                         <form @submit.prevent="editingContribution ? submitEditContribution() : submitSocialSecurity()">
                             <div class="row gx-2 gy-2">
                                 <div class="col-12 col-md-2">
-                                    <label class="form-label mb-1 small text-muted">Periodo Facturación *</label>
-                                    <input type="date" v-model="newContribution.billing_period"
+                                    <label class="form-label mb-1 small text-muted" for="f-billing-period">Periodo Facturación *</label>
+                                    <DateInput :id="'f-billing-period'" v-model="newContribution.billing_period"
                                         class="form-control form-control-sm" required placeholder="YYYY-MM" />
                                 </div>
                                 <div class="col-12 col-md-2">
@@ -400,8 +401,8 @@
                                         class="form-control form-control-sm" placeholder="0.00" min="0" step="0.01" />
                                 </div>
                                 <div class="col-12 col-md-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Pago</label>
-                                    <input type="date" v-model="newContribution.payment_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-pay-date">Fecha Pago</label>
+                                    <DateInput :id="'f-pay-date'" v-model="newContribution.payment_date"
                                         class="form-control form-control-sm" placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-2">
@@ -422,8 +423,8 @@
                                         maxlength="100" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Afiliación EPS</label>
-                                    <input type="date" v-model="newContribution.eps_affiliation_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-eps-date">Fecha Afiliación EPS</label>
+                                    <DateInput :id="'f-eps-date'" v-model="newContribution.eps_affiliation_date"
                                         class="form-control form-control-sm" placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
@@ -433,8 +434,8 @@
                                         maxlength="100" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Afiliación Pensión</label>
-                                    <input type="date" v-model="newContribution.pension_affiliation_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-pension-date">Fecha Afiliación Pensión</label>
+                                    <DateInput :id="'f-pension-date'" v-model="newContribution.pension_affiliation_date"
                                         class="form-control form-control-sm" placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
@@ -443,8 +444,8 @@
                                         class="form-control form-control-sm" placeholder="ARL" maxlength="100" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Afiliación ARL</label>
-                                    <input type="date" v-model="newContribution.risk_labor_affiliation_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-arl-date">Fecha Afiliación ARL</label>
+                                    <DateInput :id="'f-arl-date'" v-model="newContribution.risk_labor_affiliation_date"
                                         class="form-control form-control-sm" placeholder="YYYY-MM-DD" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
@@ -454,8 +455,8 @@
                                         maxlength="100" />
                                 </div>
                                 <div class="col-12 col-md-3 mt-2">
-                                    <label class="form-label mb-1 small text-muted">Fecha Afiliación Caja</label>
-                                    <input type="date" v-model="newContribution.compensation_fund_affiliation_date"
+                                    <label class="form-label mb-1 small text-muted" for="f-caja-date">Fecha Afiliación Caja</label>
+                                    <DateInput :id="'f-caja-date'" v-model="newContribution.compensation_fund_affiliation_date"
                                         class="form-control form-control-sm" placeholder="YYYY-MM-DD" />
                                 </div>
                                 <!-- Checkboxes coberturas -->
@@ -587,13 +588,17 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useThirdPartiesStore } from '../store/thirdParties.store.js';
+import { useThirdPartiesStore, tieneFilaLicenciaVigente } from '../store/thirdParties.store.js';
 import ThirdPartiesService from '../services/thirdParties.service.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { toast } from '@/utils/toast.js';
+import { logger } from '@/utils/logger.js';
+import { mensajeErrorValidacion } from '../utils/mensajeError.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -791,11 +796,27 @@ const loadLicensesForModal = async (uuid) => {
     isLoadingLicenses.value = true;
     try {
         driverLicenses.value = await store.fetchDriverLicenses(uuid);
+        store.syncDriverLicenses(uuid, driverLicenses.value);
     } catch (err) {
         console.error('Error cargando licencias', err);
     } finally {
         isLoadingLicenses.value = false;
     }
+};
+
+/**
+ * Etiqueta accesible del botón de licencias, incluyendo el estado
+ * para que el lector de pantalla anuncie si la licencia está vigente.
+ * @param {Object} data - Fila del conductor.
+ * @returns {string}
+ */
+const etiquetaBotonLicencias = (data) => {
+    const nombre = data.full_name || data.trade_name || 'conductor';
+    if (tieneFilaLicenciaVigente(data)) return `Gestionar licencias de ${nombre}: licencia activa y vigente`;
+    if (Array.isArray(data.driver_licenses) && data.driver_licenses.length > 0) {
+        return `Gestionar licencias de ${nombre}: licencia vencida o inactiva`;
+    }
+    return `Gestionar licencias de ${nombre}: sin licencias registradas`;
 };
 
 const openLicensesModal = async (uuid, companyUuid) => {
@@ -834,7 +855,8 @@ const submitNewLicense = async () => {
         await store.createDriverLicense(newLicense.value);
         await loadLicensesForModal(currentDriverUuid.value);
     } catch (err) {
-        console.error('Error guardando licencia', err);
+        logger.error('Error guardando licencia', err?.message);
+        await toast('No se pudo guardar la licencia', mensajeErrorValidacion(err), 'error');
     } finally {
         isSubmittingLicense.value = false;
     }
@@ -876,7 +898,8 @@ const submitEditLicense = async () => {
         await loadLicensesForModal(currentDriverUuid.value);
         cancelEditLicense();
     } catch (err) {
-        console.error('Error actualizando licencia', err);
+        logger.error('Error actualizando licencia', err?.message);
+        await toast('No se pudo actualizar la licencia', mensajeErrorValidacion(err), 'error');
     } finally {
         isSubmittingLicense.value = false;
     }

@@ -116,11 +116,8 @@
 
                                 <Column field="status" header="Estado" sortable class="text-center" style="width: 120px;">
                                     <template #body="{ data }">
-                                        <span class="badge rounded-pill badge-subtle" :class="data.status === 'VIGENTE'
-                                            ? 'badge-subtle-success'
-                                            : 'badge-subtle-warning'
-                                            ">
-                                            {{ data.status }}
+                                        <span class="badge rounded-pill badge-subtle" :class="claseEstadoDocumento(data.status)">
+                                            {{ normalizarEstadoDocumento(data.status) }}
                                         </span>
                                     </template>
                                 </Column>
@@ -134,7 +131,7 @@
                                             </button>
                                             <button class="btn btn-falcon-default" type="button" title="Editar" :aria-label="`Editar pólizas de ${data.vehicle?.vehicle_license_plate}`"
                                                 v-if="can('vehicle_documents.update')"
-                                                @click="goToEdit(data.policies?.[0]?.uuid || data.uuid)">
+                                                @click="goToEdit(uuidEdicionPoliza(data))">
                                                 <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                             </button>
                                             <button class="btn btn-falcon-default" type="button" title="Eliminar" :aria-label="`Eliminar pólizas de ${data.vehicle?.vehicle_license_plate}`"
@@ -186,11 +183,8 @@
 
                                 <Column field="status" header="Estado" sortable class="text-center" style="width: 120px;">
                                     <template #body="{ data }">
-                                        <span class="badge rounded-pill badge-subtle" :class="data.status === 'VIGENTE'
-                                            ? 'badge-subtle-success'
-                                            : 'badge-subtle-warning'
-                                            ">
-                                            {{ data.status }}
+                                        <span class="badge rounded-pill badge-subtle" :class="claseEstadoDocumento(data.status)">
+                                            {{ normalizarEstadoDocumento(data.status) }}
                                         </span>
                                     </template>
                                 </Column>
@@ -233,7 +227,7 @@
                 </span>
             </div>
             <div class="row g-3">
-                <div class="col-md-6" v-for="doc in selectedPolicies.policies" :key="doc.document_type">
+                <div class="col-md-6" v-for="doc in selectedPolicies.policies" :key="doc.uuid">
                     <div class="border rounded-3 p-3 h-100"
                         :class="doc.document_type === 'RCC' ? 'border-primary' : 'border-success'">
                         <h6 class="fw-bold text-uppercase mb-3"
@@ -254,11 +248,8 @@
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted small">Estado</span>
-                            <span class="badge rounded-pill" :class="doc.status === 'VIGENTE'
-                                ? 'badge-subtle-success'
-                                : 'badge-subtle-warning'
-                                ">
-                                {{ doc.status }}
+                            <span class="badge rounded-pill" :class="claseEstadoDocumento(doc.status)">
+                                {{ normalizarEstadoDocumento(doc.status) }}
                             </span>
                         </div>
                     </div>
@@ -280,6 +271,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVehicleDocumentsStore } from '../store/vehicleDocuments.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
+import { normalizarEstadoDocumento, claseEstadoDocumento } from '@/utils/documentStatus.js';
+import { elegirPolizaViva } from '@/hooks/useDocumentWizard.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
@@ -382,6 +375,18 @@ const goToEdit = (uuid) => {
     return router.push(`/vehiculos-documentos/editar/${uuid}`);
 };
 
+/**
+ * UUID para editar las pólizas de la fila: la viva más reciente (RCC o RCE).
+ * `policies[0]` no tiene orden, así que podía abrir el registro reemplazado.
+ */
+const uuidEdicionPoliza = (row) => {
+    const policies = row.policies || [];
+    return elegirPolizaViva(policies, 'RCC')?.uuid
+        ?? elegirPolizaViva(policies, 'RCE')?.uuid
+        ?? policies[0]?.uuid
+        ?? row.uuid;
+};
+
 const handleDelete = (item) => confirmDelete(item, {
     title: '¿Eliminar documento?',
     nameField: 'policy_number',
@@ -390,6 +395,7 @@ const handleDelete = (item) => confirmDelete(item, {
 onMounted(async () => {
     try {
         searchQuery.value = store.search;
+        store.vehicleUuidFilter = route.query.vehicle_uuid || null;
         const type = route.params.documentType;
         if (type === 'soat') store.documentTypeFilter = 'SOAT';
         else if (type === 'tecnomecanica') store.documentTypeFilter = 'RTM';
@@ -404,6 +410,7 @@ onMounted(async () => {
 
 watch(() => route.path, async () => {
     isViewLoading.value = true;
+    store.vehicleUuidFilter = route.query.vehicle_uuid || null;
     const type = route.params.documentType;
     if (type === 'soat') store.documentTypeFilter = 'SOAT';
     else if (type === 'tecnomecanica') store.documentTypeFilter = 'RTM';
@@ -413,6 +420,12 @@ watch(() => route.path, async () => {
     await store.setPage(1);
     isViewLoading.value = false;
     initTooltips();
+});
+
+watch(() => route.query.vehicle_uuid, async (next, prev) => {
+    if (next === prev) return;
+    store.vehicleUuidFilter = next || null;
+    await store.setPage(1);
 });
 
 onUnmounted(() => destroyTooltips());

@@ -34,13 +34,13 @@ export const employmentContractsRoutes = [
     },
     {
         path: '/recursos-humanos/contratos-laborales/perfil/:id',
-        name: 'employmentContracts.profile',
+        name: 'employmentContracts.show',
         component: () => import('./views/EmploymentContractsDetailView.vue'),
         meta: {
             title: 'Perfil',
             auth: true,
             layout: 'dashboard',
-            permissions: ['employmentContracts.profile'],
+            permissions: ['employmentContracts.show'],
         },
     },
 ];

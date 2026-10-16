@@ -22,8 +22,6 @@ rad.json
 #Test results file
 TestResults.xml
 node_modules/
-dist/
-dist-ssr/
 .env
 .env.production
 .env.local
@@ -52,3 +50,7 @@ DerivedData/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# Build (se genera en CI con npm run build; no versionar)
+dist/
+dist-ssr/

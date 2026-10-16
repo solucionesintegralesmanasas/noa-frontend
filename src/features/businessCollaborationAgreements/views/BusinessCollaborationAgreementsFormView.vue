@@ -114,11 +114,10 @@
                         <!-- Fecha de Inicio de Vigencia -->
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required" for="f-effective_date">Fecha de Inicio de Vigencia</label>
-                            <input id="f-effective_date" v-model="formData.effective_date" class="form-control"
+                            <DateInput id="f-effective_date" v-model="formData.effective_date" class="form-control"
                                 :class="{ 'is-invalid': validationErrors.effective_date }"
                                 :aria-invalid="!!validationErrors.effective_date"
-                                :aria-describedby="validationErrors.effective_date ? 'f-effective_date-error' : undefined"
-                                type="date" autocomplete="off" />
+                                :aria-describedby="validationErrors.effective_date ? 'f-effective_date-error' : undefined" autocomplete="off" />
                             <div v-if="validationErrors.effective_date" class="invalid-feedback d-block" id="f-effective_date-error" role="alert">
                                 {{ validationErrors.effective_date }}
                             </div>
@@ -127,11 +126,10 @@
                         <!-- Fecha de Expiración -->
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required" for="f-expiry_date">Fecha de Expiración</label>
-                            <input id="f-expiry_date" v-model="formData.expiry_date" class="form-control"
+                            <DateInput id="f-expiry_date" v-model="formData.expiry_date" class="form-control"
                                 :class="{ 'is-invalid': validationErrors.expiry_date }"
                                 :aria-invalid="!!validationErrors.expiry_date"
-                                :aria-describedby="validationErrors.expiry_date ? 'f-expiry_date-error' : undefined"
-                                type="date" autocomplete="off" />
+                                :aria-describedby="validationErrors.expiry_date ? 'f-expiry_date-error' : undefined" autocomplete="off" />
                             <div v-if="validationErrors.expiry_date" class="invalid-feedback d-block" id="f-expiry_date-error" role="alert">
                                 {{ validationErrors.expiry_date }}
                             </div>
@@ -224,12 +222,14 @@
 </template>
 <script setup>
 import { toast } from '@/utils/toast.js';
+import { dateUtils } from '@/utils/date.js';
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBusinessCollaborationAgreementsStore } from '../store/businessCollaborationAgreements.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 
 const route = useRoute();
@@ -384,6 +384,10 @@ onMounted(async () => {
         } else {
             // Precarga contextual (p. ej. desde una tarjeta externa) antes del consecutivo.
             applyAgreementPrefill();
+            // El convenio rige desde hoy salvo que la precarga traiga otra fecha.
+            if (!formData.effective_date) {
+                formData.effective_date = dateUtils.now('YYYY-MM-DD');
+            }
             formData.agreement_internal_id = await store.fetchNextConsecutive(formData.company_uuid);
         }
         // La modalidad es fija, independientemente de lo que devuelva el registro.

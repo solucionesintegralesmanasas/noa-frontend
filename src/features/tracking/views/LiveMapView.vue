@@ -3,13 +3,17 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import DriverMap from '../components/DriverMap.vue';
 import { useTrackingStore } from '../store/tracking.store';
 import { useRealtimeChannel } from '@/hooks/useRealtimeChannel.js';
+import { usePermissionsStore } from '@/store/modules/permissions';
 import { useToast } from 'vue-toastification';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 
 const store = useTrackingStore();
 const toast = useToast();
 
-const showGeofences = ref(true);
+const permissions = usePermissionsStore();
+// Las geocercas exigen locations.geofences; un afiliado ve el mapa de sus conductores sin ellas.
+const puedeVerGeocercas = permissions.can('locations.geofences');
+const showGeofences = ref(puedeVerGeocercas);
 const loadingDrivers = ref(false);
 const isFullscreen = ref(false);
 
@@ -63,10 +67,11 @@ onMounted(() => {
     channel = useRealtimeChannel(async (signal) => {
         loadingDrivers.value = true;
         try {
-            await store.fetchActiveDrivers(signal);
-            if (showGeofences.value) {
-                await store.fetchGeofences(signal);
-            }
+            // En paralelo, y las geocercas solo si aún no están: casi no cambian y antes se volvían a pedir
+            // (en serie) en cada refresco de 10 s.
+            const peticiones = [store.fetchActiveDrivers(signal)];
+            if (showGeofences.value && store.geofences.length === 0) peticiones.push(store.fetchGeofences(signal));
+            await Promise.all(peticiones);
         } finally {
             loadingDrivers.value = false;
         }
@@ -105,7 +110,7 @@ onBeforeUnmount(() => {
                     <i class="fad fa-sync" :class="{ 'fa-spin': loadingDrivers }"></i>
                     <span class="d-none d-sm-inline ms-1">Actualizar</span>
                 </button>
-                <button class="btn btn-falcon-default btn-sm px-2 px-sm-3" type="button" title="Geoercas"
+                <button v-if="puedeVerGeocercas" class="btn btn-falcon-default btn-sm px-2 px-sm-3" type="button" title="Geocercas"
                     :class="{ 'text-primary': showGeofences }" @click="toggleGeofences">
                     <i class="fad" :class="showGeofences ? 'fa-draw-polygon' : 'fa-eye-slash'"></i>
                     <span class="d-none d-sm-inline ms-1">Geocercas</span>

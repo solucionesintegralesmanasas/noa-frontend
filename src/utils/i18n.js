@@ -7,12 +7,14 @@ import { watch } from "vue";
 import { createI18n } from "vue-i18n";
 import { logger } from "@utils/logger.js";
 import { dateUtils } from "@utils/date.js";
+// Idioma por defecto dentro del entry: evita un salto de red (import dinámico) antes de montar.
+import defaultMessages from "@assets/locales/en.json";
 
 const SUPPORTED_LOCALES = new Set(["es", "en"]);
 const DEFAULT_LOCALE = "en";
 
 export let i18n = null;
-const localeCache = new Map();
+const localeCache = new Map([[DEFAULT_LOCALE, defaultMessages]]);
 
 /**
  * Carga los archivos JSON. 
@@ -24,7 +26,8 @@ export async function loadLocale(locale) {
 
     try {
         // Vite glob: ajustado a tu estructura real (dentro de assets)
-        const modules = import.meta.glob("@assets/locales/*.json");
+        // 'en' (idioma por defecto) ya va en el entry vía import estático y sale de la caché.
+        const modules = import.meta.glob(["@assets/locales/*.json", "!@assets/locales/en.json"]);
         const modulePath = `/src/assets/locales/${locale}.json`;
 
         if (!(modulePath in modules)) throw new Error(`No existe: ${modulePath}`);

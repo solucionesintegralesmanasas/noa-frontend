@@ -85,8 +85,9 @@ onMounted(async () => {
     }, { intervalMs: 10000 });
     channel.start();
 
-    store.fetchAlerts({ only_unread: true, per_page: 20 });
-    store.fetchGeofences();
+    // Alertas y geocercas tienen permisos propios; sin ellos no se consultan (evita 403 al afiliado).
+    if (permissions.can('locations.alerts')) store.fetchAlerts({ only_unread: true, per_page: 20 });
+    if (permissions.can('locations.geofences')) store.fetchGeofences();
 });
 
 onBeforeUnmount(() => {

@@ -64,11 +64,8 @@
 
                         <dt class="col-5 text-muted fw-medium">Estado:</dt>
                         <dd class="col-7">
-                            <span class="badge rounded-pill badge-subtle" :class="item.status === 'VIGENTE'
-                                ? 'badge-subtle-success'
-                                : 'badge-subtle-warning'
-                                ">
-                                {{ item.status }}
+                            <span class="badge rounded-pill badge-subtle" :class="claseEstadoDocumento(item.status)">
+                                {{ normalizarEstadoDocumento(item.status) }}
                             </span>
                         </dd>
                     </dl>
@@ -97,6 +94,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { normalizarEstadoDocumento, claseEstadoDocumento } from '@/utils/documentStatus.js';
 import { useRoute, useRouter } from 'vue-router';
 import { useVehicleDocumentsStore } from '../store/vehicleDocuments.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';

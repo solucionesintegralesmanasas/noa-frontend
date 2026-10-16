@@ -141,7 +141,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useBranchesStore } from '../store/branches.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 
 // --- STORES Y ROUTER ---

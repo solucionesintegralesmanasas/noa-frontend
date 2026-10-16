@@ -18,6 +18,7 @@ export const useVehicleDocumentsStore = defineStore('vehicleDocuments', {
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
         documentTypeFilter: null,
+        vehicleUuidFilter: null,
     }),
 
     getters: {
@@ -55,6 +56,7 @@ export const useVehicleDocumentsStore = defineStore('vehicleDocuments', {
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
                     document_type: this.documentTypeFilter || undefined,
+                    vehicle_uuid: this.vehicleUuidFilter || undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -177,6 +179,7 @@ export const useVehicleDocumentsStore = defineStore('vehicleDocuments', {
 
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
-        clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
+        setVehicleUuid(uuid) { this.vehicleUuidFilter = uuid || null; this.pagination.currentPage = 1; return this.fetchItems(); },
+        clearFilters() { this.search = ''; this.vehicleUuidFilter = null; this.pagination.currentPage = 1; return this.fetchItems(); },
     },
 });

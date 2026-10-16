@@ -6,7 +6,11 @@ import { logger } from "@utils/logger.js";
 // se beneficien del cache. Se ejecuta solo la primera vez.
 let _keyWarmed = false;
 async function _warmKeyOnce() {
-    if (!_keyWarmed) { _keyWarmed = true; await secureStorage.warmKey(); }
+    if (!_keyWarmed) {
+        _keyWarmed = true;
+        // Visitante sin datos guardados: se omite la derivación PBKDF2 (CPU en el arranque).
+        if (await secureStorage.hasStoredData()) await secureStorage.warmKey();
+    }
 }
 
 // Helper genérico para persistir un store de forma segura y reactiva

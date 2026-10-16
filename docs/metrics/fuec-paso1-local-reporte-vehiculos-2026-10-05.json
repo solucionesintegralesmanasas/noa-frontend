@@ -1,0 +1,57 @@
+{
+  "fecha": "2026-10-05T21:10:40.483Z",
+  "entorno": "local",
+  "etiqueta": "reporte-vehiculos",
+  "ruta": "/reportes/vehiculos",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 67,
+  "medianaCalidasMs": 128,
+  "minCalidasMs": 111,
+  "maxCalidasMs": 164,
+  "desglosePeticiones": [],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 67,
+      "ultimaRespuestaApiMs": 102,
+      "api": [
+        {
+          "peticion": "/src/services/api/base.service.js",
+          "inicioMs": 97,
+          "finMs": 102
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 164,
+      "ultimaRespuestaApiMs": null,
+      "api": []
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 141,
+      "ultimaRespuestaApiMs": null,
+      "api": []
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 111,
+      "ultimaRespuestaApiMs": null,
+      "api": []
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 115,
+      "ultimaRespuestaApiMs": null,
+      "api": []
+    }
+  ]
+}

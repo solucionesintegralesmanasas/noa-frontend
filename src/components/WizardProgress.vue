@@ -1,7 +1,7 @@
 <template>
   <div class="wizard-strip mb-3">
-    <div class="wizard-steps d-flex align-items-start" role="group" aria-label="Progreso del registro">
-      <template v-for="(step, i) in steps" :key="step.key">
+    <TransitionGroup name="wizard-step" tag="div" class="wizard-steps d-flex align-items-start" role="group" aria-label="Progreso del registro">
+      <div v-for="(step, i) in steps" :key="step.key" class="wizard-item" :class="{ 'wizard-item-last': i === steps.length - 1 }">
         <button
           type="button"
           class="wizard-node"
@@ -36,8 +36,8 @@
           </span>
         </button>
         <span v-if="i < steps.length - 1" class="wizard-link" :class="{ 'wizard-link-done': isLinkDone(i) }"></span>
-      </template>
-    </div>
+      </div>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -56,11 +56,13 @@ const props = defineProps({
   incompleteKeys: { type: Array, default: () => [] },
   disabledKeys: { type: Array, default: () => [] },
   clickable: { type: Boolean, default: false },
+  // Pasos que no aplican al vehículo (p. ej. pólizas y tarjeta en un particular): no se dibujan.
+  hiddenKeys: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['navigate']);
 
-const steps = computed(() => WIZARD_STEPS);
+const steps = computed(() => WIZARD_STEPS.filter((s) => !props.hiddenKeys.includes(s.key)));
 
 const orderOf = (key) => steps.value.map((s) => s.key).indexOf(key);
 
@@ -137,6 +139,40 @@ const onNavigate = (step) => {
 
 .wizard-steps {
   min-width: 0;
+}
+
+/* Cada paso lleva su conector; el último no se estira */
+.wizard-item {
+  display: flex;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wizard-item-last {
+  flex: 0 0 auto;
+}
+
+/* Un paso que deja de aplicar (p. ej. pólizas y tarjeta en un vehículo particular)
+   se desvanece y se encoge; los demás se reacomodan con suavidad. */
+.wizard-step-enter-active,
+.wizard-step-leave-active {
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.5s ease;
+  overflow: hidden;
+}
+
+.wizard-step-enter-from,
+.wizard-step-leave-to {
+  opacity: 0;
+  transform: scale(0.6);
+  max-width: 0;
+  flex-grow: 0;
+}
+
+.wizard-step-move {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wizard-node {
@@ -287,6 +323,12 @@ const onNavigate = (step) => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .wizard-step-enter-active,
+  .wizard-step-leave-active,
+  .wizard-step-move {
+    transition: none;
+  }
+
   .wizard-dot-done::before,
   .wizard-check path {
     animation: none;

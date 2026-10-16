@@ -1,10 +1,13 @@
 // vitest.config.js — Pruebas unitarias (ARQ-016 / §8 Calidad).
-// Uso: npm run test:unit (entorno node: sin DOM; el código bajo prueba
-// protege los accesos a `document`).
+// Uso: npm run test:unit. Entorno por defecto `node`: los tests de componentes
+// declaran `// @vitest-environment jsdom` en la primera línea y necesitan el
+// plugin Vue para compilar los SFC.
 import path from 'node:path';
+import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+    plugins: [vue()],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),

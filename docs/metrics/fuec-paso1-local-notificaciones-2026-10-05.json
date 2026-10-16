@@ -1,0 +1,207 @@
+{
+  "fecha": "2026-10-05T21:11:16.118Z",
+  "entorno": "local",
+  "etiqueta": "notificaciones",
+  "ruta": "/notificaciones",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 77,
+  "medianaCalidasMs": 40,
+  "minCalidasMs": 29,
+  "maxCalidasMs": 89,
+  "desglosePeticiones": [
+    {
+      "peticion": "notifications",
+      "inicioMs": 18,
+      "finMs": 507
+    },
+    {
+      "peticion": "notifications/sync",
+      "inicioMs": 805,
+      "finMs": 1530
+    },
+    {
+      "peticion": "notifications/counts",
+      "inicioMs": 1038,
+      "finMs": 1503
+    },
+    {
+      "peticion": "notifications",
+      "inicioMs": 1531,
+      "finMs": 1963
+    },
+    {
+      "peticion": "notifications",
+      "inicioMs": 1977,
+      "finMs": 2459
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 77,
+      "ultimaRespuestaApiMs": 3332,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 162,
+          "finMs": 715
+        },
+        {
+          "peticion": "notifications/sync",
+          "inicioMs": 1147,
+          "finMs": 2242
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 1936,
+          "finMs": 2393
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 2244,
+          "finMs": 2712
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 2754,
+          "finMs": 3332
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 89,
+      "ultimaRespuestaApiMs": 2707,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 36,
+          "finMs": 677
+        },
+        {
+          "peticion": "notifications/sync",
+          "inicioMs": 949,
+          "finMs": 1643
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 1085,
+          "finMs": 1564
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1645,
+          "finMs": 2144
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 2189,
+          "finMs": 2707
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 43,
+      "ultimaRespuestaApiMs": 2473,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 16,
+          "finMs": 529
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 811,
+          "finMs": 1288
+        },
+        {
+          "peticion": "notifications/sync",
+          "inicioMs": 811,
+          "finMs": 1508
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1509,
+          "finMs": 1975
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1990,
+          "finMs": 2473
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 29,
+      "ultimaRespuestaApiMs": 2463,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 12,
+          "finMs": 605
+        },
+        {
+          "peticion": "notifications/sync",
+          "inicioMs": 812,
+          "finMs": 1526
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 915,
+          "finMs": 1389
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1527,
+          "finMs": 1980
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1994,
+          "finMs": 2463
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 37,
+      "ultimaRespuestaApiMs": 2459,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 18,
+          "finMs": 507
+        },
+        {
+          "peticion": "notifications/sync",
+          "inicioMs": 805,
+          "finMs": 1530
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 1038,
+          "finMs": 1503
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1531,
+          "finMs": 1963
+        },
+        {
+          "peticion": "notifications",
+          "inicioMs": 1977,
+          "finMs": 2459
+        }
+      ]
+    }
+  ]
+}

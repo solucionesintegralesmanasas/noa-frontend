@@ -1,0 +1,87 @@
+{
+  "fecha": "2026-10-05T21:52:03.400Z",
+  "entorno": "local",
+  "etiqueta": "notificaciones-v2",
+  "ruta": "/notificaciones",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 5,
+  "friaMs": 32,
+  "medianaCalidasMs": 44,
+  "minCalidasMs": 33,
+  "maxCalidasMs": 51,
+  "desglosePeticiones": [
+    {
+      "peticion": "notifications",
+      "inicioMs": 18,
+      "finMs": 535
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 32,
+      "ultimaRespuestaApiMs": 592,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 51,
+          "finMs": 592
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 51,
+      "ultimaRespuestaApiMs": 522,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 27,
+          "finMs": 522
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 51,
+      "ultimaRespuestaApiMs": 579,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 21,
+          "finMs": 579
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 33,
+      "ultimaRespuestaApiMs": 555,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 17,
+          "finMs": 555
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 37,
+      "ultimaRespuestaApiMs": 535,
+      "api": [
+        {
+          "peticion": "notifications",
+          "inicioMs": 18,
+          "finMs": 535
+        }
+      ]
+    }
+  ]
+}

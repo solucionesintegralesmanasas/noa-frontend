@@ -146,14 +146,16 @@ class FuecService extends BaseService {
             }
         };
 
-        const companiesRaw = await fetchSafe('administration/companies/list');
-        const companies = withLabel(companiesRaw, 'business_name', ['company_name', 'name']);
+        // Las empresas solo se esperan antes del resto si hace falta deducir la empresa activa (p. ej. superadmin
+        // sin tenant); si ya se conoce, la petición va en paralelo con los demás catálogos (una ida y vuelta menos).
+        const companiesRequest = fetchSafe('administration/companies/list');
 
         let companyUuid = ctxCompanyUuid || authStore.currentTenant?.id;
 
         // Fallback to the first company UUID if currentTenant is not set (e.g. for super admin)
-        if (!companyUuid && companies && companies.length > 0) {
-            companyUuid = companies[0].uuid;
+        if (!companyUuid) {
+            const primeras = toArray(await companiesRequest);
+            if (primeras.length > 0) companyUuid = primeras[0].uuid;
         }
 
         const vehicleParams = {};
@@ -163,13 +165,17 @@ class FuecService extends BaseService {
         const driverParams = { type: 'is_driver' };
         if (companyUuid) driverParams.company_uuid = companyUuid;
 
-        const [vehicles, drivers, objectsContracts, documentTypes, nextContractNumber] = await Promise.all([
+        // El consecutivo de contrato NO va aquí: solo rellena el número del contrato y su petición, la sexta en
+        // paralelo, quedaba en cola ~1 s y retrasaba el paso 1. Lo carga el store en segundo plano.
+        const [companiesRaw, vehicles, drivers, objectsContracts, documentTypes] = await Promise.all([
+            companiesRequest,
             fetchSafe('fleet-management/vehicles/list', vehicleParams),
             fetchSafe('third-parties/list', driverParams),
             fetchSafe('contract-extract/objects-contracts/list'),
-            fetchSafe('catalogs/type-of-documents/list'),
-            companyUuid ? this.getNextContractConsecutive(companyUuid).catch(() => null) : Promise.resolve(null)
+            fetchSafe('catalogs/type-of-documents/list')
         ]);
+
+        const companies = withLabel(companiesRaw, 'business_name', ['company_name', 'name']);
 
         return {
             companies,
@@ -177,7 +183,8 @@ class FuecService extends BaseService {
             drivers: withLabel(drivers, 'first_name', ['company_name', 'document_number']),
             objectsContracts: withLabel(objectsContracts, 'name', ['description']),
             documentTypes: withLabel(documentTypes, 'name', ['description', 'prefix']),
-            nextContractNumber
+            nextContractNumber: null,
+            companyUuid
         };
     }
 

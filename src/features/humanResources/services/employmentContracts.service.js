@@ -14,6 +14,7 @@ class EmploymentContractsService extends BaseService {
     update(uuid, data) { return this._request('PUT', `/${uuid}`, { data }); }
     delete(uuid) { return this._request('DELETE', `/${uuid}`); }
     getProfile(uuid) { return this._request('GET', `/${uuid}/profile`); }
+    downloadPdf(uuid) { return this._request('GET', `/${uuid}/pdf`, { responseType: 'blob' }); }
 
     async getFormOptions() {
         const fetchSafe = async (url) => {
@@ -27,7 +28,7 @@ class EmploymentContractsService extends BaseService {
         };
 
         const [thirdParties] = await Promise.all([
-            fetchSafe('third-parties/list?is_employee=true'),
+            fetchSafe('third-parties/list?type=is_employee,is_driver'),
         ]);
 
         return {

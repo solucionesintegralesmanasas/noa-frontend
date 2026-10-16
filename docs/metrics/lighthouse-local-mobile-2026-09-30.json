@@ -1,0 +1,19 @@
+{
+  "fecha": "2026-09-30",
+  "origen": "http://localhost:4173",
+  "env": "local",
+  "device": "mobile",
+  "runs": 3,
+  "lighthouse": "lighthouse@12.8.2",
+  "paginas": {
+    "login": {
+      "url": "http://localhost:4173/#/",
+      "finalUrl": "http://localhost:4173/#/",
+      "performance": 84,
+      "accessibility": 96,
+      "lcpMs": 3616,
+      "tbtMs": 49,
+      "cls": 0
+    }
+  }
+}

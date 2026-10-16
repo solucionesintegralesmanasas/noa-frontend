@@ -1,0 +1,154 @@
+{
+  "fecha": "2026-09-28",
+  "dist": true,
+  "metricas": {
+    "totalJS": 2854.4,
+    "inicialJS": 747.4,
+    "diferidoJS": 2107,
+    "totalCSS": 275.9,
+    "vendorPrimevue": 223.3,
+    "vendorUI": null,
+    "vendorFeedback": 76.3,
+    "vendorHttp": 40.1,
+    "vendorVue": 209.5,
+    "indexJS": 143.1,
+    "numChunksJS": 163,
+    "numChunksInicial": 18,
+    "numChunksDiferidos": 145,
+    "numChunksCSS": 87
+  },
+  "rutas": [
+    {
+      "archivo": "ThirdPartiesFormView-avptQIPq.js",
+      "kb": 99,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceTemplateView-m6azI3c5.js",
+      "kb": 96.6,
+      "inicial": false
+    },
+    {
+      "archivo": "DashboardView-BD48LKAe.js",
+      "kb": 61.6,
+      "inicial": false
+    },
+    {
+      "archivo": "SystemConfigurationView-BM_dJ96l.js",
+      "kb": 54.3,
+      "inicial": false
+    },
+    {
+      "archivo": "FuecFormView-Dr2hW5YN.js",
+      "kb": 52,
+      "inicial": false
+    },
+    {
+      "archivo": "VehicleDocumentsFormView-GzjONqpC.js",
+      "kb": 40,
+      "inicial": false
+    },
+    {
+      "archivo": "ThirdPartiesListView-LQry5lS7.js",
+      "kb": 35.7,
+      "inicial": false
+    },
+    {
+      "archivo": "VehiclesFormView-B4E4BkUq.js",
+      "kb": 35.4,
+      "inicial": false
+    },
+    {
+      "archivo": "VehiclesDetailView-DWUOIkwv.js",
+      "kb": 33.8,
+      "inicial": false
+    },
+    {
+      "archivo": "VehicleInspectionListView-BfE9621N.js",
+      "kb": 33.7,
+      "inicial": false
+    },
+    {
+      "archivo": "FuecValidationView-Dbu-1A-i.js",
+      "kb": 30.5,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceDeliveryControlSheetListView-C_3EbSyt.js",
+      "kb": 26.4,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceDeliveryControlSheetFormView-kHDJSOdF.js",
+      "kb": 25.1,
+      "inicial": false
+    },
+    {
+      "archivo": "CompaniesFormView-C8er20Rv.js",
+      "kb": 24.7,
+      "inicial": false
+    },
+    {
+      "archivo": "AffiliateAdminChargesListView-CVTZdQTC.js",
+      "kb": 22.4,
+      "inicial": false
+    }
+  ],
+  "html": {
+    "scriptsSinDefer": [],
+    "hojasGoogleFonts": 1,
+    "cssMuertoJqueryToast": 0
+  },
+  "topChunks": [
+    {
+      "archivo": "column-CwIBQKHn.js",
+      "kb": 253.8,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "vendor-primevue-A2awspw1.js",
+      "kb": 223.3,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "vendor-vue-YDiet9Ok.js",
+      "kb": 209.5,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "html2canvas-B9Ed0YNC.js",
+      "kb": 194.9,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "index-DpbRITGk.js",
+      "kb": 143.1,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "select-BrUU_Shu.js",
+      "kb": 106.3,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "ThirdPartiesFormView-avptQIPq.js",
+      "kb": 99,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "ServiceTemplateView-m6azI3c5.js",
+      "kb": 96.6,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "vendor-feedback-p_XCIix1.js",
+      "kb": 76.3,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "DashboardView-BD48LKAe.js",
+      "kb": 61.6,
+      "tipo": "js-diferido"
+    }
+  ]
+}

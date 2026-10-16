@@ -91,7 +91,7 @@
                             <div class="row g-2 g-md-3">
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                     <label class="form-label required" for="first_name">Nombres</label>
-                                    <input id="first_name" v-model="formData.first_name" class="form-control"
+                                    <input id="first_name" v-model="formData.first_name" class="form-control text-uppercase"
                                         :class="{ 'is-invalid': validationErrors.first_name }" type="text" autocomplete="off"
                                         placeholder="Nombres propios (personas naturales)" />
                                     <div v-if="validationErrors.first_name" class="invalid-feedback d-block" id="f-first_name-error" role="alert">
@@ -100,7 +100,7 @@
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                     <label class="form-label required" for="last_name">Apellidos</label>
-                                    <input id="last_name" v-model="formData.last_name" class="form-control"
+                                    <input id="last_name" v-model="formData.last_name" class="form-control text-uppercase"
                                         :class="{ 'is-invalid': validationErrors.last_name }" type="text" autocomplete="off"
                                         placeholder="Apellidos (personas naturales)" />
                                     <div v-if="validationErrors.last_name" class="invalid-feedback d-block" id="f-last_name-error" role="alert">
@@ -109,7 +109,7 @@
                                 </div>
                                 <div class="col-12 col-sm-12 col-md-4 col-lg-4">
                                     <label class="form-label" for="trade_name">Nombre Comercial</label>
-                                    <input id="trade_name" v-model="formData.trade_name" class="form-control"
+                                    <input id="trade_name" v-model="formData.trade_name" class="form-control text-uppercase"
                                         :class="{ 'is-invalid': validationErrors.trade_name }" type="text" autocomplete="off"
                                         placeholder="Nombre comercial o razón social" />
                                     <div v-if="validationErrors.trade_name" class="invalid-feedback d-block" id="f-trade_name-error" role="alert">
@@ -123,7 +123,7 @@
                             <div class="row g-2 g-md-3">
                                 <div class="col-12">
                                     <label class="form-label required" for="company_name">Razón Social</label>
-                                    <input id="company_name" v-model="formData.company_name" class="form-control"
+                                    <input id="company_name" v-model="formData.company_name" class="form-control text-uppercase"
                                         :class="{ 'is-invalid': validationErrors.company_name }" type="text" autocomplete="off"
                                         placeholder="Razón social legal completa" />
                                     <div v-if="validationErrors.company_name" class="invalid-feedback d-block" id="f-company_name-error" role="alert">
@@ -144,9 +144,14 @@
                         <div class="col-12 col-sm-6 col-md-3 col-lg-3">
                             <label class="form-label required" for="email">Correo Electrónico</label>
                             <input id="email" v-model="formData.email" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.email }" type="email" placeholder="correo@ejemplo.com" />
+                                :class="{ 'is-invalid': validationErrors.email }" type="email" placeholder="correo@ejemplo.com"
+                                :aria-describedby="avisoCorreo ? 'f-email-aviso' : undefined"
+                                @input="avisoCorreo = ''" @blur="verificarCorreo" />
                             <div v-if="validationErrors.email" class="invalid-feedback d-block" id="f-email-error" role="alert">
                                 {{ validationErrors.email }}
+                            </div>
+                            <div v-if="avisoCorreo" id="f-email-aviso" class="form-text text-danger" role="alert">
+                                <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i>{{ avisoCorreo }}
                             </div>
                         </div>
 
@@ -299,8 +304,8 @@
                             </div>
                         </div>
 
-                            <!-- INFORMACIÓN DE LICENCIA (Solo para Conductores en Creación) -->
-                        <div class="col-12" v-show="formData.partyTypes && formData.partyTypes.includes('is_driver') && !isEditMode">
+                            <!-- INFORMACIÓN DE LICENCIA (Conductores) -->
+                        <div class="col-12" v-show="formData.partyTypes && formData.partyTypes.includes('is_driver')">
                             <h6 class="text-uppercase fw-bold text-secondary mb-3 mt-4 border-bottom pb-2">
                                 <i class="fas fa-id-card me-2"></i>
                                 Información de Licencia de Conducción y Afiliación
@@ -336,16 +341,16 @@
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                     <label class="form-label required" for="license_issue_date">Fecha Expedición</label>
-                                    <input type="date" id="license_issue_date" v-model="formData.license_issue_date"
-                                        class="form-control" :class="{ 'is-invalid': validationErrors.license_issue_date }" placeholder="YYYY-MM-DD">
+                                    <DateInput id="license_issue_date" v-model="formData.license_issue_date"
+                                        class="form-control" :class="{ 'is-invalid': validationErrors.license_issue_date }" placeholder="YYYY-MM-DD" />
                                     <div v-if="validationErrors.license_issue_date" class="invalid-feedback d-block" id="f-license_issue_date-error" role="alert">
                                         {{ validationErrors.license_issue_date }}
                                     </div>
                                 </div>
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-4">
                                     <label class="form-label required" for="license_expiration_date">Fecha Expiración</label>
-                                    <input type="date" id="license_expiration_date" v-model="formData.license_expiration_date"
-                                        class="form-control" :class="{ 'is-invalid': validationErrors.license_expiration_date }" placeholder="YYYY-MM-DD">
+                                    <DateInput id="license_expiration_date" v-model="formData.license_expiration_date"
+                                        class="form-control" :class="{ 'is-invalid': validationErrors.license_expiration_date }" placeholder="YYYY-MM-DD" />
                                     <div v-if="validationErrors.license_expiration_date" class="invalid-feedback d-block" id="f-license_expiration_date-error" role="alert">
                                         {{ validationErrors.license_expiration_date }}
                                     </div>
@@ -443,11 +448,16 @@ import { toast } from '@/utils/toast.js';
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
+import thirdPartiesService from '../services/thirdParties.service.js';
 import { usePermissionsStore, useUserStore } from '@store';
+import { logger } from '@/utils/logger.js';
+import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
+import { elegirLicencia } from '@/utils/driverLicense.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
-import PrimeMultiSelect from 'primevue/multiselect';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
+import PrimeMultiSelect from '@/components/form/PrimeMultiSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import ProfilePhotoUploader from '@/components/ProfilePhotoUploader.vue';
 import RuesLookupPanel from '@/components/RuesLookupPanel.vue';
@@ -460,6 +470,27 @@ const userStore = useUserStore();
 const isSuperAdmin = computed(() => permissionsStore.roles?.includes('SUPERADMIN'));
 
 const isEditMode = computed(() => route.params.id !== undefined);
+
+// Aviso previo: el usuario es único por correo y el backend rechaza (422) guardar un tercero con el correo de otro.
+const avisoCorreo = ref('');
+async function verificarCorreo() {
+    avisoCorreo.value = '';
+    const correo = String(formData.email || '').trim();
+    if (!correo || !EMAIL_RE.test(correo)) return;
+    try {
+        const res = await thirdPartiesService.checkEmail(correo, isEditMode.value ? route.params.id : null);
+        const info = res?.data ?? res;
+        if (info?.en_uso) {
+            // El nombre y los roles solo llegan a los administradores; el resto ve el aviso sin detalle.
+            const duenio = info.tercero
+                ? `«${info.tercero.nombre}» (${(info.tercero.roles || []).join(', ') || 'sin rol'})`
+                : 'otro tercero';
+            avisoCorreo.value = `Este correo ya es el usuario de ${duenio}. No se podrá guardar este tercero con ese correo: use otro.`;
+        }
+    } catch {
+        // El aviso es informativo: si la consulta falla, el formulario sigue sin él.
+    }
+}
 
 /** Computed para BasePageHeader (evita expresiones complejas en el template) */
 const pageTitle = computed(() => isEditMode.value ? 'Actualizar Tercero' : 'Registrar Tercero');
@@ -478,6 +509,8 @@ const routeType = computed(() => {
 
 const isViewLoading = ref(true);
 const submitting = ref(false);
+// Indica si en edición se cargó una licencia existente del conductor.
+const licenciaCargada = ref(false);
 const validationErrors = reactive({});
 
 // Estado inicial del formulario (inicializar campos del JSON de la Tarea 1)
@@ -555,6 +588,19 @@ const filteredRbacRoleOptions = computed(() => {
     // Mostrar TODOS los roles siempre, solo limitar selección a 1 cuando es empleado
     return rbacRoleOptions.value;
 });
+
+// Rol por defecto al crear desde un listado (afiliado/conductor/empleado).
+// Solo si hay sugerencia válida en catálogo y el usuario no eligió nada:
+// nunca se impone un rol ni se pisa una selección existente.
+function aplicarRolPorDefecto() {
+    if (isEditMode.value || formData.rbacRoles.length > 0) return;
+    const sugerido = rolPorDefectoPara(routeType.value, rbacRoleOptions.value);
+    if (sugerido) {
+        formData.rbacRoles = [sugerido];
+    } else if (ROL_POR_DEFECTO_POR_TIPO[routeType.value]) {
+        logger.warn(`[terceros] sin rol por defecto para ${routeType.value}: no está en el catálogo`);
+    }
+}
 
 const bottomRowColClass = computed(() => {
     return isSuperAdmin.value
@@ -659,8 +705,18 @@ const validateForm = () => {
         }
     }
 
-    // Validar licencia si es conductor (solo al crear)
-    if (formData.partyTypes && formData.partyTypes.includes('is_driver') && !isEditMode.value) {
+    // Validar licencia si es conductor. En edición no se exige cuando el
+    // conductor no tiene licencia registrada ni se está diligenciando una,
+    // para no bloquear cambios de otros campos; si se empieza a diligenciar,
+    // debe completarse igual que en el registro.
+    const licenciaEnCurso = !isEmpty(formData.license_number)
+        || !isEmpty(formData.license_category)
+        || !isEmpty(formData.license_issue_date)
+        || !isEmpty(formData.license_expiration_date);
+    const exigirLicencia = formData.partyTypes
+        && formData.partyTypes.includes('is_driver')
+        && (!isEditMode.value || licenciaCargada.value || licenciaEnCurso);
+    if (exigirLicencia) {
         if (!isOwnerDriver.value && isEmpty(formData.affiliate_uuid)) {
             validationErrors.affiliate_uuid = 'Debe asignar el conductor a un afiliado';
         }
@@ -834,11 +890,29 @@ onMounted(async () => {
                 formData.partyTypes = partyTypes;
 
                 // Roles de acceso RBAC que vienen del perfil (p. ej. ADMIN_EMPRESA).
-                formData.rbacRoles = Array.isArray(item.roles)
-                    ? item.roles.filter(r => r && !r.startsWith('is_'))
-                    : [];
+                // Se normalizan sin perder valores: strings u objetos {name}, sin flags is_*.
+                formData.rbacRoles = normalizarRolesDelPerfil(item.roles);
 
                 formData.is_active = (item.is_active == 1 || item.is_active === true || item.is_active === '1') ? '1' : '0';
+
+                // Licencia existente: precargarla para editarla igual que en el registro.
+                if (formData.partyTypes.includes('is_driver')) {
+                    try {
+                        const licencias = await store.fetchDriverLicenses(route.params.id);
+                        const licencia = elegirLicencia(licencias);
+                        if (licencia) {
+                            licenciaCargada.value = true;
+                            formData.license_number = licencia.number ?? null;
+                            formData.license_category = licencia.category ?? null;
+                            formData.license_issue_date = licencia.issue_date ? String(licencia.issue_date).slice(0, 10) : null;
+                            formData.license_expiration_date = licencia.expiration_date ? String(licencia.expiration_date).slice(0, 10) : null;
+                            formData.license_restrictions = licencia.restrictions ?? null;
+                            formData.license_status = licencia.status ?? 'ACTIVA';
+                        }
+                    } catch {
+                        // Sin licencia previa: el formulario queda listo para registrarla.
+                    }
+                }
                 
                 if (item.photo_url || item.logo_url) {
                     filePreviews.photo = item.photo_url || item.logo_url;
@@ -849,6 +923,8 @@ onMounted(async () => {
             if (routeType.value !== 'all') {
                 formData.partyTypes = [routeType.value];
             }
+            // ... y el rol de acceso correspondiente (afiliado/conductor/empleado).
+            aplicarRolPorDefecto();
         }
     } catch (error) {
         toast('Error', 'No se pudieron cargar los datos', 'error');
@@ -857,6 +933,7 @@ onMounted(async () => {
         if (!isEditMode.value && routeType.value !== 'all' && formData.partyTypes.length === 0) {
             formData.partyTypes = [routeType.value];
         }
+        aplicarRolPorDefecto();
     }
 });
 </script>

@@ -1,0 +1,19 @@
+{
+  "fecha": "2026-09-30",
+  "origen": "https://apptransportessinbarreras.transportessinbarreras.com",
+  "env": "apptransportessinbarreras-transportessinbarreras-com",
+  "device": "desktop",
+  "runs": 3,
+  "lighthouse": "lighthouse@12.8.2",
+  "paginas": {
+    "login": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/#/",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/#/",
+      "performance": 79,
+      "accessibility": 96,
+      "lcpMs": 2042,
+      "tbtMs": 0,
+      "cls": 0
+    }
+  }
+}

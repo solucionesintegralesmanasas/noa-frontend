@@ -1,16 +1,29 @@
 <template>
   <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
   <DriverTrackingProvider />
-  <Sidebar v-if="!shouldHideSidebar" />
-  <div class="content" :class="{ 'no-sidebar-content': shouldHideSidebar }">
-    <Navbar :hide-sidebar-toggle="shouldHideSidebar" :show-brand="shouldHideSidebar" />
-    <main id="main-content" tabindex="-1">
-      <slot>
-        <router-view />
-      </slot>
-    </main>
-    <Footer />
-  </div>
+  <!-- Shell móvil solo para conductor en Android nativo (mockup Capacitor) -->
+  <MobileConductorLayout
+    v-if="esMovilAndroidConductor"
+    :iniciales="inicialesConductor"
+    :nombre-conductor="nombreConductor"
+    :no-leidas="noLeidas"
+  >
+    <slot>
+      <router-view />
+    </slot>
+  </MobileConductorLayout>
+  <template v-else>
+    <Sidebar v-if="!shouldHideSidebar" />
+    <div class="content" :class="{ 'no-sidebar-content': shouldHideSidebar }">
+      <Navbar :hide-sidebar-toggle="shouldHideSidebar" :show-brand="shouldHideSidebar" />
+      <main id="main-content" tabindex="-1">
+        <slot>
+          <router-view />
+        </slot>
+      </main>
+      <Footer />
+    </div>
+  </template>
 </template>
 
 <script setup>
@@ -20,13 +33,35 @@ import { usePermissionsStore } from '@store'
 import Navbar from '@/components/layout/Navbar.vue'
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Footer from '@/components/layout/Footer.vue'
+import MobileConductorLayout from '@/components/layout/MobileConductorLayout.vue'
 import DriverTrackingProvider from '@/features/tracking/components/DriverTrackingProvider.vue'
+import { usePlatform } from '@/hooks/usePlatform.js'
+import { useNotificationsStore } from '@/features/notifications/store/notifications.store.js'
+import { useUserStore } from '@store'
 
 const route = useRoute()
 const permissionsStore = usePermissionsStore()
+const notificationsStore = useNotificationsStore()
+const userStore = useUserStore()
+const { esAndroidNativo } = usePlatform()
 
 const isConductorRole = computed(() => {
   return permissionsStore.hasRole('CONDUCTOR')
+})
+
+const RUTAS_OPERATIVAS_CONDUCTOR = [
+  '/dashboard',
+  '/inspeccion-vehiculos',
+  '/planillas-de-control-de-servicios',
+  '/planilla-de-control-de-prestacion-servicios',
+  '/extracto-de-contrato',
+  '/vehiculos',
+  '/profile',
+  '/notificaciones',
+]
+
+const isConductorRoute = computed(() => {
+  return RUTAS_OPERATIVAS_CONDUCTOR.some((r) => route.path.startsWith(r))
 })
 
 const isConductorDashboard = computed(() => {
@@ -39,6 +74,25 @@ const isConductorDashboard = computed(() => {
 const shouldHideSidebar = computed(() => {
   return Boolean(route.meta?.hideSidebar) || isConductorDashboard.value
 })
+
+// Solo Android nativo + conductor (o con ?view=conductor para previsualización)
+// usa el shell móvil del mockup para todas sus vistas operativas.
+const esMovilAndroidConductor = computed(() => {
+  if (route.query.view === 'admin') return false
+  const esModoConductor = isConductorRole.value || route.query.view === 'conductor'
+  const esPlataformaMovil = esAndroidNativo.value || route.query.view === 'conductor' || (window.innerWidth <= 768 && isConductorRole.value)
+  return esPlataformaMovil && esModoConductor && isConductorRoute.value
+})
+
+const nombreConductor = computed(() => userStore.fullName || userStore.username || 'Conductor')
+
+const inicialesConductor = computed(() => {
+  const partes = nombreConductor.value.trim().split(/\s+/).filter(Boolean)
+  if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase()
+  return (partes[0] || 'CO').substring(0, 2).toUpperCase()
+})
+
+const noLeidas = computed(() => notificationsStore.unreadCount || 0)
 
 onMounted(() => {
   var isFluid = true

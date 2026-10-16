@@ -77,8 +77,8 @@
                             <label class="form-label required" for="resolution_date">
                                 Fecha de Resolución
                             </label>
-                            <input id="resolution_date" v-model="formData.resolution_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.resolution_date }" type="date" />
+                            <DateInput id="resolution_date" v-model="formData.resolution_date" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.resolution_date }" />
                             <div v-if="validationErrors.resolution_date" class="invalid-feedback d-block" id="f-resolution_date-error" role="alert">
                                 {{ validationErrors.resolution_date }}
                             </div>
@@ -158,7 +158,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useEnablingResolutionsStore } from '../store/enablingResolutions.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 
 /** @type {import('vue-router').Route} Ruta activa */

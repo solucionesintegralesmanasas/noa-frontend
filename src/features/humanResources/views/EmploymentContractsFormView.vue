@@ -30,7 +30,7 @@
                             <label class="form-label required" for="third_party_uuid">Empleado</label>
                             <PrimeSelect :input-id="'third_party_uuid'" v-model="formData.third_party_uuid"
                                 :options="store.catalogs?.thirdParties ?? []" option-value="uuid"
-                                :option-label="(opt) => `${opt.document_number || ''} - ${opt.first_name || ''} ${opt.last_name || ''} ${opt.trade_name || ''}`.trim()"
+                                :option-label="(opt) => `${opt.document_number || ''} - ${[opt.first_name, opt.last_name].filter(Boolean).join(' ') || opt.company_name || opt.trade_name || ''}`.trim()"
                                 placeholder="Seleccionar empleado..." showClear filter class="w-100"
                                 :invalid="!!validationErrors['third_party_uuid']" />
                             <div v-if="validationErrors.third_party_uuid" class="invalid-feedback d-block" id="f-third_party_uuid-error" role="alert">
@@ -71,8 +71,8 @@
                         <!-- Fecha Inicio -->
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required" for="start_date">Fecha de inicio</label>
-                            <input id="start_date" v-model="formData.start_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.start_date }" type="date" />
+                            <DateInput id="start_date" v-model="formData.start_date" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.start_date }" />
                             <div v-if="validationErrors.start_date" class="invalid-feedback d-block" id="f-start_date-error" role="alert">
                                 {{ validationErrors.start_date }}
                             </div>
@@ -81,8 +81,8 @@
                         <!-- Fecha Fin -->
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label" for="end_date">Fecha de finalización</label>
-                            <input id="end_date" v-model="formData.end_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.end_date }" type="date" />
+                            <DateInput id="end_date" v-model="formData.end_date" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.end_date }" />
                             <div v-if="validationErrors.end_date" class="invalid-feedback d-block" id="f-end_date-error" role="alert">
                                 {{ validationErrors.end_date }}
                             </div>
@@ -159,7 +159,8 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useEmploymentContractsStore } from '../store/employmentContracts.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import { handleGlobalError } from '@/utils/error-handler.js';
 
@@ -193,10 +194,8 @@ const formData = reactive({
 const loadData = async () => {
     store.loading = true;
     try {
-        if (!store.catalogs?.thirdParties) {
-            const catalogs = await store.loadFormOptions();
-            store.catalogs = catalogs;
-        }
+        const catalogs = await store.loadFormOptions();
+        store.catalogs = catalogs;
 
         if (isEditMode.value) {
             const contract = await store.fetchProfileById(route.params.id);
@@ -235,10 +234,10 @@ const handleSubmit = async () => {
     try {
         if (isEditMode.value) {
             await store.updateItem(route.params.id, payload);
-            toast.success('Contrato laboral actualizado exitosamente.');
+            toast('Éxito', 'Contrato laboral actualizado exitosamente.', 'success');
         } else {
             await store.createItem(payload);
-            toast.success('Contrato laboral creado exitosamente.');
+            toast('Éxito', 'Contrato laboral creado exitosamente.', 'success');
         }
         goBack();
     } catch (error) {
@@ -256,7 +255,7 @@ const handleSubmit = async () => {
                 target.focus({ preventScroll: true });
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            toast.error('Por favor, revisa los errores en el formulario.');
+            toast('Atención', 'Por favor, revisa los errores en el formulario.', 'warning');
         } else {
             handleGlobalError(error);
         }

@@ -214,12 +214,129 @@
                             </div>
                         </div>
                         <p v-else class="text-muted small mb-0 mt-2">
-                            <i class="fad fa-info-circle me-1" />Este proyecto aún no tiene conductores con vehículos asignados.
+                            <i class="fad fa-info-circle me-1" aria-hidden="true" />Este proyecto aún no tiene conductores con vehículos asignados.
                         </p>
                     </div>
                 </div>
             </div>
 
+            <!-- Evidencia acumulada del proyecto -->
+            <div v-if="can('service_delivery_control_sheets.index')" class="col-12 col-sm-12 col-md-12 col-lg-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center gap-2">
+                        <i class="fad fa-folder-open text-primary" style="font-size: 14px;" aria-hidden="true"></i>
+                        <h6 class="mb-0 fw-medium" style="font-size: 0.9rem;">
+                            Evidencia acumulada
+                            <span v-if="!evidenciaLoading" class="badge badge-subtle-success ms-1"
+                                style="font-size:0.65rem;">
+                                {{ evidenciaTotal }} días · {{ evidenciaCerradas }} cerrados
+                            </span>
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-falcon-default py-0 px-2 ms-auto"
+                            title="Abrir el listado de planillas filtrado por este proyecto"
+                            @click="irAPlanillas">
+                            <i class="fad fa-clipboard-list me-1" aria-hidden="true" />Ver en planillas
+                        </button>
+                    </div>
+                    <div class="card-body py-2">
+                        <div v-if="evidenciaLoading" class="text-center py-3">
+                            <span class="spinner-border spinner-border-sm text-primary me-2" aria-hidden="true"></span>
+                            <span class="small text-muted">Cargando evidencia…</span>
+                        </div>
+                        <div v-else-if="evidenciaError" id="f-evidencia-error" role="alert"
+                            class="alert alert-warning py-2 px-3 my-2 small mb-0">
+                            {{ evidenciaError }}
+                        </div>
+                        <p v-else-if="!evidenciaItems.length" class="text-muted small mb-0 mt-2">
+                            <i class="fad fa-info-circle me-1" aria-hidden="true" />Este proyecto aún no tiene planillas registradas.
+                        </p>
+                        <div v-else>
+                            <div class="d-flex flex-wrap gap-2 my-2 small">
+                                <span class="badge badge-subtle-success">Cerrados: {{ evidenciaCerradas }}</span>
+                                <span class="badge badge-subtle-danger">En curso: {{ evidenciaEnCurso }}</span>
+                                <span v-if="diasIncompletos > 0" class="badge badge-subtle-warning"
+                                    :title="'Días con datos o firmas operativas pendientes'">
+                                    <i class="fad fa-triangle-exclamation me-1" aria-hidden="true"></i>
+                                    {{ diasIncompletos }} con evidencia incompleta
+                                </span>
+                                <span v-if="evidenciaResumen.pendiente_certificacion > 0" class="badge badge-subtle-info"
+                                    :title="'Días operativamente completos que aún esperan firma del coordinador'">
+                                    {{ evidenciaResumen.pendiente_certificacion }} por certificar
+                                </span>
+                                <span v-if="evidenciaResumen.excepciones > 0" class="badge badge-subtle-danger"
+                                    :title="'Días cerrados con una excepción aprobada'">
+                                    {{ evidenciaResumen.excepciones }} excepción(es)
+                                </span>
+                                <span v-if="evidenciaTotal > 0 && !evidenciaEnCurso && !diasIncompletos && !evidenciaResumen.pendiente_certificacion && !evidenciaResumen.excepciones" class="badge badge-subtle-success">
+                                    <i class="fad fa-circle-check me-1" aria-hidden="true"></i>Evidencia completa
+                                </span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Estado</th>
+                                            <th scope="col">Recorridos</th>
+                                            <th scope="col" class="text-center">PDF del día</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template v-for="padre in evidenciaItems" :key="padre.uuid">
+                                            <tr v-for="dia in diasDe(padre)" :key="dia.uuid || dia.service_date">
+                                                <td>{{ formatRango(dia.service_date) || '—' }}</td>
+                                                <td>
+                                                    <!-- SPEC-002 §8: estado administrativo y evidencia del día -->
+                                                    <span v-if="dia.estado" class="badge rounded-pill d-block mt-1"
+                                                        :class="claseEstadoServicio(dia.estado)" style="font-size:0.6rem;"
+                                                        :title="tituloEstadoServicio(dia)">
+                                                        {{ etiquetaEstadoServicio(dia.estado) }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ recorridosDe(dia) }}</td>
+                                                <td class="text-center">
+                                                    <button v-if="esCerrado(dia) && can('service_delivery_control_sheets.history_pdf')"
+                                                        type="button" class="btn btn-falcon-default btn-sm p-0 px-1"
+                                                        title="Descargar PDF de este día"
+                                                        :aria-label="`Descargar PDF del día ${formatRango(dia.service_date)}`"
+                                                        :disabled="descargandoPdf === dia.uuid"
+                                                        @click="descargarPdfDia(dia.uuid)">
+                                                        <span v-if="descargandoPdf === dia.uuid"
+                                                            class="spinner-border spinner-border-sm text-danger"
+                                                            style="width: 14px; height: 14px;" aria-hidden="true"></span>
+                                                        <i v-else class="fad fa-file-pdf text-danger"
+                                                            style="font-size:14px;" aria-hidden="true" />
+                                                    </button>
+                                                    <span v-else class="text-muted small">—</span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-2">
+                                <small class="text-muted">Página {{ evidenciaPage }} de {{ evidenciaLastPage }}</small>
+                                <div class="d-flex gap-1">
+                                    <button id="f-evidencia-prev" type="button"
+                                        class="btn btn-sm btn-falcon-default py-0 px-2"
+                                        :disabled="evidenciaPage <= 1 || evidenciaLoading"
+                                        aria-label="Página anterior de evidencia"
+                                        @click="cambiarPaginaEvidencia(-1)">
+                                        Anterior
+                                    </button>
+                                    <button id="f-evidencia-next" type="button"
+                                        class="btn btn-sm btn-falcon-default py-0 px-2"
+                                        :disabled="evidenciaPage >= evidenciaLastPage || evidenciaLoading"
+                                        aria-label="Página siguiente de evidencia"
+                                        @click="cambiarPaginaEvidencia(1)">
+                                        Siguiente
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </template>
@@ -229,10 +346,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectsStore } from '../store/projects.store.js';
+import { useServiceDeliveryControlSheetStore } from '../../serviceDeliveryControlSheet/store/serviceDeliveryControlSheet.store.js';
+import serviceDeliveryControlSheetService from '../../serviceDeliveryControlSheet/services/serviceDeliveryControlSheet.service.js';
+import { formatRango, diasHijos, recorridosCount, esCerrado } from '../../serviceDeliveryControlSheet/hooks/useServiceList.js';
 import { usePermissionsStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import { getMediaUrl } from '@/utils/media.js';
+import { claseEstadoServicio, etiquetaEstadoServicio, tituloEstadoServicio } from '@/utils/serviceDeliveryStatus.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -304,9 +425,94 @@ const formatMoney = (value) =>
 const goToBack = () => router.push(can('projects.index') ? '/proyectos' : '/');
 const goToEdit = () => router.push(`/proyectos/editar/${route.params.id}`);
 
+/** Evidencia acumulada: planillas del proyecto con sus días y PDF por día. */
+const EVIDENCIA_POR_PAGINA = 10;
+const evidenciaItems = ref([]);
+const evidenciaTotal = ref(0);
+const evidenciaCerradas = ref(0);
+const evidenciaResumen = ref({
+    total_dias: 0,
+    cerrados: 0,
+    en_curso: 0,
+    evidencia_incompleta: 0,
+    pendiente_certificacion: 0,
+    excepciones: 0,
+    certificados: 0,
+});
+const evidenciaPage = ref(1);
+const evidenciaLastPage = ref(1);
+const evidenciaLoading = ref(false);
+const evidenciaError = ref('');
+const descargandoPdf = ref(null);
+
+const projectUuid = computed(() => project.value?.uuid || route.params.id);
+const evidenciaEnCurso = computed(() => evidenciaResumen.value.en_curso || 0);
+const diasDe = (padre) => diasHijos(padre, false);
+const recorridosDe = (dia) => recorridosCount(dia);
+
+/** Conteo global, calculado por backend en bloques; no solo la página visible. */
+const diasIncompletos = computed(() => evidenciaResumen.value.evidencia_incompleta || 0);
+
+const cargarEvidencia = async (page = 1) => {
+    evidenciaLoading.value = true;
+    evidenciaError.value = '';
+    try {
+        const [resp, respResumen] = await Promise.all([
+            serviceDeliveryControlSheetService.list({
+                project_uuid: projectUuid.value,
+                per_page: EVIDENCIA_POR_PAGINA,
+                page,
+            }),
+            serviceDeliveryControlSheetService.projectEvidenceSummary(projectUuid.value),
+        ]);
+        const p = resp?.data ?? resp;
+        evidenciaItems.value = p.data ?? [];
+        evidenciaLastPage.value = p.last_page ?? 1;
+        evidenciaPage.value = p.current_page ?? page;
+        evidenciaResumen.value = respResumen?.data ?? respResumen;
+        evidenciaTotal.value = evidenciaResumen.value.total_dias ?? 0;
+        evidenciaCerradas.value = evidenciaResumen.value.cerrados ?? 0;
+    } catch (err) {
+        evidenciaError.value = 'No se pudo cargar la evidencia del proyecto.';
+    } finally {
+        evidenciaLoading.value = false;
+    }
+};
+
+const cambiarPaginaEvidencia = (delta) => {
+    const next = evidenciaPage.value + delta;
+    if (next < 1 || next > evidenciaLastPage.value || evidenciaLoading.value) return;
+    cargarEvidencia(next);
+};
+
+const descargarPdfDia = async (uuid) => {
+    if (descargandoPdf.value) return;
+    descargandoPdf.value = uuid;
+    try {
+        await serviceDeliveryControlSheetService.downloadDailyPdf(uuid);
+    } catch (err) {
+        await toast('Error', 'No se pudo descargar el PDF del día', 'error');
+    } finally {
+        descargandoPdf.value = null;
+    }
+};
+
+/** Abre el listado de planillas ya filtrado por este proyecto. */
+const irAPlanillas = () => {
+    try {
+        useServiceDeliveryControlSheetStore().setProjectFilter(projectUuid.value);
+    } catch (err) {
+        // Si el filtro falla, igual se navega al listado sin filtrar.
+    }
+    router.push('/planilla-de-control-de-prestacion-servicios');
+};
+
 onMounted(async () => {
     try {
         project.value = await store.fetchProfileById(route.params.id);
+        if (project.value && can('service_delivery_control_sheets.index')) {
+            await cargarEvidencia();
+        }
     } finally {
         isViewLoading.value = false;
     }

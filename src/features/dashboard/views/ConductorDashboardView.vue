@@ -918,11 +918,24 @@ onMounted(() => {
     }
 
     .module-card .card-body {
-        padding: 1rem !important;
+        padding: 0.75rem !important;
     }
 
     .table-responsive {
         -webkit-overflow-scrolling: touch;
+    }
+
+    .row.g-3 {
+        --bs-gutter-y: 0.5rem !important;
+        --bs-gutter-x: 0.5rem !important;
+    }
+
+    .mb-3, .mb-4 {
+        margin-bottom: 0.65rem !important;
+    }
+
+    .card-body {
+        padding: 0.75rem !important;
     }
 }
 

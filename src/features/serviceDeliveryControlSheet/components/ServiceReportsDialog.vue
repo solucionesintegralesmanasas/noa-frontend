@@ -17,11 +17,11 @@
             <div class="row g-2">
                 <div v-if="tipo === 'rango' || muestraRango" class="col-6">
                     <label class="form-label" for="rep-desde">Desde</label>
-                    <input id="rep-desde" v-model="filtros.fecha_desde" type="date" class="form-control form-control-sm" :max="filtros.fecha_hasta || undefined" />
+                    <DateInput id="rep-desde" v-model="filtros.fecha_desde" class="form-control form-control-sm" :max="filtros.fecha_hasta || undefined" />
                 </div>
                 <div v-if="tipo === 'rango' || muestraRango" class="col-6">
                     <label class="form-label" for="rep-hasta">Hasta (máx 62 días)</label>
-                    <input id="rep-hasta" v-model="filtros.fecha_hasta" type="date" class="form-control form-control-sm" :min="filtros.fecha_desde || undefined" />
+                    <DateInput id="rep-hasta" v-model="filtros.fecha_hasta" class="form-control form-control-sm" :min="filtros.fecha_desde || undefined" />
                 </div>
                 <div v-if="tipo === 'vehiculo' || tipo === 'mensual'" class="col-12">
                     <label class="form-label" for="rep-veh">Vehículo {{ tipo === 'mensual' ? '(opcional)' : '' }}</label>
@@ -39,7 +39,7 @@
                 </div>
                 <div v-if="tipo === 'dia'" class="col-12">
                     <label class="form-label" for="rep-dia">Fecha</label>
-                    <input id="rep-dia" v-model="filtros.fecha" type="date" class="form-control form-control-sm" />
+                    <DateInput id="rep-dia" v-model="filtros.fecha" class="form-control form-control-sm" />
                 </div>
                 <div v-if="tipo === 'mensual'" class="col-6">
                     <label class="form-label" for="rep-month">Mes</label>
@@ -75,7 +75,8 @@
 <script setup>
 import { reactive, ref, computed } from 'vue';
 import Dialog from 'primevue/dialog';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import { useServiceDeliveryControlSheetStore } from '../store/serviceDeliveryControlSheet.store.js';
 
 defineProps({ vehicles: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });

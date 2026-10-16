@@ -2,6 +2,19 @@
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
+import { readFileSync, existsSync } from 'node:fs';
+
+// Inlina critical/login.css (ver scripts/critical-css.cjs) en index.html al compilar.
+// En dev no se inlina: los CSS completos cargan sin bloquear de la forma normal.
+const criticalCss = () => ({
+  name: 'critical-css',
+  apply: 'build',
+  transformIndexHtml(html) {
+    const file = path.resolve(__dirname, 'critical/login.css');
+    const css = existsSync(file) ? readFileSync(file, 'utf8') : '';
+    return html.replace('<!--CRITICAL_LOGIN_CSS-->', css ? `<style id="critical-login">${css}</style>` : '');
+  },
+});
 
 export default defineConfig(({ mode }) => {
   // Cargar variables de entorno (carga archivos .env locales y globales)
@@ -9,7 +22,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://api.transportessinbarreras.local';
 
   return {
-    plugins: [vue()],
+    plugins: [vue(), criticalCss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

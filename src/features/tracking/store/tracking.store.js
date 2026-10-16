@@ -37,27 +37,37 @@ export const useTrackingStore = defineStore('tracking', {
             }
         },
 
-        async fetchDriverHistory(uuid, startDate, endDate) {
+        async fetchDriverHistory(uuid, startDate, endDate, extra = {}) {
             this.loading = true;
             this.error = null;
             try {
                 const response = await trackingService.getDriverHistory(uuid, {
                     start_date: startDate,
                     end_date: endDate,
+                    ...extra,
                 });
                 this.driverHistory = response.data?.data || response.data || [];
             } catch (err) {
+                // Sin datos obsoletos: ante un error (p. ej. 422) se vacía.
+                this.driverHistory = [];
                 this.error = err.message;
             } finally {
                 this.loading = false;
             }
         },
 
-        async fetchDriverStats(uuid) {
+        async fetchDriverStats(uuid, startDate = null, endDate = null) {
             try {
-                const response = await trackingService.getDriverStats(uuid);
+                const params = {};
+                if (startDate && endDate) {
+                    params.start_date = startDate;
+                    params.end_date = endDate;
+                }
+                const response = await trackingService.getDriverStats(uuid, params);
                 this.stats = response.data?.data || response.data || null;
             } catch (err) {
+                // Sin datos obsoletos: ante un error se limpia.
+                this.stats = null;
                 this.error = err.message;
             }
         },

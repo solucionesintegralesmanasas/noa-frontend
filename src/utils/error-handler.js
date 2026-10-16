@@ -8,6 +8,15 @@ import { logger } from "@utils/logger.js";
 const AUTH_ERROR_CODES = new Set([401, 403]);
 const RETRYABLE_HTTP_CODES = new Set([408, 429, 500, 502, 503, 504]);
 
+// Cuando el servidor no responde no llega un mensaje de negocio: axios solo deja
+// "Request failed with status code 502". Estos textos explican el motivo en español.
+const MENSAJES_SERVIDOR = {
+    500: "El servidor encontró un error al procesar la solicitud. Inténtalo de nuevo.",
+    502: "El servidor no está respondiendo. Es posible que se haya reiniciado: espera unos segundos e inténtalo de nuevo.",
+    503: "El servidor está ocupado o en mantenimiento. Inténtalo de nuevo en unos minutos.",
+    504: "El servidor tardó demasiado en responder. Inténtalo de nuevo."
+};
+
 const ErrorType = { HTTP: "http", NETWORK: "network", JS: "js", UNKNOWN: "unknown" };
 
 /** Detecta cancelaciones propias (AbortController/axios): siempre son silencio. */
@@ -61,7 +70,13 @@ export async function handleGlobalError(error, source = "global", options = {}) 
     logger.error(`[${source}] ${normalizedError.message}`, report, { classification });
 
     if (options.notifyUser !== false) {
-        const backendMsg = error?.response?.data?.message || normalizedError.message || "Ha ocurrido un error inesperado";
+        const mensajeNegocio = typeof error?.response?.data?.message === "string" && error.response.data.message.trim()
+            ? error.response.data.message
+            : null;
+        const backendMsg = mensajeNegocio
+            || MENSAJES_SERVIDOR[error?.response?.status]
+            || normalizedError.message
+            || "Ha ocurrido un error inesperado";
         notifyUser(backendMsg, classification.isAuthError ? "warning" : "error");
     }
 

@@ -248,7 +248,7 @@
                         <div class="col-12 col-md-4 col-lg-4">
                             <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-registration_date">Fecha de
                                 Matriculación</label>
-                            <input id="f-registration_date" :aria-invalid="!!validationErrors['registration_date']" :aria-describedby="validationErrors['registration_date'] ? 'f-registration_date-error' : undefined" type="date" class="form-control" placeholder="YYYY-MM-DD" :class="{
+                            <DateInput id="f-registration_date" :aria-invalid="!!validationErrors['registration_date']" :aria-describedby="validationErrors['registration_date'] ? 'f-registration_date-error' : undefined" class="form-control" placeholder="YYYY-MM-DD" :class="{
                                 'is-invalid': validationErrors.registration_date,
                                 'is-valid': formData.registration_date && !validationErrors.registration_date
                             }" v-model="formData.registration_date"
@@ -526,7 +526,8 @@ import { useVehiclesStore } from '../store/vehicles.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { useDocumentWizard } from '@/hooks/useDocumentWizard.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import WizardProgress from '@/components/WizardProgress.vue';
 
@@ -684,7 +685,7 @@ const handleSubmit = async () => {
             // Tras crear, encadenar el asistente de documentos (si hay pasos permitidos)
             if (uuid) {
                 const { firstStep, stepRoute } = useDocumentWizard();
-                const step = firstStep(permissionsStore);
+                const step = firstStep(permissionsStore, { particular: String(formData.type_of_service ?? '').toUpperCase() === 'PARTICULAR' });
                 if (!step) {
                     goBack();
                 } else {

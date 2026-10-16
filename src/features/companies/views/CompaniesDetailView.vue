@@ -291,7 +291,7 @@
                                     style="font-size: 0.7rem;">
                                     <i class="fad fa-star me-1" style="font-size: 8px;"></i>Principal
                                 </span>
-                                <router-link v-if="can('branches.view')"
+                                <router-link v-if="can('branches.profile')"
                                     :to="`/empresas/sucursales/perfil/${branch.uuid}`"
                                     class="btn btn-falcon-default btn-sm py-1 px-2" style="font-size: 0.7rem;">
                                     Ver

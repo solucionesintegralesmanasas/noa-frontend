@@ -26,8 +26,8 @@ export default {
     getDriverHistory(uuid, params) {
         return this.client.get(`/tracking/driver/${uuid}/history`, { params });
     },
-    getDriverStats(uuid) {
-        return this.client.get(`/tracking/driver/${uuid}/stats`);
+    getDriverStats(uuid, params = {}) {
+        return this.client.get(`/tracking/driver/${uuid}/stats`, { params });
     },
     saveRouteMapCapture(data) {
         return this.client.post('/control-sheets/service-delivery-control-sheets/route-map-capture', data);

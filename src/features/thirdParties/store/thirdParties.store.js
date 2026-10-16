@@ -1,6 +1,37 @@
 import { defineStore } from 'pinia';
 import { toast } from '@/utils/toast.js';
+import { dateUtils } from '@/utils/date.js';
 import thirdPartiesService from '../services/thirdParties.service.js';
+
+/**
+ * Indica si hay al menos una licencia ACTIVA y vigente (vence hoy o después),
+ * con granularidad de día. Tolerante a mayúsculas, espacios y fechas con hora.
+ * @param {Array} licenses - Licencias con `status` y `expiration_date`.
+ * @returns {boolean}
+ */
+export const tieneLicenciaVigente = (licenses) => {
+    if (!Array.isArray(licenses) || licenses.length === 0) return false;
+    const today = dateUtils.dayjs().startOf('day');
+    return licenses.some((l) => {
+        if (String(l?.status ?? '').trim().toUpperCase() !== 'ACTIVA') return false;
+        if (!l?.expiration_date) return false;
+        const vencimiento = dateUtils.dayjs(String(l.expiration_date).slice(0, 10), 'YYYY-MM-DD');
+        return vencimiento.isValid() && !vencimiento.isBefore(today, 'day');
+    });
+};
+
+/**
+ * Indica si la fila de un conductor tiene licencia vigente.
+ * Acepta el booleano del backend (`has_valid_license`, 0/1 incluidos) y,
+ * si el campo falta, lo calcula desde `driver_licenses`.
+ * @param {Object} row - Fila del listado de terceros.
+ * @returns {boolean}
+ */
+export const tieneFilaLicenciaVigente = (row) => {
+    if (row?.has_valid_license === true || row?.has_valid_license === 1) return true;
+    if (row?.has_valid_license === false || row?.has_valid_license === 0) return false;
+    return tieneLicenciaVigente(row?.driver_licenses);
+};
 
 /**
  * Store Pinia para la gestión de estados de terceros.
@@ -208,8 +239,27 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
         },
 
         /**
+         * Sincroniza en la fila local las licencias recién cargadas del conductor,
+         * para que el icono de la tabla refleje los cambios sin recargar la página.
+         * @param {string} uuid - UUID del conductor.
+         * @param {Array} licenses - Licencias recién cargadas (formato del modal).
+         * @returns {void}
+         */
+        syncDriverLicenses(uuid, licenses) {
+            const list = Array.isArray(licenses) ? licenses : [];
+            this._patchLocal(uuid, {
+                driver_licenses: list.map(l => ({
+                    uuid: l.uuid,
+                    status: l.status,
+                    expiration_date: l.expiration_date ? String(l.expiration_date).slice(0, 10) : null,
+                })),
+                has_valid_license: tieneLicenciaVigente(list),
+            });
+        },
+
+        /**
          * Obtiene los aportes de seguridad social de un tercero.
-         * @param {string} uuid - UUID del conductor o empleado.
+         * @param {string} uuid - UUID del tercero (conductor o empleado).
          * @returns {Promise<Array>}
          */
         async fetchSocialSecurityContributions(uuid) {

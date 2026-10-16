@@ -434,6 +434,29 @@
                                                         validationErrors.notification_email }}</div>
                                             </div>
                                         </div>
+
+                                        <div class="col-12">
+                                            <div class="col-12 col-md-8">
+                                                <label class="form-label" for="f-own_company_names">Nombres de la
+                                                    empresa propia</label>
+                                                <textarea id="f-own_company_names" v-model="ownCompanyNamesText" rows="3"
+                                                    class="form-control"
+                                                    :class="{ 'is-invalid': validationErrors.own_company_names }"
+                                                    :aria-invalid="!!validationErrors.own_company_names"
+                                                    :aria-describedby="validationErrors.own_company_names ? 'f-own_company_names-error' : undefined"
+                                                    placeholder="Un nombre por línea. Ej: TRANSPORTES ESPECIALES SIN BARRERAS S.A.S." />
+                                                <div class="invalid-feedback"
+                                                    v-if="validationErrors.own_company_names"
+                                                    id="f-own_company_names-error" role="alert">{{
+                                                        validationErrors.own_company_names }}</div>
+                                                <p class="text-muted small mb-0 mt-1">
+                                                    Nombres que identifican a la empresa propia en las tarjetas de
+                                                    operación. Las alertas de esos vehículos se marcan como
+                                                    prioritarias. Si se deja vacío se usa el nombre registrado de la
+                                                    empresa.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -511,6 +534,41 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <h5 class="fw-medium text-primary mt-4 mb-3 d-flex align-items-center gap-2">
+                                        <i class="fad fa-palette"></i>
+                                        Presentación por documento
+                                    </h5>
+                                    <p class="text-muted small mb-3">
+                                        Defina qué lleva cada PDF: hoja membretada, logo de la empresa como fondo o nada. Sin elegir, se usa el logo de fondo.
+                                    </p>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Documento</th>
+                                                    <th scope="col" style="width: 240px;">Presentación</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="doc in PDF_DOCUMENTOS" :key="doc.clave">
+                                                    <td>
+                                                        <label class="form-label mb-0" :for="`f-pdf-${doc.clave}`">
+                                                            {{ doc.etiqueta }}
+                                                        </label>
+                                                    </td>
+                                                    <td>
+                                                        <select :id="`f-pdf-${doc.clave}`" v-model="formData.pdf_branding[doc.clave]" class="form-select form-select-sm">
+                                                            <option :value="undefined">Logo de fondo (defecto)</option>
+                                                            <option v-for="modo in PDF_MODOS" :key="modo.valor" :value="modo.valor">
+                                                                {{ modo.etiqueta }}
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -605,30 +663,64 @@
                                                     <input id="corporate_rcc_insurer" v-model="formData.corporate_rcc_insurer"
                                                         type="text" autocomplete="off" class="form-control" :class="{ 'is-invalid': validationErrors.corporate_rcc_insurer }" placeholder="Ej: Seguros del Estado / La Previsora" />
                                                     <div class="invalid-feedback" v-if="validationErrors.corporate_rcc_insurer">{{ validationErrors.corporate_rcc_insurer }}</div>
-                                                    <p class="text-muted small mb-0 mt-1">Nombre de la entidad emisora de las pólizas colectivas de la empresa.</p>
+                                                    <p class="text-muted small mb-0 mt-1">Entidad emisora de las pólizas colectivas RCC y RCE de la empresa.</p>
                                                 </div>
                                             </div>
-                                            <!-- Vencimiento RCE -->
+                                            <!-- Vencimiento único RCC y RCE -->
                                             <div class="col-12 col-md-6">
                                                 <div class="p-3 rounded border bg-white h-100 switch-card">
-                                                    <label class="form-label fw-medium required" for="corporate_rce_expiration">Fecha de Vencimiento Póliza RCE</label>
+                                                    <label class="form-label fw-medium required" for="corporate_rce_expiration">Fecha de vencimiento pólizas RCC y RCE</label>
                                                     <input id="corporate_rce_expiration" v-model="formData.corporate_rce_expiration"
                                                         type="date" class="form-control" :class="{ 'is-invalid': validationErrors.corporate_rce_expiration }" />
                                                     <div class="invalid-feedback" v-if="validationErrors.corporate_rce_expiration">{{ validationErrors.corporate_rce_expiration }}</div>
-                                                    <p class="text-muted small mb-0 mt-1">Fecha de expiración para la cobertura de Responsabilidad Civil Extracontractual.</p>
+                                                    <p class="text-muted small mb-0 mt-1">Una sola fecha de vencimiento para ambas coberturas colectivas.</p>
                                                 </div>
                                             </div>
-                                            <!-- Vencimiento RCC -->
+                                            <!-- N.º póliza RCC -->
                                             <div class="col-12 col-md-6">
                                                 <div class="p-3 rounded border bg-white h-100 switch-card">
-                                                    <label class="form-label fw-medium required" for="corporate_rcc_expiration">Fecha de Vencimiento Póliza RCC</label>
-                                                    <input id="corporate_rcc_expiration" v-model="formData.corporate_rcc_expiration"
-                                                        type="date" class="form-control" :class="{ 'is-invalid': validationErrors.corporate_rcc_expiration }" />
-                                                    <div class="invalid-feedback" v-if="validationErrors.corporate_rcc_expiration">{{ validationErrors.corporate_rcc_expiration }}</div>
-                                                    <p class="text-muted small mb-0 mt-1">Fecha de expiración para la cobertura de Responsabilidad Civil Contractual.</p>
+                                                    <label class="form-label fw-medium" for="rcc_policy_number">N.º póliza RCC</label>
+                                                    <input id="rcc_policy_number" v-model="formData.rcc_policy_number" type="text" autocomplete="off" class="form-control" placeholder="Número de póliza RCC" />
+                                                    <p class="text-muted small mb-0 mt-1">Número de la póliza colectiva contractual.</p>
+                                                </div>
+                                            </div>
+                                            <!-- N.º póliza RCE -->
+                                            <div class="col-12 col-md-6">
+                                                <div class="p-3 rounded border bg-white h-100 switch-card">
+                                                    <label class="form-label fw-medium" for="rce_policy_number">N.º póliza RCE</label>
+                                                    <input id="rce_policy_number" v-model="formData.rce_policy_number" type="text" autocomplete="off" class="form-control" placeholder="Número de póliza RCE" />
+                                                    <p class="text-muted small mb-0 mt-1">Número de la póliza colectiva extracontractual.</p>
                                                 </div>
                                             </div>
                                         </template>
+                                    </div>
+
+                                    <hr class="my-4 text-muted opacity-25" />
+
+                                    <!-- Sección: Dirección territorial -->
+                                    <h5 class="fw-medium text-primary mb-3 d-flex align-items-center gap-2">
+                                        <i class="fad fa-map-marked-alt"></i>
+                                        Dirección territorial
+                                    </h5>
+                                    <p class="text-muted small mb-4">
+                                        Dirección ante la cual se radican los trámites. Se usa para prerrellenar la radicación de tarjeta de operación.
+                                    </p>
+                                    <div class="row g-4">
+                                        <div class="col-12 col-md-6">
+                                            <div class="p-3 rounded border bg-white h-100 switch-card">
+                                                <label class="form-label fw-medium" for="f-default-territorial">Dirección territorial por defecto</label>
+                                                <PrimeSelect :input-id="'f-default-territorial'" v-model="formData.default_territorial_director_uuid" :options="directoresTerritoriales" option-label="label" option-value="value" placeholder="Seleccione la dirección" showClear filter class="w-100" @change="alCambiarDireccion" />
+                                                <p class="text-muted small mb-0 mt-1">Se usa para prerrellenar la radicación de tarjeta de operación.</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="p-3 rounded border bg-white h-100 switch-card">
+                                                <label class="form-label fw-medium" for="default_territorial_director_name">Nombre de la directora o director territorial</label>
+                                                <input id="default_territorial_director_name" v-model="formData.default_territorial_director_name"
+                                                    type="text" autocomplete="off" class="form-control" placeholder="Ej. Dirección Territorial Valle del Cauca" />
+                                                <p class="text-muted small mb-0 mt-1">Se completa solo al elegir la dirección; puede ajustarlo a mano.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -890,8 +982,10 @@ import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
 import companiesService from '@/features/companies/services/companies.service.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import Swal from 'sweetalert2';
 import { toast } from '@/utils/toast.js';
+import { logger } from '@/utils/logger.js';
 
 // --- ESTADOS DE IDENTIDAD Y TARIFAS ---
 const identityPreviews = reactive({
@@ -903,6 +997,41 @@ const identityPreviews = reactive({
 });
 
 const vehicleClasses = ref([]);
+
+// --- PRESENTACIÓN POR DOCUMENTO PDF ---
+// Claves alineadas con PdfService::PDF_CLAVES del backend.
+const PDF_DOCUMENTOS = Object.freeze([
+    { clave: 'fuec', etiqueta: 'FUEC' },
+    { clave: 'hoja_vida_vehicular', etiqueta: 'Hoja de vida vehicular' },
+    { clave: 'ficha_tecnica_vehiculo', etiqueta: 'Ficha técnica del vehículo' },
+    { clave: 'acta_entrega', etiqueta: 'Acta de entrega' },
+    { clave: 'mantenimiento', etiqueta: 'Hoja de vida de mantenimiento' },
+    { clave: 'inspeccion_preoperacional', etiqueta: 'Inspección preoperacional' },
+    { clave: 'planilla_diaria', etiqueta: 'Planilla diaria' },
+    { clave: 'planilla_mensual', etiqueta: 'Planilla mensual / historial' },
+    { clave: 'planilla_filtrada', etiqueta: 'Reporte de planillas filtradas' },
+    { clave: 'convenio_colaboracion', etiqueta: 'Convenio de colaboración' },
+    { clave: 'recibo_administracion', etiqueta: 'Recibo de administración' },
+    { clave: 'reporte_vehiculos', etiqueta: 'Reporte de vehículos' },
+    { clave: 'ficha_tecnica_tercero', etiqueta: 'Ficha técnica del tercero' },
+]);
+
+const PDF_MODOS = Object.freeze([
+    { valor: 'membrete', etiqueta: 'Hoja membretada' },
+    { valor: 'limpio', etiqueta: 'Sin nada (limpio)' },
+]);
+
+const MODOS_PDF_VALIDOS = PDF_MODOS.map((m) => m.valor);
+
+const normalizarPdfBranding = (valor) => {
+    const limpio = {};
+    if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
+        for (const doc of PDF_DOCUMENTOS) {
+            if (MODOS_PDF_VALIDOS.includes(valor[doc.clave])) limpio[doc.clave] = valor[doc.clave];
+        }
+    }
+    return limpio;
+};
 
 // --- STORES ---
 const authStore = useAuthStore();
@@ -964,6 +1093,24 @@ const getOrFetchCompanyUuid = async () => {
 const isViewLoading = ref(true);
 const submitting = ref(false);
 const validationErrors = reactive({});
+const directoresTerritoriales = ref([]);
+
+function alCambiarDireccion() {
+    const sel = directoresTerritoriales.value.find((d) => d.value === formData.default_territorial_director_uuid);
+    if (sel) formData.default_territorial_director_name = sel.nombre || sel.label;
+}
+
+async function cargarDirectores() {
+    try {
+        const r = await systemConfigurationService._getInstance().get('procedure/territorial-directors/list');
+        const items = r.data?.data ?? r.data ?? [];
+        directoresTerritoriales.value = (Array.isArray(items) ? items : []).map((x) => ({
+            label: [x.name, x.territorial_director].filter(Boolean).join(' — ') || 'Dirección',
+            value: x.uuid,
+            nombre: [x.name, x.territorial_director].filter(Boolean).join(' — ') || '',
+        }));
+    } catch { directoresTerritoriales.value = []; }
+}
 
 const breadcrumbs = computed(() => [
     { label: 'Configuración', to: '/settings/system-configuration' },
@@ -988,17 +1135,42 @@ const formData = reactive({
     fuec_pdf_show_signatures: true,
     fuec_pdf_show_contractor_details: true,
     fuec_pdf_show_route_details: true,
+    pdf_branding: {},
     vehicle_internal_number_counter: 1,
     fuec_enable_auto_internal_number: false,
     fuec_use_corporate_policies: false,
     corporate_rcc_insurer: '',
     corporate_rce_expiration: '',
-    corporate_rcc_expiration: '',
+    rcc_policy_number: '',
+    rce_policy_number: '',
+    default_territorial_director_uuid: '',
+    default_territorial_director_name: '',
     platform_fee_type: 'VEHICLE_CLASS',
     platform_fee_rates: [],
 });
 
 // --- VALIDACION Y SUBMIT ---
+const ownCompanyNamesText = ref('');
+
+const parseOwnCompanyNames = (text) => String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+
+const formatOwnCompanyNames = (value) => {
+    const clean = (list) => list.filter((v) => typeof v === 'string' && v.trim() !== '').join('\n');
+    if (Array.isArray(value)) return clean(value);
+    if (typeof value === 'string' && value.trim() !== '') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return clean(parsed);
+        } catch {
+            return value;
+        }
+    }
+    return '';
+};
+
 const validateForm = () => {
     Object.keys(validationErrors).forEach(key => delete validationErrors[key]);
 
@@ -1042,6 +1214,11 @@ const validateForm = () => {
         }
     }
 
+    const tooLong = parseOwnCompanyNames(ownCompanyNamesText.value).filter((line) => line.length > 255);
+    if (tooLong.length > 0) {
+        validationErrors.own_company_names = 'Cada nombre debe tener máximo 255 caracteres';
+    }
+
     // Validación de número interno
     if (formData.fuec_enable_auto_internal_number) {
         if (formData.vehicle_internal_number_counter === null || formData.vehicle_internal_number_counter === undefined || formData.vehicle_internal_number_counter === '') {
@@ -1051,16 +1228,13 @@ const validateForm = () => {
         }
     }
 
-    // Validación de pólizas corporativas
+    // Validación de pólizas corporativas (una sola aseguradora y una sola fecha para RCC y RCE)
     if (formData.fuec_use_corporate_policies) {
         if (!formData.corporate_rcc_insurer) {
             validationErrors.corporate_rcc_insurer = 'La aseguradora corporativa es obligatoria';
         }
         if (!formData.corporate_rce_expiration) {
             validationErrors.corporate_rce_expiration = 'La fecha de vencimiento es obligatoria';
-        }
-        if (!formData.corporate_rcc_expiration) {
-            validationErrors.corporate_rcc_expiration = 'La fecha de vencimiento es obligatoria';
         }
     }
 
@@ -1376,11 +1550,16 @@ const handleSubmit = async () => {
             payload.notification_email = null;
         }
 
-        // Pólizas corporativas nulas si no se usan
+        // Nombres de empresa propia: del textarea (uno por línea) al arreglo.
+        payload.own_company_names = parseOwnCompanyNames(ownCompanyNamesText.value);
+
+        // Pólizas corporativas nulas si no se usan (una sola fecha para RCC y RCE)
         if (!payload.fuec_use_corporate_policies) {
             payload.corporate_rcc_insurer = null;
             payload.corporate_rce_expiration = null;
-            payload.corporate_rcc_expiration = null;
+            payload.corporate_rcc_expiration = payload.corporate_rce_expiration;
+        } else if (payload.corporate_rce_expiration) {
+            payload.corporate_rcc_expiration = payload.corporate_rce_expiration;
         }
 
         // Número interno nulo si no se usa
@@ -1425,15 +1604,20 @@ const handleSubmit = async () => {
                 fuec_pdf_show_signatures: updatedConfig.fuec_pdf_show_signatures === 1 || updatedConfig.fuec_pdf_show_signatures === true,
                 fuec_pdf_show_contractor_details: updatedConfig.fuec_pdf_show_contractor_details === 1 || updatedConfig.fuec_pdf_show_contractor_details === true,
                 fuec_pdf_show_route_details: updatedConfig.fuec_pdf_show_route_details === 1 || updatedConfig.fuec_pdf_show_route_details === true,
+                pdf_branding: normalizarPdfBranding(updatedConfig.pdf_branding),
                 vehicle_internal_number_counter: updatedConfig.vehicle_internal_number_counter != null ? Number(updatedConfig.vehicle_internal_number_counter) : 1,
                 fuec_enable_auto_internal_number: updatedConfig.fuec_enable_auto_internal_number === 1 || updatedConfig.fuec_enable_auto_internal_number === true,
                 fuec_use_corporate_policies: updatedConfig.fuec_use_corporate_policies === 1 || updatedConfig.fuec_use_corporate_policies === true,
                 corporate_rcc_insurer: updatedConfig.corporate_rcc_insurer || '',
                 corporate_rce_expiration: updatedConfig.corporate_rce_expiration ? String(updatedConfig.corporate_rce_expiration).split('T')[0] : '',
-                corporate_rcc_expiration: updatedConfig.corporate_rcc_expiration ? String(updatedConfig.corporate_rcc_expiration).split('T')[0] : '',
+                rcc_policy_number: updatedConfig.rcc_policy_number || '',
+                rce_policy_number: updatedConfig.rce_policy_number || '',
+                default_territorial_director_uuid: updatedConfig.default_territorial_director_uuid || '',
+                default_territorial_director_name: updatedConfig.default_territorial_director_name || '',
                 platform_fee_type: updatedConfig.platform_fee_type || 'VEHICLE_CLASS',
                 platform_fee_rates: parsePlatformFeeRates(updatedConfig.platform_fee_rates),
             });
+            ownCompanyNamesText.value = formatOwnCompanyNames(updatedConfig.own_company_names);
 
             // Sincronizar URLs de imágenes de configuración
             if (updatedConfig.ministry_logo_url) identityPreviews.ministry_logo = updatedConfig.ministry_logo_url;
@@ -1450,8 +1634,10 @@ const handleSubmit = async () => {
 // --- CICLO DE VIDA ---
 onMounted(async () => {
     isViewLoading.value = true;
+    cargarDirectores();
+    let companyUuid = null;
     try {
-        const companyUuid = await getOrFetchCompanyUuid();
+        companyUuid = await getOrFetchCompanyUuid();
         if (companyUuid) {
             try {
                 const compRes = await companiesService.get(companyUuid);
@@ -1461,14 +1647,14 @@ onMounted(async () => {
                     identityPreviews.signature = company.signature_url;
                 }
             } catch (err) {
-                console.warn('Error al cargar la identidad de la empresa:', err);
+                logger.warn('Error al cargar la identidad de la empresa', { error: err?.message });
             }
 
             try {
                 const vcRes = await companiesService._getInstance().get('catalogs/vehicle-classes/list');
                 vehicleClasses.value = vcRes.data?.data || vcRes.data || [];
             } catch (err) {
-                console.warn('Error al cargar catálogo de clases de vehículos:', err);
+                logger.warn('Error al cargar catálogo de clases de vehículos', { error: err?.message });
             }
 
             const data = await systemConfigStore.fetchByCompany(companyUuid);
@@ -1491,15 +1677,20 @@ onMounted(async () => {
                     fuec_pdf_show_signatures: data.fuec_pdf_show_signatures === 1 || data.fuec_pdf_show_signatures === true || data.fuec_pdf_show_signatures === undefined,
                     fuec_pdf_show_contractor_details: data.fuec_pdf_show_contractor_details === 1 || data.fuec_pdf_show_contractor_details === true || data.fuec_pdf_show_contractor_details === undefined,
                     fuec_pdf_show_route_details: data.fuec_pdf_show_route_details === 1 || data.fuec_pdf_show_route_details === true || data.fuec_pdf_show_route_details === undefined,
+                    pdf_branding: normalizarPdfBranding(data.pdf_branding),
                     vehicle_internal_number_counter: data.vehicle_internal_number_counter !== null && data.vehicle_internal_number_counter !== undefined ? Number(data.vehicle_internal_number_counter) : 1,
                     fuec_enable_auto_internal_number: data.fuec_enable_auto_internal_number === 1 || data.fuec_enable_auto_internal_number === true,
                     fuec_use_corporate_policies: data.fuec_use_corporate_policies === 1 || data.fuec_use_corporate_policies === true,
                     corporate_rcc_insurer: data.corporate_rcc_insurer || '',
                     corporate_rce_expiration: data.corporate_rce_expiration ? String(data.corporate_rce_expiration).split('T')[0] : '',
-                    corporate_rcc_expiration: data.corporate_rcc_expiration ? String(data.corporate_rcc_expiration).split('T')[0] : '',
+                    rcc_policy_number: data.rcc_policy_number || '',
+                    rce_policy_number: data.rce_policy_number || '',
+                    default_territorial_director_uuid: data.default_territorial_director_uuid || '',
+                    default_territorial_director_name: data.default_territorial_director_name || '',
                     platform_fee_type: data.platform_fee_type || 'VEHICLE_CLASS',
                     platform_fee_rates: parsePlatformFeeRates(data.platform_fee_rates),
                 });
+                ownCompanyNamesText.value = formatOwnCompanyNames(data.own_company_names);
 
                 // Cargar imágenes de configuración del sistema (logos del PDF)
                 if (data.ministry_logo_url) identityPreviews.ministry_logo = data.ministry_logo_url;
@@ -1508,7 +1699,13 @@ onMounted(async () => {
             }
         }
     } catch (e) {
-        console.error('Error cargando configuración inicial:', e);
+        // El interceptor ya notifica los 5xx; aquí solo queda el registro con el
+        // motivo real (por ejemplo un backend caído responde 502 Bad Gateway).
+        logger.error('Error cargando configuración inicial', {
+            companyUuid,
+            status: e?.response?.status ?? null,
+            message: e?.message,
+        });
     } finally {
         isViewLoading.value = false;
     }

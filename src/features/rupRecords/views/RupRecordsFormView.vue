@@ -46,15 +46,15 @@
 
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
               <label class="form-label" for="issue_date">Fecha de Expedición</label>
-              <input id="issue_date" v-model="formData.issue_date" class="form-control"
-                :class="{ 'is-invalid': validationErrors.issue_date }" type="date" />
+              <DateInput id="issue_date" v-model="formData.issue_date" class="form-control"
+                :class="{ 'is-invalid': validationErrors.issue_date }" />
               <div v-if="validationErrors.issue_date" class="invalid-feedback d-block" id="f-issue_date-error" role="alert">{{ validationErrors.issue_date }}</div>
             </div>
 
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
               <label class="form-label" for="expiration_date">Fecha de Vencimiento</label>
-              <input id="expiration_date" v-model="formData.expiration_date" class="form-control"
-                :class="{ 'is-invalid': validationErrors.expiration_date }" type="date" />
+              <DateInput id="expiration_date" v-model="formData.expiration_date" class="form-control"
+                :class="{ 'is-invalid': validationErrors.expiration_date }" />
               <div v-if="validationErrors.expiration_date" class="invalid-feedback d-block" id="f-expiration_date-error" role="alert">{{ validationErrors.expiration_date
               }}</div>
             </div>
@@ -169,7 +169,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useRupRecordsStore } from '../store/rupRecords.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from 'primevue/select';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 
 const route = useRoute();

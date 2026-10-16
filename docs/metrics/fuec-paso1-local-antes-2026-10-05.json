@@ -1,0 +1,349 @@
+{
+  "fecha": "2026-10-05T20:48:24.398Z",
+  "entorno": "local",
+  "etiqueta": "antes",
+  "ruta": "/extracto-de-contrato/crear",
+  "selector": "#f-vehicle_uuid",
+  "cpuThrottle": 1,
+  "corridas": 6,
+  "friaMs": 2234,
+  "medianaCalidasMs": 2091,
+  "minCalidasMs": 2057,
+  "maxCalidasMs": 2188,
+  "desglosePeticiones": [
+    {
+      "peticion": "administration/companies/list",
+      "inicioMs": 12,
+      "finMs": 537
+    },
+    {
+      "peticion": "fleet-management/vehicles/list",
+      "inicioMs": 539,
+      "finMs": 1174
+    },
+    {
+      "peticion": "third-parties/list",
+      "inicioMs": 539,
+      "finMs": 1154
+    },
+    {
+      "peticion": "contract-extract/objects-contracts/list",
+      "inicioMs": 539,
+      "finMs": 1141
+    },
+    {
+      "peticion": "catalogs/type-of-documents/list",
+      "inicioMs": 539,
+      "finMs": 1136
+    },
+    {
+      "peticion": "contract-extract/contractors/next-consecutive",
+      "inicioMs": 540,
+      "finMs": 1146
+    },
+    {
+      "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+      "inicioMs": 1175,
+      "finMs": 1642
+    },
+    {
+      "peticion": "contract-extract/fuecs/preview-number",
+      "inicioMs": 1175,
+      "finMs": 1624
+    }
+  ],
+  "detalle": [
+    {
+      "corrida": 1,
+      "tipo": "fria",
+      "pasoUnoMs": 2234,
+      "api": [
+        {
+          "peticion": "/src/services/api/base.service.js",
+          "inicioMs": 47,
+          "finMs": 50
+        },
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 90,
+          "finMs": 621
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 623,
+          "finMs": 1273
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 623,
+          "finMs": 1257
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 623,
+          "finMs": 1256
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 624,
+          "finMs": 1301
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 624,
+          "finMs": 1268
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1303,
+          "finMs": 1805
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1303,
+          "finMs": 1793
+        }
+      ]
+    },
+    {
+      "corrida": 2,
+      "tipo": "calida",
+      "pasoUnoMs": 2163,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 16,
+          "finMs": 575
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 576,
+          "finMs": 1214
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 576,
+          "finMs": 1180
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 576,
+          "finMs": 1162
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 577,
+          "finMs": 1134
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 577,
+          "finMs": 1169
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1216,
+          "finMs": 1741
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1216,
+          "finMs": 1726
+        }
+      ]
+    },
+    {
+      "corrida": 3,
+      "tipo": "calida",
+      "pasoUnoMs": 2091,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 18,
+          "finMs": 560
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 561,
+          "finMs": 1188
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 561,
+          "finMs": 1184
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 562,
+          "finMs": 1170
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 562,
+          "finMs": 1144
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 562,
+          "finMs": 1188
+        },
+        {
+          "peticion": "notifications/counts",
+          "inicioMs": 704,
+          "finMs": 1604
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1189,
+          "finMs": 1672
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1190,
+          "finMs": 1665
+        }
+      ]
+    },
+    {
+      "corrida": 4,
+      "tipo": "calida",
+      "pasoUnoMs": 2057,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 13,
+          "finMs": 532
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 533,
+          "finMs": 1147
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 533,
+          "finMs": 1159
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 533,
+          "finMs": 1144
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 533,
+          "finMs": 1111
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 533,
+          "finMs": 1139
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1160,
+          "finMs": 1639
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1160,
+          "finMs": 1617
+        }
+      ]
+    },
+    {
+      "corrida": 5,
+      "tipo": "calida",
+      "pasoUnoMs": 2188,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 17,
+          "finMs": 554
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 555,
+          "finMs": 1183
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 555,
+          "finMs": 1188
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 555,
+          "finMs": 1153
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 555,
+          "finMs": 1137
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 555,
+          "finMs": 1179
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1190,
+          "finMs": 1768
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1190,
+          "finMs": 1725
+        }
+      ]
+    },
+    {
+      "corrida": 6,
+      "tipo": "calida",
+      "pasoUnoMs": 2076,
+      "api": [
+        {
+          "peticion": "administration/companies/list",
+          "inicioMs": 12,
+          "finMs": 537
+        },
+        {
+          "peticion": "fleet-management/vehicles/list",
+          "inicioMs": 539,
+          "finMs": 1174
+        },
+        {
+          "peticion": "third-parties/list",
+          "inicioMs": 539,
+          "finMs": 1154
+        },
+        {
+          "peticion": "contract-extract/objects-contracts/list",
+          "inicioMs": 539,
+          "finMs": 1141
+        },
+        {
+          "peticion": "catalogs/type-of-documents/list",
+          "inicioMs": 539,
+          "finMs": 1136
+        },
+        {
+          "peticion": "contract-extract/contractors/next-consecutive",
+          "inicioMs": 540,
+          "finMs": 1146
+        },
+        {
+          "peticion": "settings/system-configurations/company/1f0c00dc-3825-4271-a56b-7ae7d018ca49",
+          "inicioMs": 1175,
+          "finMs": 1642
+        },
+        {
+          "peticion": "contract-extract/fuecs/preview-number",
+          "inicioMs": 1175,
+          "finMs": 1624
+        }
+      ]
+    }
+  ]
+}

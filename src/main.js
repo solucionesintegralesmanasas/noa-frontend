@@ -2,8 +2,6 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "./assets/brand-tokens.css";
 import "./assets/primevue-bridge.css";
-// Estilos de SweetAlert2 (los toasts usan import() diferido, el CSS queda en el bundle inicial)
-import "sweetalert2/dist/sweetalert2.min.css";
 // Importación usando alias definido en vite.config.js -> @utils apunta a src/utils/
 import { registerPlugins } from "@utils/plugins.js";
 
@@ -47,6 +45,12 @@ async function bootstrap() {
 
         // Montaje tras asegurar que todo el core está listo
         app.mount("#app");
+
+        // Estilos de SweetAlert2 fuera de la ruta crítica: lo usan toasts y vistas (import directo)
+        // que solo aparecen tras interacción; se piden cuando el navegador queda libre.
+        const cargarEstilosSwal = () => import("sweetalert2/dist/sweetalert2.min.css");
+        if (window.requestIdleCallback) window.requestIdleCallback(cargarEstilosSwal, { timeout: 3000 });
+        else setTimeout(cargarEstilosSwal, 500);
     } catch (error) {
         console.error("❌ Fallo crítico en el bootstrap de la aplicación:", error);
         displayErrorUI(error);
