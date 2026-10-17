@@ -2,12 +2,28 @@
   <div class="mb-4">
     <h3 class="timeline-section-title">Línea de tiempo del trámite</h3>
 
-    <p v-if="oculta" class="alert alert-success d-flex align-items-center gap-2 mb-0" role="status">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-      <span>Trámite completado. Todos los pasos han sido cerrados exitosamente.</span>
-    </p>
+    <button
+      v-if="oculta"
+      type="button"
+      class="alert alert-success timeline-completed-toggle"
+      :aria-expanded="mostrarLinea ? 'true' : 'false'"
+      aria-controls="linea-tiempo-detalle"
+      @click="mostrarLinea = !mostrarLinea"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="timeline-check"><path d="M4.5 12.5l5 5L19.5 7"/></svg>
+      <span class="timeline-completed-text">Trámite completado. Todos los pasos han sido cerrados exitosamente.</span>
+      <i class="fas fa-chevron-down timeline-chevron" aria-hidden="true"></i>
+      <span class="visually-hidden">{{ mostrarLinea ? 'Ocultar línea de tiempo y documentos' : 'Ver línea de tiempo y documentos' }}</span>
+    </button>
 
-    <ol v-else class="timeline-list">
+    <Transition
+      name="timeline-expand"
+      @enter="alExpandir"
+      @after-enter="limpiarAltura"
+      @leave="alColapsar"
+      @after-leave="limpiarAltura"
+    >
+      <ol v-if="lineaVisible" id="linea-tiempo-detalle" class="timeline-list">
       <li
         v-for="(p, i) in linea"
         :key="p.paso"
@@ -70,7 +86,8 @@
           </div>
         </div>
       </li>
-    </ol>
+      </ol>
+    </Transition>
   </div>
 </template>
 
@@ -88,15 +105,18 @@ const props = defineProps({
 });
 
 const generando = ref('');
+const mostrarLinea = ref(false);
 
 const documentosDe = (paso) => props.documentos?.[paso] ?? [];
+
+const oculta = computed(() => props.estadoGlobal === 'COMPLETADO');
+
+const lineaVisible = computed(() => !oculta.value || mostrarLinea.value);
 
 const indiceActual = computed(() => {
   const i = props.linea.findIndex((p) => p.estado === 'EN_PROCESO');
   return i === -1 ? props.linea.length - 1 : i;
 });
-
-const oculta = computed(() => props.estadoGlobal === 'COMPLETADO');
 
 const estadoLabel = (estado) => {
   if (estado === 'COMPLETADO') return 'Completado';
@@ -115,7 +135,41 @@ async function descargar(documento) {
   }
 }
 
-defineExpose({ indiceActual, oculta });
+const respetaMovimientoReducido = () =>
+  typeof window !== 'undefined'
+  && typeof window.matchMedia === 'function'
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function alExpandir(el) {
+  if (respetaMovimientoReducido()) return;
+  el.style.overflow = 'hidden';
+  el.style.height = '0px';
+  el.style.opacity = '0';
+  void el.offsetHeight;
+  el.style.transition = 'height .55s cubic-bezier(.4, 0, .2, 1), opacity .45s ease';
+  el.style.height = `${el.scrollHeight}px`;
+  el.style.opacity = '1';
+}
+
+function alColapsar(el) {
+  if (respetaMovimientoReducido()) return;
+  el.style.overflow = 'hidden';
+  el.style.height = `${el.scrollHeight}px`;
+  el.style.opacity = '1';
+  void el.offsetHeight;
+  el.style.transition = 'height .45s cubic-bezier(.4, 0, .2, 1), opacity .35s ease';
+  el.style.height = '0px';
+  el.style.opacity = '0';
+}
+
+function limpiarAltura(el) {
+  el.style.height = '';
+  el.style.opacity = '';
+  el.style.transition = '';
+  el.style.overflow = '';
+}
+
+defineExpose({ indiceActual, oculta, mostrarLinea, lineaVisible });
 </script>
 
 <style scoped>
@@ -271,6 +325,59 @@ defineExpose({ indiceActual, oculta });
   font-weight: 700;
   color: #2563eb;
   white-space: nowrap;
+}
+
+/* ── Aviso expandible de trámite completado ── */
+.timeline-completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.timeline-completed-toggle:hover {
+  border-color: #0fa968;
+  box-shadow: 0 0 0 3px rgba(15,169,104,.12);
+}
+.timeline-completed-toggle:focus-visible {
+  outline: 2px solid #0b7a4b;
+  outline-offset: 2px;
+}
+.timeline-check {
+  flex-shrink: 0;
+}
+.timeline-completed-text {
+  flex: 1;
+}
+.timeline-chevron {
+  flex-shrink: 0;
+  transition: transform .35s ease;
+}
+.timeline-completed-toggle[aria-expanded="true"] .timeline-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Animación del expandible (el JS fija la altura real) ── */
+.timeline-expand-enter-active,
+.timeline-expand-leave-active {
+  overflow: hidden;
+  will-change: height, opacity;
+}
+
+@media (max-width: 576px) {
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-expand-enter-active,
+  .timeline-expand-leave-active,
+  .timeline-chevron {
+    transition: none;
+  }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,55 @@
+{
+  "fecha": "2026-10-05",
+  "origen": "https://apptransportessinbarreras.transportessinbarreras.com",
+  "env": "apptransportessinbarreras-transportessinbarreras-com",
+  "device": "desktop",
+  "runs": 3,
+  "lighthouse": "lighthouse@12.8.2",
+  "paginas": {
+    "login": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/#/",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/#/",
+      "performance": 91,
+      "accessibility": 95,
+      "lcpMs": 1308,
+      "tbtMs": 0,
+      "cls": 0
+    },
+    "conductor": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/?view=conductor",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/?view=conductor#/",
+      "performance": 89,
+      "accessibility": 95,
+      "lcpMs": 1491,
+      "tbtMs": 0,
+      "cls": 0
+    },
+    "dashboard": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/#/dashboard",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/#/login?redirect=/dashboard",
+      "performance": 90,
+      "accessibility": 95,
+      "lcpMs": 1377,
+      "tbtMs": 0,
+      "cls": 0
+    },
+    "mapa": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/#/rastreo/mapa-en-vivo",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/#/login?redirect=/rastreo/mapa-en-vivo",
+      "performance": 89,
+      "accessibility": 95,
+      "lcpMs": 1405,
+      "tbtMs": 0,
+      "cls": 0
+    },
+    "geocercas": {
+      "url": "https://apptransportessinbarreras.transportessinbarreras.com/#/rastreo/geocercas",
+      "finalUrl": "https://apptransportessinbarreras.transportessinbarreras.com/#/login?redirect=/rastreo/geocercas",
+      "performance": 92,
+      "accessibility": 95,
+      "lcpMs": 1232,
+      "tbtMs": 0,
+      "cls": 0
+    }
+  }
+}

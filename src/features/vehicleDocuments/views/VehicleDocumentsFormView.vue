@@ -526,7 +526,7 @@ import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import WizardProgress from '@/components/WizardProgress.vue';
-import { useDocumentWizard, esVehiculoParticular } from '@/hooks/useDocumentWizard.js';
+import { useDocumentWizard, esVehiculoParticular, elegirPolizaViva } from '@/hooks/useDocumentWizard.js';
 import { confirmUnsavedChanges } from '@/utils/confirm.js';
 import vehicleDocumentsService from '../services/vehicleDocuments.service.js';
 
@@ -1006,8 +1006,10 @@ const loadEditDocument = async (type) => {
         const docs = resp?.data ?? resp ?? [];
         const list = Array.isArray(docs) ? docs : (docs.data ?? []);
 
-        const rce = list.find(d => d.document_type === 'RCE');
-        const rcc = list.find(d => d.document_type === 'RCC');
+        // Las reemplazadas (INACTIVA) son historial: se edita la viva más reciente.
+        // Sin viva, al guardar se crea.
+        const rce = elegirPolizaViva(list, 'RCE');
+        const rcc = elegirPolizaViva(list, 'RCC');
 
         editingPolicyUuids.rce = rce?.uuid ?? null;
         editingPolicyUuids.rcc = rcc?.uuid ?? null;

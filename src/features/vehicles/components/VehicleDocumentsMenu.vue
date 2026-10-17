@@ -36,7 +36,27 @@
                         </button>
 
                         <div v-show="expandedKey === row.key" class="px-3 pb-3 pt-1 border-top bg-light bg-opacity-50">
-                            <dl v-if="row.doc" class="row mb-2 mt-2 small" style="font-size: 0.8rem;">
+                            <dl v-if="row.esPolizas" class="row mb-2 mt-2 small" style="font-size: 0.8rem;">
+                                <dt class="col-5 text-muted fw-medium">N° de póliza RCE:</dt>
+                                <dd class="col-7 text-dark fw-semibold font-monospace mb-1">
+                                    {{ row.numeroRce || '—' }}
+                                    <span v-if="row.estadosDifieren" class="badge rounded-pill ms-1" :class="row.pillRce.badgeClass" style="font-size: 0.65rem;">
+                                        {{ row.pillRce.label }}
+                                    </span>
+                                </dd>
+                                <dt class="col-5 text-muted fw-medium">N° de póliza RCC:</dt>
+                                <dd class="col-7 text-dark fw-semibold font-monospace mb-1">
+                                    {{ row.numeroRcc || '—' }}
+                                    <span v-if="row.estadosDifieren" class="badge rounded-pill ms-1" :class="row.pillRcc.badgeClass" style="font-size: 0.65rem;">
+                                        {{ row.pillRcc.label }}
+                                    </span>
+                                </dd>
+                                <dt class="col-5 text-muted fw-medium">{{ row.entityLabel }}:</dt>
+                                <dd class="col-7 text-dark mb-1">{{ row.entity || '—' }}</dd>
+                                <dt class="col-5 text-muted fw-medium">Vigencia:</dt>
+                                <dd class="col-7 text-dark mb-0">{{ row.validity }}</dd>
+                            </dl>
+                            <dl v-else-if="row.doc" class="row mb-2 mt-2 small" style="font-size: 0.8rem;">
                                 <dt class="col-5 text-muted fw-medium">{{ row.numberLabel }}:</dt>
                                 <dd class="col-7 text-dark fw-semibold font-monospace mb-1">{{ row.number || '—' }}</dd>
                                 <dt class="col-5 text-muted fw-medium">{{ row.entityLabel }}:</dt>
@@ -75,6 +95,7 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePermissionsStore } from '@store';
 import { useDocumentWizard } from '@/hooks/useDocumentWizard.js';
+import { estadoDocumento, estadoPolizas, debenAgruparse, vencimientoMasProximo, expiryDe } from '../utils/documentosVehiculo.js';
 
 const props = defineProps({
     modelValue: { type: Boolean, default: false },
@@ -107,20 +128,6 @@ const formatShort = (date) => {
     try {
         return new Date(date).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
     } catch { return '—'; }
-};
-
-const expiryOf = (doc, isCard) => (isCard ? doc?.expiration_date : doc?.expiry_date) ?? null;
-
-const statusOf = (doc, isCard) => {
-    if (!doc) return 'faltante';
-    if (!isCard && doc.status === 'VENCIDO') return 'vencido';
-    const expiry = expiryOf(doc, isCard);
-    if (!expiry) return 'vigente';
-    const end = new Date(expiry);
-    const now = new Date();
-    if (end <= now) return 'vencido';
-    if (end.getTime() - now.getTime() <= 30 * 24 * 60 * 60 * 1000) return 'por-vencer';
-    return 'vigente';
 };
 
 const STATUS_META = {
@@ -159,17 +166,39 @@ const goNew = (row) => { close(); router.push(`${createPath(row)}&nuevo=1`); };
 const rows = computed(() => {
     const defs = [
         { key: 'soat', label: 'SOAT', icon: 'fad fa-shield-alt', docType: 'soat', doc: found.value.soat, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de SOAT', entityLabel: 'Entidad emisora', missingLabel: 'Documento faltante para este vehículo.' },
-        { key: 'rce', label: 'Póliza RCE', icon: 'fad fa-file-contract', docType: 'poliza', doc: found.value.rce, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de póliza', entityLabel: 'Entidad emisora', missingLabel: 'Documento faltante para este vehículo.' },
-        { key: 'rcc', label: 'Póliza RCC', icon: 'fad fa-file-invoice', docType: 'poliza', doc: found.value.rcc, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de póliza', entityLabel: 'Entidad emisora', missingLabel: 'Documento faltante para este vehículo.' },
+        // Las pólizas RCE y RCC se registran juntas: si existen ambas se ven en una sola fila.
+        ...(debenAgruparse(found.value.rce, found.value.rcc)
+            ? [{
+                key: 'polizas',
+                label: 'Pólizas de Responsabilidad Civil (RCC y RCE)',
+                icon: 'fad fa-file-contract',
+                docType: 'poliza',
+                // El formulario de pólizas carga ambas por vehículo: sirve cualquiera de los dos UUID.
+                doc: found.value.rcc ?? found.value.rce,
+                isCard: false,
+                module: 'vehicle_documents',
+                entityLabel: 'Entidad emisora',
+                missingLabel: 'Documento faltante para este vehículo.',
+                esPolizas: true,
+                rce: found.value.rce,
+                rcc: found.value.rcc,
+            }]
+            : [
+                { key: 'rce', label: 'Póliza RCE', icon: 'fad fa-file-contract', docType: 'poliza', doc: found.value.rce, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de póliza', entityLabel: 'Entidad emisora', missingLabel: 'Documento faltante para este vehículo.' },
+                { key: 'rcc', label: 'Póliza RCC', icon: 'fad fa-file-invoice', docType: 'poliza', doc: found.value.rcc, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de póliza', entityLabel: 'Entidad emisora', missingLabel: 'Documento faltante para este vehículo.' },
+            ]),
         { key: 'rtm', label: 'Tecnomecánica', icon: 'fad fa-clipboard-check', docType: 'tecnomecanica', doc: found.value.rtm, isCard: false, module: 'vehicle_documents', numberLabel: 'N° de revisión', entityLabel: 'CDA', missingLabel: 'Documento faltante para este vehículo.' },
         { key: 'tarjeta', label: 'Tarjeta de operación', icon: 'fad fa-car-bus', docType: 'tarjeta', doc: found.value.tarjeta, isCard: true, module: 'operation_cards', numberLabel: 'N° de tarjeta', entityLabel: 'Empresa afiliada', missingLabel: 'Documento faltante para este vehículo.' },
         { key: 'convenio', label: 'Convenio de colaboración', icon: 'fad fa-handshake', docType: 'convenio', doc: found.value.convenio, isAgreement: true, module: 'business_collaboration_agreements', numberLabel: 'N° de convenio', entityLabel: 'Entidad contratante', missingLabel: 'Sin convenio de colaboración registrado.' },
     ];
     return defs.map((d) => {
-        const status = statusOf(d.doc, d.isCard);
+        const status = d.esPolizas ? estadoPolizas(d.rce, d.rcc) : estadoDocumento(d.doc, { esTarjeta: d.isCard });
         const meta = STATUS_META[status];
+        const estadoRce = d.esPolizas ? estadoDocumento(d.rce) : null;
+        const estadoRcc = d.esPolizas ? estadoDocumento(d.rcc) : null;
         return {
             ...d,
+            status,
             badgeLabel: meta.label,
             badgeClass: meta.badgeClass,
             canCreate: can(`${d.module}.create`),
@@ -177,14 +206,23 @@ const rows = computed(() => {
             number: d.isAgreement
                 ? d.doc?.agreement_internal_id
                 : (d.isCard ? d.doc?.operating_card_number : d.doc?.policy_number),
-            entity: d.isAgreement
-                ? d.doc?.contracting_entity_name
-                : (d.isCard ? d.doc?.affiliated_company : d.doc?.issuing_entity),
-            validity: d.doc
-                ? (d.isAgreement
-                    ? `${formatShort(d.doc?.effective_date)} → ${formatShort(d.doc?.expiry_date)}`
-                    : `${formatShort(d.doc?.issue_date)} → ${formatShort(expiryOf(d.doc, d.isCard))}`)
-                : '',
+            numeroRce: d.esPolizas ? d.rce?.policy_number : null,
+            numeroRcc: d.esPolizas ? d.rcc?.policy_number : null,
+            pillRce: d.esPolizas ? STATUS_META[estadoRce] : null,
+            pillRcc: d.esPolizas ? STATUS_META[estadoRcc] : null,
+            estadosDifieren: d.esPolizas ? estadoRce !== estadoRcc : false,
+            entity: d.esPolizas
+                ? (d.rce?.issuing_entity ?? d.rcc?.issuing_entity)
+                : (d.isAgreement
+                    ? d.doc?.contracting_entity_name
+                    : (d.isCard ? d.doc?.affiliated_company : d.doc?.issuing_entity)),
+            validity: d.esPolizas
+                ? `${formatShort(d.rce?.issue_date ?? d.rcc?.issue_date)} → ${formatShort(vencimientoMasProximo(d.rce, d.rcc))}`
+                : (d.doc
+                    ? (d.isAgreement
+                        ? `${formatShort(d.doc?.effective_date)} → ${formatShort(d.doc?.expiry_date)}`
+                        : `${formatShort(d.doc?.issue_date)} → ${formatShort(expiryDe(d.doc, d.isCard))}`)
+                    : ''),
         };
     });
 });
@@ -195,7 +233,7 @@ const load = async () => {
     try {
         found.value = await fetchExistingDocs(props.vehicleUuid);
         // Expande la primera fila que requiera atención (faltante o por vencer/vencido)
-        const attention = rows.value.find((r) => statusOf(r.doc, r.isCard) !== 'vigente');
+        const attention = rows.value.find((r) => r.status !== 'vigente');
         expandedKey.value = (attention ?? rows.value[0])?.key ?? null;
     } finally {
         loading.value = false;

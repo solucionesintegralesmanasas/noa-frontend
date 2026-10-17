@@ -1,7 +1,7 @@
 // Un vehículo particular no tiene pólizas RCC/RCE ni tarjeta de operación: el asistente
 // solo le ofrece SOAT y tecnomecánica.
 import { describe, expect, it } from 'vitest';
-import { esVehiculoParticular, masReciente, pasosAplicables, useDocumentWizard } from '../useDocumentWizard.js';
+import { elegirPolizaViva, esVehiculoParticular, masReciente, pasosAplicables, useDocumentWizard } from '../useDocumentWizard.js';
 
 const permisos = { can: () => true };
 
@@ -84,5 +84,55 @@ describe('masReciente (documento más reciente por tipo)', () => {
         expect(masReciente(tarjetas, () => true, 'expiration_date').uuid).toBe('t2');
         expect(masReciente([], () => true)).toBeNull();
         expect(masReciente(undefined, () => true)).toBeNull();
+    });
+});
+
+describe('elegirPolizaViva (póliza viva más reciente por tipo)', () => {
+    const docs = [
+        { uuid: 'rcc-vieja', document_type: 'RCC', status: 'NO VIGENTE', expiry_date: '2026-01-01', created_at: '2026-02-01' },
+        { uuid: 'rcc-nueva', document_type: 'RCC', status: 'VIGENTE', expiry_date: '2027-12-31', created_at: '2026-09-01' },
+        { uuid: 'rce', document_type: 'RCE', status: 'VIGENTE', expiry_date: '2027-06-30', created_at: '2026-09-01' },
+    ];
+
+    it('toma la RCC nueva aunque la reemplazada venga primero', () => {
+        expect(elegirPolizaViva(docs, 'RCC').uuid).toBe('rcc-nueva');
+    });
+
+    it('no depende del orden del arreglo', () => {
+        expect(elegirPolizaViva([...docs].reverse(), 'RCC').uuid).toBe('rcc-nueva');
+        expect(elegirPolizaViva(docs, 'RCE').uuid).toBe('rce');
+    });
+
+    it('con las mismas fechas gana la registrada después', () => {
+        const iguales = [
+            { uuid: 'a', document_type: 'RCC', status: 'VIGENTE', expiry_date: '2027-01-01', created_at: '2026-01-01' },
+            { uuid: 'b', document_type: 'RCC', status: 'VIGENTE', expiry_date: '2027-01-01', created_at: '2026-02-01' },
+        ];
+        expect(elegirPolizaViva(iguales, 'RCC').uuid).toBe('b');
+    });
+
+    it('sin viva devuelve null (al guardar se crea)', () => {
+        const soloHistorial = [
+            { uuid: 'x', document_type: 'RCC', status: 'INACTIVA', expiry_date: '2027-12-31' },
+        ];
+        expect(elegirPolizaViva(soloHistorial, 'RCC')).toBeNull();
+        expect(elegirPolizaViva([], 'RCC')).toBeNull();
+        expect(elegirPolizaViva(undefined, 'RCC')).toBeNull();
+    });
+
+    it('prefiere la vigente aunque otra viva tenga mayor vencimiento', () => {
+        const raras = [
+            { uuid: 'no-vigente', document_type: 'RCC', status: 'NO VIGENTE', expiry_date: '2028-01-01', created_at: '2026-01-01' },
+            { uuid: 'vigente', document_type: 'RCC', status: 'VIGENTE', expiry_date: '2027-01-01', created_at: '2026-02-01' },
+        ];
+        expect(elegirPolizaViva(raras, 'RCC').uuid).toBe('vigente');
+    });
+
+    it('sin vigentes elige la viva más reciente', () => {
+        const sinVigentes = [
+            { uuid: 'a', document_type: 'RCC', status: 'NO VIGENTE', expiry_date: '2026-01-01', created_at: '2026-01-01' },
+            { uuid: 'b', document_type: 'RCC', status: 'NO', expiry_date: '2026-06-01', created_at: '2026-02-01' },
+        ];
+        expect(elegirPolizaViva(sinVigentes, 'RCC').uuid).toBe('b');
     });
 });

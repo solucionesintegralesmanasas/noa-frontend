@@ -53,6 +53,25 @@ export const masReciente = (docs, coincide, campoVence = 'expiry_date') => {
 };
 
 /**
+ * Póliza viva más reciente de un tipo (RCC/RCE/SOAT/RTM): excluye las
+ * reemplazadas (INACTIVA, historial), prefiere las vigentes y elige por
+ * vencimiento y registro. La API devuelve todos los documentos del vehículo
+ * en cualquier orden, así que tomar el primero editaba o validaba contra
+ * el registro viejo. Acepta SI por compatibilidad con registros anteriores
+ * a la normalización.
+ * @param {Array} docs
+ * @param {string} tipo p. ej. 'RCC'
+ * @returns {Object|null}
+ */
+export const elegirPolizaViva = (docs, tipo) => {
+    const clave = (tipo ?? '').toUpperCase();
+    const esTipo = (d) => (d.document_type ?? '').toUpperCase() === clave;
+    const vivas = (docs ?? []).filter((d) => (d.status ?? '').toUpperCase() !== 'INACTIVA' && esTipo(d));
+    const vigentes = vivas.filter((d) => ['VIGENTE', 'SI'].includes((d.status ?? '').toUpperCase()));
+    return masReciente(vigentes.length > 0 ? vigentes : vivas, () => true);
+};
+
+/**
  * Normaliza respuestas paginadas o planas a arreglo.
  * @param {*} resp
  * @returns {Array}

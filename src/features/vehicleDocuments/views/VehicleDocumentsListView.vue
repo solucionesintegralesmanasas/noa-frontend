@@ -131,7 +131,7 @@
                                             </button>
                                             <button class="btn btn-falcon-default" type="button" title="Editar" :aria-label="`Editar pólizas de ${data.vehicle?.vehicle_license_plate}`"
                                                 v-if="can('vehicle_documents.update')"
-                                                @click="goToEdit(data.policies?.[0]?.uuid || data.uuid)">
+                                                @click="goToEdit(uuidEdicionPoliza(data))">
                                                 <i class="fad fa-edit text-warning" style="font-size:14px;" />
                                             </button>
                                             <button class="btn btn-falcon-default" type="button" title="Eliminar" :aria-label="`Eliminar pólizas de ${data.vehicle?.vehicle_license_plate}`"
@@ -227,7 +227,7 @@
                 </span>
             </div>
             <div class="row g-3">
-                <div class="col-md-6" v-for="doc in selectedPolicies.policies" :key="doc.document_type">
+                <div class="col-md-6" v-for="doc in selectedPolicies.policies" :key="doc.uuid">
                     <div class="border rounded-3 p-3 h-100"
                         :class="doc.document_type === 'RCC' ? 'border-primary' : 'border-success'">
                         <h6 class="fw-bold text-uppercase mb-3"
@@ -272,6 +272,7 @@ import { useVehicleDocumentsStore } from '../store/vehicleDocuments.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { normalizarEstadoDocumento, claseEstadoDocumento } from '@/utils/documentStatus.js';
+import { elegirPolizaViva } from '@/hooks/useDocumentWizard.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
@@ -372,6 +373,18 @@ const goToEdit = (uuid) => {
     const type = route.params.documentType;
     if (type) return router.push(`/vehiculos-documentos/${type}/editar/${uuid}`);
     return router.push(`/vehiculos-documentos/editar/${uuid}`);
+};
+
+/**
+ * UUID para editar las pólizas de la fila: la viva más reciente (RCC o RCE).
+ * `policies[0]` no tiene orden, así que podía abrir el registro reemplazado.
+ */
+const uuidEdicionPoliza = (row) => {
+    const policies = row.policies || [];
+    return elegirPolizaViva(policies, 'RCC')?.uuid
+        ?? elegirPolizaViva(policies, 'RCE')?.uuid
+        ?? policies[0]?.uuid
+        ?? row.uuid;
 };
 
 const handleDelete = (item) => confirmDelete(item, {

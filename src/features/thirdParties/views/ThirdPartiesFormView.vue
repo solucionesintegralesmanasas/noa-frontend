@@ -450,6 +450,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
 import thirdPartiesService from '../services/thirdParties.service.js';
 import { usePermissionsStore, useUserStore } from '@store';
+import { logger } from '@/utils/logger.js';
+import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
+import { elegirLicencia } from '@/utils/driverLicense.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
@@ -468,9 +471,6 @@ const isSuperAdmin = computed(() => permissionsStore.roles?.includes('SUPERADMIN
 
 const isEditMode = computed(() => route.params.id !== undefined);
 
-/** Computed para BasePageHeader (evita expresiones complejas en el template) */
-const pageTitle = computed(() => isEditMode.value ? 'Actualizar Tercero' : 'Registrar Tercero');
-const pageSubtitle = computed(() => isEditMode.value ? 'Modifica los datos del registro en el sistema' : 'Completa los datos para crear un nuevo registro');
 // Aviso previo: el usuario es único por correo y el backend rechaza (422) guardar un tercero con el correo de otro.
 const avisoCorreo = ref('');
 async function verificarCorreo() {
@@ -492,6 +492,9 @@ async function verificarCorreo() {
     }
 }
 
+/** Computed para BasePageHeader (evita expresiones complejas en el template) */
+const pageTitle = computed(() => isEditMode.value ? 'Actualizar Tercero' : 'Registrar Tercero');
+const pageSubtitle = computed(() => isEditMode.value ? 'Modifica los datos del registro en el sistema' : 'Completa los datos para crear un nuevo registro');
 const breadcrumbs = computed(() => [ dynamicBreadcrumb.value, { label: isEditMode.value ? 'Editar' : 'Nuevo' }, ]);
 
 const routeType = computed(() => {
@@ -585,6 +588,19 @@ const filteredRbacRoleOptions = computed(() => {
     // Mostrar TODOS los roles siempre, solo limitar selección a 1 cuando es empleado
     return rbacRoleOptions.value;
 });
+
+// Rol por defecto al crear desde un listado (afiliado/conductor/empleado).
+// Solo si hay sugerencia válida en catálogo y el usuario no eligió nada:
+// nunca se impone un rol ni se pisa una selección existente.
+function aplicarRolPorDefecto() {
+    if (isEditMode.value || formData.rbacRoles.length > 0) return;
+    const sugerido = rolPorDefectoPara(routeType.value, rbacRoleOptions.value);
+    if (sugerido) {
+        formData.rbacRoles = [sugerido];
+    } else if (ROL_POR_DEFECTO_POR_TIPO[routeType.value]) {
+        logger.warn(`[terceros] sin rol por defecto para ${routeType.value}: no está en el catálogo`);
+    }
+}
 
 const bottomRowColClass = computed(() => {
     return isSuperAdmin.value
@@ -874,9 +890,8 @@ onMounted(async () => {
                 formData.partyTypes = partyTypes;
 
                 // Roles de acceso RBAC que vienen del perfil (p. ej. ADMIN_EMPRESA).
-                formData.rbacRoles = Array.isArray(item.roles)
-                    ? item.roles.filter(r => r && !r.startsWith('is_'))
-                    : [];
+                // Se normalizan sin perder valores: strings u objetos {name}, sin flags is_*.
+                formData.rbacRoles = normalizarRolesDelPerfil(item.roles);
 
                 formData.is_active = (item.is_active == 1 || item.is_active === true || item.is_active === '1') ? '1' : '0';
 
@@ -884,7 +899,7 @@ onMounted(async () => {
                 if (formData.partyTypes.includes('is_driver')) {
                     try {
                         const licencias = await store.fetchDriverLicenses(route.params.id);
-                        const licencia = Array.isArray(licencias) ? licencias[0] : null;
+                        const licencia = elegirLicencia(licencias);
                         if (licencia) {
                             licenciaCargada.value = true;
                             formData.license_number = licencia.number ?? null;
@@ -908,6 +923,8 @@ onMounted(async () => {
             if (routeType.value !== 'all') {
                 formData.partyTypes = [routeType.value];
             }
+            // ... y el rol de acceso correspondiente (afiliado/conductor/empleado).
+            aplicarRolPorDefecto();
         }
     } catch (error) {
         toast('Error', 'No se pudieron cargar los datos', 'error');
@@ -916,6 +933,7 @@ onMounted(async () => {
         if (!isEditMode.value && routeType.value !== 'all' && formData.partyTypes.length === 0) {
             formData.partyTypes = [routeType.value];
         }
+        aplicarRolPorDefecto();
     }
 });
 </script>

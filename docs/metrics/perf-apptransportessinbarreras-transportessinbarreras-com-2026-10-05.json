@@ -1,0 +1,135 @@
+{
+  "fecha": "2026-10-05",
+  "origen": "https://apptransportessinbarreras.transportessinbarreras.com",
+  "buildId": "CZRcSXIW",
+  "dist": true,
+  "metricas": {
+    "totalJS": 778.2,
+    "inicialJS": 778.2,
+    "diferidoJS": 0,
+    "totalCSS": 13.7,
+    "vendorPrimevue": null,
+    "vendorUI": null,
+    "vendorFeedback": null,
+    "vendorHttp": 40.1,
+    "vendorVue": 209.5,
+    "indexJS": 101.7,
+    "publicInicialJS": 634.2,
+    "publicInicialCSS": 1066.4,
+    "numChunksJS": 20,
+    "numChunksInicial": 20,
+    "numChunksDiferidos": 0,
+    "numChunksCSS": 1,
+    "numPublicos": 12
+  },
+  "rutas": [],
+  "html": {
+    "scriptsSinDefer": [],
+    "hojasGoogleFonts": 1,
+    "cssMuertoJqueryToast": 0
+  },
+  "topChunks": [
+    {
+      "archivo": "vendor-vue-DWGmPRLb.js",
+      "kb": 209.5,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "index-CZRcSXIW.js",
+      "kb": 101.7,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "config.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "simplebar.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "popper.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "bootstrap.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "anchor.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "is.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "lodash.min.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "theme.js",
+      "kb": 47,
+      "tipo": "js-inicial"
+    }
+  ],
+  "topPublicos": [
+    {
+      "archivo": "theme.min.css",
+      "kb": 892.7,
+      "tipo": "css-publico"
+    },
+    {
+      "archivo": "theme.js",
+      "kb": 437.7,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "all.min.css",
+      "kb": 170.2,
+      "tipo": "css-publico"
+    },
+    {
+      "archivo": "lodash.min.js",
+      "kb": 71.4,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "bootstrap.min.js",
+      "kb": 59.1,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "simplebar.min.js",
+      "kb": 26.6,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "popper.min.js",
+      "kb": 19.7,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "is.min.js",
+      "kb": 12.9,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "anchor.min.js",
+      "kb": 5.8,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "simplebar.min.css",
+      "kb": 3.2,
+      "tipo": "css-publico"
+    }
+  ]
+}

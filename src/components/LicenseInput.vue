@@ -83,8 +83,11 @@ const storedCompanyUuid = localStorage.getItem('company_uuid_from_license')
 
 // Si ya tiene licencia aceptada guardada, ir directamente al dashboard
 if (licenseAcceptedFromStorage && storedLicenseKey) {
-  // Verificar que la licencia aún sea válida
-  axios.get('/api/v1/license/verify/' + encodeURIComponent(storedLicenseKey.trim()))
+  // Verificar que la licencia aún sea válida (con tope: sin respuesta no se puede
+  // dejar el formulario esperando para siempre).
+  axios.get('/api/v1/license/verify/' + encodeURIComponent(storedLicenseKey.trim()), {
+    timeout: 8000,
+  })
     .then(response => {
       if (response.data.success && response.data.data.status === 'valid') {
         licenseAccepted.value = true
