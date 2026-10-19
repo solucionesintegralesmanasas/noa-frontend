@@ -151,12 +151,13 @@ Reglas cerradas en las fases 1-3 (2026-09-15). Verificables con `npm run test:a1
 - **Rendimiento P0-P2 cerrado:** primeicons y SweetAlert2 fuera del arranque, FontAwesome JS eliminado (−1.2 MB), jQuery/Select2 eliminados (−148 kB) y 28 vistas migradas al wrapper `PrimeSelect`.
 - **Medición (2026-09-29):** `totalJS` 2854 kB · `inicialJS` 748 kB · `totalCSS` 277 kB · `vendor-primevue` 228 kB. El presupuesto mide también el `public/` que carga `index.html` (`publicInicialJS` 634 kB + `publicInicialCSS` 1066 kB). Reportes en `docs/metrics/` (`a11y-*`, `perf-*`, `lighthouse-<env>-<device>-*` y `lighthouse.md`).
 - **Lighthouse producción (2026-09-23, tarde):** Perf 69–85, LCP 2,4–3,1 s, TBT 0 ms. El cuello son bytes y latencia de API, no JS bloqueante. Local (`vite preview`, 2026-09-29): login desktop 95; conductor móvil 65 con LCP 6 s.
-- **Plan de rendimiento:** `noa-backend/PLAN-ARQUITECTURA-RENDIMIENTO-NOA.md` (el backlog ARQ-xxx). Medir siempre en producción o `preview`, nunca contra `localhost:5173`.
+- **Plan de rendimiento:** `PLAN-ARQUITECTURA-RENDIMIENTO-NOA.md` fue retirado del backend (2026-10-15, `aea765c`); el backlog y las cifras viven en SPEC-004 y en el AGENTS del backend. Medir siempre en producción o `preview`, nunca contra `localhost:5173`.
 - **Perfil autenticado para Lighthouse (2026-10-05):** `--profile="C:\Users\trans_nn1on\lighthouse-profile"` NO retiene la sesión en las corridas headless del script (las privadas caen a `#/login?redirect=...` aunque el perfil tenga token): las páginas privadas se miden manual en DevTools (protocolo de `docs/metrics/lighthouse.md`, 3 corridas, guardar JSON). El script solo sirve para públicas (`login`, `conductor`). Perfil creado con `--user-data-dir` apuntando ahí; no navegar a otros sitios con él.
 - **No eliminar `lodash.min.js`:** `public/assets/js/theme.js` usa `window._` 11 veces.
 - **Deuda conocida:** `theme.min.css` 892 kB sin purga, `public/assets/js/theme.js` 438 kB, `bootstrap.min.js` global (Modal/Tooltip), Leaflet por CDN, Google Fonts con 5 familias (ahora no bloqueantes; recortar las no usadas), `tenantGuard` sin implementar, ~18 `type="date"` sin migrar a `DateInput`, `vue-tsc` con ~1740 errores de baseline y muy poca cobertura de tests.
 - **Componentes de formulario compartidos:** `PrimeSelect`, `PrimeMultiSelect` y `DateInput` viven en `src/components/form/` (importar localmente). `PrimeSelect` fija `focusOnHover=false` y `autoFilterFocus=true`; `DateInput` acepta `dd/mm/aaaa` vía `parsearFechaFlexible` (`src/utils/date.js`). El estado de documentos se normaliza con `src/utils/documentStatus.js` (`SI`/`NO` → `VIGENTE`/`NO VIGENTE`).
 - **Pruebas de componentes:** vitest con `jsdom` + `@vue/test-utils`; cada archivo declara `// @vitest-environment jsdom` en la primera línea (entorno por defecto: `node`).
+- **Novedades 2026-10-15/19:** facturación y protección por permisos en rutas/vistas llegaron con el merge `10e68ca`; catálogos con guard de roles; puerta de licencia desactivada (`LICENSE_REQUIRED = false` en `src/router/index.js:179`, con comentario de reactivación; el guard queda como no-op de ~150 líneas — `LicenseInput.vue` quedó huérfano, decidir si se elimina); `deploy.yml` eliminado de CI (quedan `ci.yml` + `appflow.yml`, con `VITE_API_BASE_URL` provista por `7921327` para tests sin `.env` versionado); asistente de chat restaurado sin backend (ver módulo `assistant`); billing agregó 3 `type="date"` nativos a la deuda conocida. Verificado el 2026-10-19: radicaciónTO/licencia coherentes con el backend v1.0.0 (radicación 30/30 vitest, backend 62 pruebas en verde).
 
 ## Módulos y Features del Sistema (`src/features/`)
 
@@ -164,10 +165,13 @@ Listado de submódulos de negocio disponibles y activos en la aplicación:
 
 - **`affiliateAdminCharges`**: Gestión de cobros de afiliación y cuotas de administración mensual de vehículos.
 - **`auth`**: Autenticación, inicio de sesión y gestión de credenciales.
+- **`assistant`**: Asistente de chat con burbuja flotante (restaurado `e77a83a`). **Defecto abierto:** llama a `/chat/sessions` y `/chat/messages/{uuid}/feedback`, rutas que el backend eliminó el 2026-10-02 (`5723016`); 404 garantizado hasta portar el module del backend o retirar la feature de nuevo.
 - **`bankDetails`**: Configuración de cuentas y detalles bancarios de los actores.
+- **`billing`**: Facturación comercial sin FE (cotizaciones, facturas internas, notas crédito/débito, resoluciones de proveedor y filtrado de clientes). Rutas protegidas con `meta.permissions` + `permissionsStore.can(...)`; el fetch de catálogos del formulario (`getFormOptions`) degrada a lista vacía pero deja `logger.warn`.
 - **`branches`**: Gestión de sucursales u oficinas de las empresas transportadoras.
 - **`businessCollaborationAgreements`**: Convenios de colaboración empresarial y contratos entre entidades.
 - **`companies`**: Configuración de empresas operadoras (multi-tenant context).
+- **`brands` / `vehicleClasses` / `inspectionItems` / `objectsContracts` / `withholdings`**: Catálogos compartidos del sistema que abren solo a roles de administración (`meta.roles/permissions`; el backend bloquea su escritura desde 2026-10-01 aunque `authz` siga en auditoría).
 - **`conveyorCapacity`**: Capacidad transportadora y control de cupos de la flota.
 - **`dashboard`**: Panel principal y widgets de resumen operativo y alertas.
 - **`economicactivity`**: Gestión de actividades económicas homologadas por la DIAN.
