@@ -441,13 +441,14 @@ import { toast } from '@/utils/toast.js';
  * @resource {ThirdParty}
  */
 
-import { ref, reactive, computed, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
 import thirdPartiesService from '../services/thirdParties.service.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { logger } from '@/utils/logger.js';
 import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
+import { licenciaDesdeDocumento } from '../utils/licenciaDeConductor.js';
 import { elegirLicencia } from '@/utils/driverLicense.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -551,6 +552,26 @@ const formData = reactive({
 const filePreviews = reactive({});
 
 const isOwnerDriver = computed(() => formData.partyTypes && formData.partyTypes.includes('is_affiliate') && formData.partyTypes.includes('is_driver'));
+
+// Licencia de conducción autollenada con el número de documento (coinciden en
+// Colombia). Espejo de UNA vía: documento → licencia, nunca licencia →
+// documento; y si la licencia ya se tecleó distinta, se respeta.
+const esDriverSeleccionado = computed(() => Boolean(formData.partyTypes?.includes('is_driver')));
+
+// Documento → licencia: cuando el documento cambia y la licencia sigue
+// espejada (vacía o igual al documento anterior), la licencia la acompaña.
+watch(() => formData.document_number, (docNuevo, docPrevio) => {
+    if (!esDriverSeleccionado.value) return;
+    const licencia = licenciaDesdeDocumento({ documento: docNuevo, licenciaActual: formData.license_number, documentoAnterior: docPrevio });
+    if (licencia !== null) formData.license_number = licencia;
+});
+
+// Se marca el tipo Conductor con documento ya escrito y licencia vacía: autollena.
+watch(esDriverSeleccionado, (esDriver) => {
+    if (!esDriver || !isEmpty(formData.license_number)) return;
+    const doc = String(formData.document_number ?? '').trim();
+    if (doc) formData.license_number = doc;
+});
 
 /**
  * Opciones del selector "Tipo de Tercero".
