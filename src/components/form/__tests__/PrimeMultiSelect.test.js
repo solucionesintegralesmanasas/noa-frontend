@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // PrimeMultiSelect del proyecto: fija el comportamiento sin tocar plantillas.
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import PrimeVue from 'primevue/config';
 import MultiSelectReal from 'primevue/multiselect';
@@ -81,9 +81,65 @@ describe('PrimeMultiSelect: sin filtro no rompe al abrir (afiliados)', () => {
 
     // PrimeVue 4 dibuja la casilla "marcar todo" de la cabecera sin texto y se
     // ve como un cuadro mudo que igual selecciona todo. El wrapper la etiqueta.
-    it('el panel abierto muestra la leyenda Seleccionar todos', async () => {
+    it('el panel abierto muestra el control con su etiqueta "Seleccionar todos"', async () => {
         const wrapper = montarReal();
         await wrapper.find('.p-multiselect').trigger('click');
         expect(document.body.textContent).toContain('Seleccionar todos');
+        expect(document.querySelector('.seleccionar-todos input')).not.toBeNull();
+    });
+
+    it('la casilla nativa de marcar todo queda desactivada (showToggleAll=false)', () => {
+        const interno = montarReal().findComponent(MultiSelectReal);
+        expect(interno.props('showToggleAll')).toBe(false);
+    });
+});
+
+// El control propio marca todas las opciones: debe actualizar el v-model.
+describe('PrimeMultiSelect: el control seleccionar todos marca todas las opciones', () => {
+    const Arnes = {
+        components: { PrimeMultiSelect },
+        template: '<PrimeMultiSelect v-model="seleccionados" :options="opciones" option-value="value" option-label="label" />',
+        data() {
+            return {
+                seleccionados: [],
+                opciones: [
+                    { value: 'a', label: 'Cliente' },
+                    { value: 'b', label: 'Proveedor' },
+                    { value: 'c', label: 'Empleado' },
+                ],
+            };
+        },
+    };
+
+    // Los paneles de PrimeVue se teletransportan al body y las pruebas anteriores
+    // dejan los suyos: se toma siempre el último control abierto.
+    function ultimoControl() {
+        const controles = document.querySelectorAll('.seleccionar-todos input');
+        return controles[controles.length - 1];
+    }
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it('al marcarlo quedan seleccionadas todas las opciones', async () => {
+        const wrapper = mount(Arnes, { global: { plugins: [PrimeVue] } });
+        await wrapper.find('.p-multiselect').trigger('click');
+        const casilla = ultimoControl();
+        expect(casilla).not.toBeUndefined();
+        casilla.click();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.seleccionados).toEqual(['a', 'b', 'c']);
+    });
+
+    it('al marcarlo de nuevo las deselecciona todas', async () => {
+        const wrapper = mount(Arnes, { global: { plugins: [PrimeVue] } });
+        await wrapper.find('.p-multiselect').trigger('click');
+        const casilla = ultimoControl();
+        casilla.click();
+        await wrapper.vm.$nextTick();
+        casilla.click();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.seleccionados).toEqual([]);
     });
 });
