@@ -449,6 +449,7 @@ import { usePermissionsStore, useUserStore } from '@store';
 import { logger } from '@/utils/logger.js';
 import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
 import { licenciaDesdeDocumento } from '../utils/licenciaDeConductor.js';
+import { esRolReservado, rolesVisibles } from '../../auth/utils/rolesPrivilegiados.js';
 import { elegirLicencia } from '@/utils/driverLicense.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -558,20 +559,29 @@ const isOwnerDriver = computed(() => formData.partyTypes && formData.partyTypes.
 // documento; y si la licencia ya se tecleó distinta, se respeta.
 const esDriverSeleccionado = computed(() => Boolean(formData.partyTypes?.includes('is_driver')));
 
+// Bandera de carga del registro (crear o editar): mientras el formulario se
+// puebla programáticamente NO se autollena la licencia, para no activar la
+// validación dura (categoría, fechas, afiliado) de un conductor que todavía no
+// tiene licencia registrada. El autollenado queda solo para el tecleo del usuario.
+const cargandoRegistro = ref(false);
+
 // Documento → licencia: cuando el documento cambia y la licencia sigue
 // espejada (vacía o igual al documento anterior), la licencia la acompaña.
+// Flush sincrónico: el watcher corre dentro de la asignación y por eso ve la
+// bandera en true durante toda la carga del registro, sin depender de los turnos.
 watch(() => formData.document_number, (docNuevo, docPrevio) => {
-    if (!esDriverSeleccionado.value) return;
+    if (cargandoRegistro.value || !esDriverSeleccionado.value) return;
     const licencia = licenciaDesdeDocumento({ documento: docNuevo, licenciaActual: formData.license_number, documentoAnterior: docPrevio });
     if (licencia !== null) formData.license_number = licencia;
-});
+}, { flush: 'sync' });
 
-// Se marca el tipo Conductor con documento ya escrito y licencia vacía: autollena.
+// Se marca el tipo Conductor con documento ya escrito y licencia vacía: autollena
+// (los casos restantes de la regla quedan cubiertos por la misma utilidad).
 watch(esDriverSeleccionado, (esDriver) => {
-    if (!esDriver || !isEmpty(formData.license_number)) return;
-    const doc = String(formData.document_number ?? '').trim();
-    if (doc) formData.license_number = doc;
-});
+    if (cargandoRegistro.value || !esDriver) return;
+    const licencia = licenciaDesdeDocumento({ documento: formData.document_number, licenciaActual: formData.license_number, documentoAnterior: formData.document_number });
+    if (licencia !== null) formData.license_number = licencia;
+}, { flush: 'sync' });
 
 /**
  * Opciones del selector "Tipo de Tercero".
@@ -593,7 +603,7 @@ const partyTypeOptions = [
  * nuevo en el sistema, aparecerá automáticamente aquí.
  */
 const rbacRoleOptions = computed(() =>
-    (store.catalogs.roles || [])
+    rolesVisibles(store.catalogs.roles, isSuperAdmin.value)
         .map(r => r?.name)
         .filter(Boolean)
         .map(name => ({ value: name, label: name }))
@@ -852,6 +862,7 @@ const handleSubmit = async () => {
 };
 
 onMounted(async () => {
+    cargandoRegistro.value = true;
     isViewLoading.value = true;
     try {
         await store.loadFormOptions();
@@ -876,7 +887,12 @@ onMounted(async () => {
 
                 // Roles de acceso RBAC que vienen del perfil (p. ej. ADMIN_EMPRESA).
                 // Se normalizan sin perder valores: strings u objetos {name}, sin flags is_*.
-                formData.rbacRoles = normalizarRolesDelPerfil(item.roles);
+                // Los reservados no se seleccionan en la UI salvo para un SUPERADMIN
+                // (el backend los conserva igualmente al sincronizar).
+                const rolesPerfil = normalizarRolesDelPerfil(item.roles);
+                formData.rbacRoles = isSuperAdmin.value
+                    ? rolesPerfil
+                    : rolesPerfil.filter((rol) => !esRolReservado(rol));
 
                 formData.is_active = (item.is_active == 1 || item.is_active === true || item.is_active === '1') ? '1' : '0';
 
@@ -919,6 +935,9 @@ onMounted(async () => {
             formData.partyTypes = [routeType.value];
         }
         aplicarRolPorDefecto();
+        // Última asignación del arranque: desde aquí el tecleo del usuario vuelve
+        // a activar el espejo documento → licencia.
+        cargandoRegistro.value = false;
     }
 });
 </script>

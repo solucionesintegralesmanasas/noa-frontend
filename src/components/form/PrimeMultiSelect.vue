@@ -9,9 +9,13 @@
        marcar todo de la cabecera sin texto (un cuadro mudo que igual marca
        todo), así que se desactiva la suya (showToggleAll=false) y se pone un
        checkbox con su etiqueta, que reutiliza el comportamiento nativo
-       (marca o desmarca las opciones visibles, respetando el filtro). -->
+       (marca o desmarca las opciones visibles, respetando el filtro).
+      Limitación anotada: como el control delega en onToggleAll nativo, no
+      soporta selectionLimit (> 0); con un límite de selección el estado de
+      la casilla no tendría sentido y habría que rehacer la capa. Ningún
+      uso del sistema pasa selectionLimit a este combo. -->
 <script setup>
-import { computed, ref, useAttrs, useId } from 'vue';
+import { computed, ref, useId } from 'vue';
 import PrimeVueMultiSelect from 'primevue/multiselect';
 // La casilla real de PrimeVue: el propio MultiSelect ya la importa para sus
 // opciones, así que usar el componente no añade bytes al bundle.
@@ -26,7 +30,6 @@ const props = defineProps({
     filter: { type: Boolean, default: undefined },
 });
 
-const attrs = useAttrs();
 const interno = ref(null);
 const idControl = useId();
 
@@ -37,17 +40,14 @@ const filtroActivo = computed(() => props.filter ?? ((props.options?.length ?? 0
 // Estado real de PrimeVue (respeta el filtro: solo cuenta las opciones visibles).
 const todosMarcados = computed(() => Boolean(interno.value?.allSelected));
 
-// Marca o desmarca todas las opciones visibles reutilizando la lógica de
-// PrimeVue. Si la versión instalada no expone el método, se marca todo.
+// Marca o desmarca todas las opciones visibles delegando en PrimeVue (respeta
+// el filtro y optionValue/optionLabel). Sin fallback manual: si el método no
+// existiera, el control quedaría sin efecto y no emitiría valores crudos que
+// rompan el v-model (la versión instalada siempre lo expone).
 function alternarTodos() {
     const vm = interno.value;
     if (vm && typeof vm.onToggleAll === 'function') {
         vm.onToggleAll();
-        return;
-    }
-    const emitir = attrs['onUpdate:modelValue'];
-    if (typeof emitir === 'function') {
-        emitir((props.options ?? []).map((opcion) => (opcion && typeof opcion === 'object' && 'value' in opcion ? opcion.value : opcion)));
     }
 }
 </script>

@@ -19,9 +19,13 @@ describe('licenciaDesdeDocumento (autollenado documento → licencia)', () => {
         expect(licenciaDesdeDocumento({ documento: '123456', licenciaActual: '94483254', documentoAnterior: '94483000' })).toBe(null);
     });
 
-    it('borrar el documento no borra la licencia', () => {
-        expect(licenciaDesdeDocumento({ documento: '', licenciaActual: '94483254', documentoAnterior: '9448' })).toBe(null);
-        expect(licenciaDesdeDocumento({ documento: '   ', licenciaActual: '', documentoAnterior: '' })).toBe(null);
+    it('borrar el documento limpia la licencia espejada, no una tecleada a mano', () => {
+        // Licencia espejada (igual al documento previo): se limpia con él.
+        expect(licenciaDesdeDocumento({ documento: '', licenciaActual: '9254194', documentoAnterior: '9254194' })).toBe('');
+        // Licencia del usuario distinta del doc previo: no se borra.
+        expect(licenciaDesdeDocumento({ documento: '', licenciaActual: 'CC-999', documentoAnterior: '9254194' })).toBe(null);
+        // Sin doc previo (carga) y licencia histórica: no se toca.
+        expect(licenciaDesdeDocumento({ documento: '', licenciaActual: '1090654321', documentoAnterior: '' })).toBe(null);
     });
 
     it('en la carga de edición la licencia existente se conserva aunque el documento difiera', () => {

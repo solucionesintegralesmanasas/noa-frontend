@@ -143,3 +143,55 @@ describe('PrimeMultiSelect: el control seleccionar todos marca todas las opcione
         expect(wrapper.vm.seleccionados).toEqual([]);
     });
 });
+
+// El control debe REFLEJAR el estado real: marcada cuando ya están todas las
+// opciones visibles (el filtro reduce lo visibles), sin marcar si falta alguna.
+describe('PrimeMultiSelect: la casilla seleccionar todos refleja el estado de lo visible', () => {
+    const ArnesEstado = {
+        components: { PrimeMultiSelect },
+        template: '<PrimeMultiSelect v-model="seleccionados" :options="opciones" filter option-value="value" option-label="label" />',
+        data() {
+            return {
+                seleccionados: [],
+                opciones: [
+                    { value: 'a', label: 'Cliente' },
+                    { value: 'b', label: 'Proveedor' },
+                    { value: 'c', label: 'Empleado' },
+                ],
+            };
+        },
+    };
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    function ultimoControl() {
+        const controles = document.querySelectorAll('.seleccionar-todos input');
+        return controles[controles.length - 1];
+    }
+
+    it('está marcada cuando todas las opciones visibles ya están seleccionadas', async () => {
+        const wrapper = mount(ArnesEstado, { global: { plugins: [PrimeVue] } });
+        wrapper.vm.seleccionados = ['a', 'b', 'c'];
+        await wrapper.vm.$nextTick();
+        await wrapper.find('.p-multiselect').trigger('click');
+        await wrapper.vm.$nextTick();
+        expect(ultimoControl().checked).toBe(true);
+    });
+
+    it('el filtro manda: si la visible única no está elegida, no está marcada; si llega, sí', async () => {
+        const wrapper = mount(ArnesEstado, { global: { plugins: [PrimeVue] } });
+        wrapper.vm.seleccionados = ['b', 'c'];
+        await wrapper.vm.$nextTick();
+        await wrapper.find('.p-multiselect').trigger('click');
+        const filtro = wrapper.findComponent(MultiSelectReal).vm;
+        filtro.filterValue = 'clie';
+        await wrapper.vm.$nextTick();
+        expect(ultimoControl().checked).toBe(false);
+        // Se elige la opción visible (Cliente): con ella cubiertas las visibles, se refleja.
+        wrapper.vm.seleccionados = ['a', 'b', 'c'];
+        await wrapper.vm.$nextTick();
+        expect(ultimoControl().checked).toBe(true);
+    });
+});
