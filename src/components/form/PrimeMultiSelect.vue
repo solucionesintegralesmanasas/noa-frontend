@@ -13,6 +13,9 @@
 <script setup>
 import { computed, ref, useAttrs, useId } from 'vue';
 import PrimeVueMultiSelect from 'primevue/multiselect';
+// La casilla real de PrimeVue: el propio MultiSelect ya la importa para sus
+// opciones, así que usar el componente no añade bytes al bundle.
+import PrimeVueCheckbox from 'primevue/checkbox';
 
 defineOptions({ inheritAttrs: false });
 
@@ -62,7 +65,7 @@ function alternarTodos() {
     >
         <template #header>
             <div v-if="(props.options?.length ?? 0) > 0" class="seleccionar-todos">
-                <input :id="idControl" type="checkbox" :checked="todosMarcados" @change="alternarTodos" />
+                <PrimeVueCheckbox :binary="true" :modelValue="todosMarcados" :inputId="idControl" @update:modelValue="alternarTodos" />
                 <label :for="idControl">Seleccionar todos</label>
             </div>
         </template>
@@ -70,29 +73,32 @@ function alternarTodos() {
 </template>
 
 <style scoped>
-/* El panel se teletransporta al body, pero el label se compila aquí y conserva
-   su data-v, así que el selector scoped sigue aplicando. */
+/* El panel se teletransporta al body, pero el contenido del slot se compila
+   aquí y conserva su data-v, así que el selector scoped sigue aplicando.
+   Los tokens son los del propio tema: la fila queda como una opción más
+   del panel (mismo padding, radio, hover) con un divisor debajo. */
 .seleccionar-todos {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.55rem 0.75rem;
-    font-size: 0.82rem;
-    color: var(--p-text-color, inherit);
+    gap: var(--p-list-option-gap, 0.5rem);
+    padding: var(--p-list-option-padding, 0.5rem 0.75rem);
+    font-size: var(--p-form-field-font-size, 0.82rem);
+    color: var(--p-list-option-color, var(--p-text-color, inherit));
+    background: var(--p-overlay-select-background, none);
+    border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+    border-radius: 0;
     cursor: pointer;
     user-select: none;
+    transition: background-color var(--p-list-option-transition-duration, 0.2s);
+}
+
+.seleccionar-todos:hover {
+    background: var(--p-list-option-focus-background, #f1f5f9);
 }
 
 .seleccionar-todos label {
     margin: 0;
     cursor: pointer;
-}
-
-.seleccionar-todos input {
-    width: 1rem;
-    height: 1rem;
-    margin: 0;
-    accent-color: var(--p-primary-color, #10b981);
-    cursor: pointer;
+    color: inherit;
 }
 </style>
