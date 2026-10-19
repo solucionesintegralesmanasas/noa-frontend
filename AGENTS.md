@@ -85,6 +85,7 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - Route meta flags: `auth`, `public`, `requiresTenant`, `requires2FA`.
 - Error routes: `/401`, `/403`, `/404`, `/500`. Catch-all redirects to `/404`.
 - `permissionsStore.hasRole()` normaliza separadores: `super-admin` = `super_admin` = `SUPERADMIN`. Usar `hasRole('superadmin')` / `hasRole('administrador')`.
+- **Roles reservados (2026-10-19):** SUPERADMIN y ADMIN_EMPRESA solo se muestran y gestionan para `hasRole('superadmin')`: el backend los oculta de `auth/roles` y `auth/roles/list` para el resto y el frontend filtra además con `features/auth/utils/rolesPrivilegiados.js` (usado en `UsersListView` y `Rolepermissionsform`; en el listado de usuarios se ocultan "Editar roles" y "Quitar rol" para quien tenga un rol reservado). Prueba: `rolesPrivilegiados.test.js`.
 
 ## Dynamic Layout Resolution
 

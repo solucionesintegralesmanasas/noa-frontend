@@ -105,10 +105,10 @@
         <div class="rp-card roles-section mb-4">
             <div class="roles-section-head">
                 <h4><i class="fas fa-users-cog text-primary me-2"></i>Roles del sistema</h4>
-                <span class="count-badge">{{ roles.length }} roles</span>
+                <span class="count-badge">{{ rolesMostrados.length }} roles</span>
             </div>
             <div class="roles-grid">
-                <div v-for="rol in roles" :key="rol.id" class="role-card"
+                <div v-for="rol in rolesMostrados" :key="rol.id" class="role-card"
                     :class="{ active: selectedRole?.id === rol.id }" @click="selectRole(rol)">
                     <div class="role-card-top">
                         <div class="role-card-name-row">
@@ -291,8 +291,14 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import BasePageHeader from '@/components/BasePageHeader.vue'
 import { useRolesAndPermissionsStore } from '../store/rolesandpermissions.store.js'
+import { usePermissionsStore } from '@store'
+import { rolesVisibles } from '../utils/rolesPrivilegiados.js'
 
 const store = useRolesAndPermissionsStore()
+const permissionsStore = usePermissionsStore()
+// Los roles reservados (SUPERADMIN, ADMIN_EMPRESA) solo se muestran a un SUPERADMIN.
+const esSuperadmin = computed(() => permissionsStore.hasRole('SUPERADMIN'))
+const rolesMostrados = computed(() => rolesVisibles(roles.value, esSuperadmin.value))
 
 // ── Paleta de colores ──────────────────────────────────────────────────────────
 const COLORS = [
@@ -554,7 +560,7 @@ async function loadRoles() {
             perms: mapPerms(r),
         }))
 
-        if (roles.value.length) selectedRole.value = roles.value[0]
+        if (rolesMostrados.value.length) selectedRole.value = rolesMostrados.value[0]
         await nextTick()
         isReady.value = true
     } catch {

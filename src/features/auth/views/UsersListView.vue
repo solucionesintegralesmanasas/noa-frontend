@@ -80,7 +80,7 @@
                                 <span v-for="role in data.roles" :key="role" class="badge rounded-pill d-inline-flex align-items-center gap-1 role-badge" :class="roleBadgeClass(role)" style="font-size:.72rem;padding: .4em .65em;">
                                     <i :class="roleIcon(role)" style="font-size:.7rem" />
                                     {{ role }}
-                                    <button type="button" class="btn-close btn-close-white ms-1" style="font-size:.55rem;width:.7em;height:.7em;opacity:.8" title="Quitar rol" @click="confirmRemoveRole(data, role)" />
+                                    <button v-if="puedeGestionarUsuario(data)" type="button" class="btn-close btn-close-white ms-1" style="font-size:.55rem;width:.7em;height:.7em;opacity:.8" title="Quitar rol" @click="confirmRemoveRole(data, role)" />
                                 </span>
                             </div>
                         </template>
@@ -97,7 +97,7 @@
                     <Column header="Acciones" style="width:120px" class="text-center">
                         <template #body="{ data }">
                             <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-falcon-default" type="button" title="Editar roles" :aria-label="`Editar roles de ${data.email}`" @click="openRolesModal(data)"><i class="fad fa-user-shield text-primary" style="font-size:14px" /></button>
+                                <button v-if="puedeGestionarUsuario(data)" class="btn btn-falcon-default" type="button" title="Editar roles" :aria-label="`Editar roles de ${data.email}`" @click="openRolesModal(data)"><i class="fad fa-user-shield text-primary" style="font-size:14px" /></button>
                                 <button class="btn btn-falcon-default" type="button" title="Ver perfil" :aria-label="`Ver perfil de ${data.email}`" @click="goProfile(data)"><i class="fad fa-eye text-secondary" style="font-size:14px" /></button>
                             </div>
                         </template>
@@ -145,6 +145,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUsersStore } from '../store/users.store.js';
+import { usePermissionsStore } from '@store';
+import { rolesVisibles, usuarioTieneRolReservado } from '../utils/rolesPrivilegiados.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -153,6 +155,10 @@ import { toast } from '@/utils/toast.js';
 
 const router = useRouter();
 const store = useUsersStore();
+const permissionsStore = usePermissionsStore();
+// Los roles reservados (SUPERADMIN, ADMIN_EMPRESA) solo se muestran a un SUPERADMIN.
+const esSuperadmin = computed(() => permissionsStore.hasRole('SUPERADMIN'));
+const puedeGestionarUsuario = (user) => esSuperadmin.value || !usuarioTieneRolReservado(user?.roles);
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -165,7 +171,9 @@ const availableRoles = computed(() => {
     const cats = store.rolesCatalog;
     // Normalizar: puede venir como [{name, ...}] o {data:[...]}
     const list = Array.isArray(cats) ? cats : (cats?.data ?? []);
-    return list.map(r => ({ name: r.name, description: r.description || '' })).filter(r => r.name);
+    return rolesVisibles(list, esSuperadmin.value)
+        .map(r => ({ name: r.name, description: r.description || '' }))
+        .filter(r => r.name);
 });
 
 const roleBadgeClass = (role) => {
