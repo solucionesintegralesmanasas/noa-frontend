@@ -78,4 +78,12 @@ describe('PrimeMultiSelect: sin filtro no rompe al abrir (afiliados)', () => {
         expect(() => vm.onOverlayEnter(vm.overlay)).not.toThrow();
         vm.overlay.remove();
     });
+
+    // PrimeVue 4 dibuja la casilla "marcar todo" de la cabecera sin texto y se
+    // ve como un cuadro mudo que igual selecciona todo. El wrapper la etiqueta.
+    it('el panel abierto muestra la leyenda Seleccionar todos', async () => {
+        const wrapper = montarReal();
+        await wrapper.find('.p-multiselect').trigger('click');
+        expect(document.body.textContent).toContain('Seleccionar todos');
+    });
 });

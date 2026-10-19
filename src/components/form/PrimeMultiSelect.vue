@@ -4,7 +4,9 @@
      - Filtro: el explícito manda; si no, se activa solo en listas de más
        de 7 opciones (misma convención que PrimeSelect).
      - autoFilterFocus solo con filtro activo: sin filtro PrimeVue revienta
-       en onOverlayEnter (this.$refs.filterInput es undefined). -->
+       en onOverlayEnter (this.$refs.filterInput es undefined).
+     - Cabecera con la leyenda "Seleccionar todos": PrimeVue 4 deja la
+       casilla de marcar todo sin texto y se ve como un cuadro mudo. -->
 <script setup>
 import { computed } from 'vue';
 import PrimeVueMultiSelect from 'primevue/multiselect';
@@ -30,5 +32,21 @@ const filtroActivo = computed(() => props.filter ?? ((props.options?.length ?? 0
         :filter="filtroActivo"
         :focusOnHover="false"
         :autoFilterFocus="filtroActivo"
-    />
+    >
+        <!-- PrimeVue 4 deja sin texto la casilla "seleccionar todos" de la
+             cabecera del panel (en v3 era "Select All"); esta banda hace de
+             leyenda para que el checkbox vacío no se vea como opción muda. -->
+        <template #header>
+            <span class="leyenda-todos">Seleccionar todos</span>
+        </template>
+    </PrimeVueMultiSelect>
 </template>
+
+<style scoped>
+/* La casilla vive en el encabezado del panel, que PrimeVue teletransporta al body.
+   El span lleva el data-v del componente, así que el selector sigue aplicando. */
+.leyenda-todos {
+    font-size: 0.72rem;
+    color: var(--p-text-muted-color, #6c757d);
+}
+</style>
