@@ -699,7 +699,7 @@
 
                                     <!-- Sección: Dirección territorial -->
                                     <h5 class="fw-medium text-primary mb-3 d-flex align-items-center gap-2">
-                                        <i class="fad fa-map-marked-alt"></i>
+                                        <i class="fad fa-map-marked-alt" aria-hidden="true"></i>
                                         Dirección territorial
                                     </h5>
                                     <p class="text-muted small mb-4">
@@ -708,17 +708,15 @@
                                     <div class="row g-4">
                                         <div class="col-12 col-md-6">
                                             <div class="p-3 rounded border bg-white h-100 switch-card">
-                                                <label class="form-label fw-medium" for="f-default-territorial">Dirección territorial por defecto</label>
-                                                <PrimeSelect :input-id="'f-default-territorial'" v-model="formData.default_territorial_director_uuid" :options="directoresTerritoriales" option-label="label" option-value="value" placeholder="Seleccione la dirección" showClear filter class="w-100" @change="alCambiarDireccion" />
-                                                <p class="text-muted small mb-0 mt-1">Se usa para prerrellenar la radicación de tarjeta de operación.</p>
+                                                <label class="form-label fw-medium" for="default_territorial_director_name">Nombre de la directora o director del Ministerio de Transporte</label>
+                                                <input id="default_territorial_director_name" v-model="formData.default_territorial_director_name" type="text" autocomplete="off" class="form-control" placeholder="Ej. Nombre y apellidos" />
                                             </div>
                                         </div>
-                                        <div class="col-12">
+                                        <div class="col-12 col-md-6">
                                             <div class="p-3 rounded border bg-white h-100 switch-card">
-                                                <label class="form-label fw-medium" for="default_territorial_director_name">Nombre de la directora o director territorial</label>
-                                                <input id="default_territorial_director_name" v-model="formData.default_territorial_director_name"
-                                                    type="text" autocomplete="off" class="form-control" placeholder="Ej. Dirección Territorial Valle del Cauca" />
-                                                <p class="text-muted small mb-0 mt-1">Se completa solo al elegir la dirección; puede ajustarlo a mano.</p>
+                                                <label class="form-label fw-medium" for="territorial_name">Territorial</label>
+                                                <input id="territorial_name" v-model="formData.territorial_name" type="text" autocomplete="off" class="form-control" placeholder="Ej. Cesar, Atlántico, Cundinamarca" />
+                                                <p class="text-muted small mb-0 mt-1">Se muestra como "Dirección Territorial [territorial]".</p>
                                             </div>
                                         </div>
                                     </div>
@@ -982,7 +980,6 @@ import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
 import companiesService from '@/features/companies/services/companies.service.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import Swal from 'sweetalert2';
 import { toast } from '@/utils/toast.js';
 import { logger } from '@/utils/logger.js';
@@ -1093,24 +1090,6 @@ const getOrFetchCompanyUuid = async () => {
 const isViewLoading = ref(true);
 const submitting = ref(false);
 const validationErrors = reactive({});
-const directoresTerritoriales = ref([]);
-
-function alCambiarDireccion() {
-    const sel = directoresTerritoriales.value.find((d) => d.value === formData.default_territorial_director_uuid);
-    if (sel) formData.default_territorial_director_name = sel.nombre || sel.label;
-}
-
-async function cargarDirectores() {
-    try {
-        const r = await systemConfigurationService._getInstance().get('procedure/territorial-directors/list');
-        const items = r.data?.data ?? r.data ?? [];
-        directoresTerritoriales.value = (Array.isArray(items) ? items : []).map((x) => ({
-            label: [x.name, x.territorial_director].filter(Boolean).join(' — ') || 'Dirección',
-            value: x.uuid,
-            nombre: [x.name, x.territorial_director].filter(Boolean).join(' — ') || '',
-        }));
-    } catch { directoresTerritoriales.value = []; }
-}
 
 const breadcrumbs = computed(() => [
     { label: 'Configuración', to: '/settings/system-configuration' },
@@ -1143,8 +1122,8 @@ const formData = reactive({
     corporate_rce_expiration: '',
     rcc_policy_number: '',
     rce_policy_number: '',
-    default_territorial_director_uuid: '',
     default_territorial_director_name: '',
+    territorial_name: '',
     platform_fee_type: 'VEHICLE_CLASS',
     platform_fee_rates: [],
 });
@@ -1612,8 +1591,8 @@ const handleSubmit = async () => {
                 corporate_rce_expiration: updatedConfig.corporate_rce_expiration ? String(updatedConfig.corporate_rce_expiration).split('T')[0] : '',
                 rcc_policy_number: updatedConfig.rcc_policy_number || '',
                 rce_policy_number: updatedConfig.rce_policy_number || '',
-                default_territorial_director_uuid: updatedConfig.default_territorial_director_uuid || '',
                 default_territorial_director_name: updatedConfig.default_territorial_director_name || '',
+                territorial_name: updatedConfig.territorial_name || '',
                 platform_fee_type: updatedConfig.platform_fee_type || 'VEHICLE_CLASS',
                 platform_fee_rates: parsePlatformFeeRates(updatedConfig.platform_fee_rates),
             });
@@ -1634,7 +1613,6 @@ const handleSubmit = async () => {
 // --- CICLO DE VIDA ---
 onMounted(async () => {
     isViewLoading.value = true;
-    cargarDirectores();
     let companyUuid = null;
     try {
         companyUuid = await getOrFetchCompanyUuid();
@@ -1685,8 +1663,8 @@ onMounted(async () => {
                     corporate_rce_expiration: data.corporate_rce_expiration ? String(data.corporate_rce_expiration).split('T')[0] : '',
                     rcc_policy_number: data.rcc_policy_number || '',
                     rce_policy_number: data.rce_policy_number || '',
-                    default_territorial_director_uuid: data.default_territorial_director_uuid || '',
                     default_territorial_director_name: data.default_territorial_director_name || '',
+                    territorial_name: data.territorial_name || '',
                     platform_fee_type: data.platform_fee_type || 'VEHICLE_CLASS',
                     platform_fee_rates: parsePlatformFeeRates(data.platform_fee_rates),
                 });
