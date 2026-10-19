@@ -5,7 +5,7 @@
       <div class="d-flex align-items-center gap-3">
         <div class="avatar avatar-xl">
           <div class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle shadow-sm">
-            <i class="fad fa-robot fs-7"></i>
+            <i class="fad fa-robot fs-7" aria-hidden="true"></i>
           </div>
         </div>
         <div>
@@ -19,7 +19,7 @@
       <div class="d-flex gap-2">
         <button class="btn btn-sm btn-outline-light border-200 text-600 hover-bg-light shadow-none"
           @click="assistantStore.resetSession()" title="Reiniciar conversación">
-          <i class="fad fa-sync-alt"></i>
+          <i class="fad fa-sync-alt" aria-hidden="true"></i>
         </button>
       </div>
     </div>
@@ -30,7 +30,7 @@
       <div v-if="assistantStore.error"
         class="alert alert-soft-danger rounded-0 mb-0 border-0 border-bottom py-2 px-4 d-flex align-items-center animate__animated animate__fadeIn"
         role="alert">
-        <i class="fas fa-exclamation-circle me-2"></i>
+        <i class="fas fa-exclamation-circle me-2" aria-hidden="true"></i>
         <span class="fs-10">{{ assistantStore.error }}</span>
       </div>
 
@@ -76,10 +76,10 @@
               <div class="avatar avatar-l flex-shrink-0 mt-1">
                 <div v-if="msg.role === 'assistant'"
                   class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle shadow-sm">
-                  <i class="fad fa-robot fs-11"></i>
+                  <i class="fad fa-robot fs-11" aria-hidden="true"></i>
                 </div>
                 <div v-else class="avatar-name rounded-circle bg-200 text-600 border border-300 shadow-sm">
-                  <i class="fad fa-user fs-11"></i>
+                  <i class="fad fa-user fs-11" aria-hidden="true"></i>
                 </div>
               </div>
 
@@ -96,11 +96,11 @@
                 <div v-if="msg.role === 'assistant'" class="d-flex gap-2 mt-1 px-1 align-items-center">
                   <button class="btn btn-link text-400 p-0 feedback-btn" :class="{ 'text-success': msg.feedback === 1 }"
                     @click="rateMessage(msg.uuid || msg.id, 1)">
-                    <i class="fad fa-thumbs-up"></i>
+                    <i class="fad fa-thumbs-up" aria-hidden="true"></i>
                   </button>
                   <button class="btn btn-link text-400 p-0 feedback-btn" :class="{ 'text-danger': msg.feedback === -1 }"
                     @click="rateMessage(msg.uuid || msg.id, -1)">
-                    <i class="fad fa-thumbs-down"></i>
+                    <i class="fad fa-thumbs-down" aria-hidden="true"></i>
                   </button>
                   <span class="text-400 ms-2" style="font-size: 0.65rem;">{{ formatTime(msg.created_at) }}</span>
                 </div>
@@ -117,7 +117,7 @@
             <div class="avatar avatar-l flex-shrink-0">
               <div
                 class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle shadow-sm">
-                <i class="fad fa-robot fs-11"></i>
+                <i class="fad fa-robot fs-11" aria-hidden="true"></i>
               </div>
             </div>
             <div class="bg-white border shadow-sm px-3 py-2 rounded-4 d-flex align-items-center gap-1"
@@ -147,12 +147,13 @@
         <form @submit.prevent="handleSend" class="position-relative">
           <div
             class="input-group shadow-sm rounded-pill overflow-hidden border border-300 transition-base focus-within-primary">
-            <input v-model="newMessage"
+            <input id="f-assistant-chat" v-model="newMessage"
               class="form-control border-0 ps-4 py-2-5 shadow-none fs-9 bg-light bg-opacity-50" type="text"
-              placeholder="Escribe tu consulta..." :disabled="assistantStore.isLoading" ref="inputField" />
+              placeholder="Escribe tu consulta..." aria-label="Mensaje para el asistente"
+              :disabled="assistantStore.isLoading" ref="inputField" />
             <button class="btn btn-primary px-4 border-0 d-flex align-items-center gap-2" type="submit"
               :disabled="!newMessage.trim() || assistantStore.isLoading">
-              <i class="fad fa-paper-plane"></i>
+              <i class="fad fa-paper-plane" aria-hidden="true"></i>
               <span class="d-none d-sm-inline fw-bold">Enviar</span>
             </button>
           </div>

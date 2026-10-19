@@ -13,7 +13,7 @@
                         <div class="col-12 col-md">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="hero-icon bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow flex-shrink-0">
-                                    <i class="fad fa-file-contract"></i>
+                                    <i class="fad fa-file-contract" aria-hidden="true"></i>
                                 </div>
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
@@ -23,12 +23,12 @@
                                         <span v-if="accessedViaQR"
                                             class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill shadow-sm badge-qr-verified"
                                             style="font-size: 0.7rem;">
-                                            <i class="fad fa-qrcode me-1"></i>Verificado por QR
+                                            <i class="fad fa-qrcode me-1" aria-hidden="true"></i>Verificado por QR
                                         </span>
                                     </div>
                                     <h2 class="hero-title mb-1 fw-bold text-break">N.º {{ currentFuecData?.number_fuec || '---' }}</h2>
                                     <p class="mb-0 opacity-75 small text-break">
-                                        <i class="fad fa-hashtag me-1"></i>Solicitud: {{ currentFuecData?.request_number || '-' }}
+                                        <i class="fad fa-hashtag me-1" aria-hidden="true"></i>Solicitud: {{ currentFuecData?.request_number || '-' }}
                                     </p>
                                 </div>
                             </div>
@@ -39,12 +39,12 @@
                             <div class="hero-meta d-flex flex-wrap flex-md-column align-items-center align-items-md-end justify-content-between gap-2 pt-2 pt-md-0 border-top border-white border-opacity-25 border-md-0">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="badge bg-white text-primary fs-6 px-3 py-2 rounded-pill shadow-sm">
-                                        <i :class="currentFuecData?.status === 'ACTIVO' ? 'fad fa-check-circle text-success me-1' : 'fad fa-circle me-1'"></i>
+                                        <i :class="currentFuecData?.status === 'ACTIVO' ? 'fad fa-check-circle text-success me-1' : 'fad fa-circle me-1'" aria-hidden="true"></i>
                                         {{ currentFuecData?.status || '---' }}
                                     </span>
                                 </div>
                                 <div class="text-white-50 small">
-                                    <i class="fad fa-calendar-alt me-1"></i>Emitido: {{ formatDate(currentFuecData?.created_at) }}
+                                    <i class="fad fa-calendar-alt me-1" aria-hidden="true"></i>Emitido: {{ formatDate(currentFuecData?.created_at) }}
                                 </div>
                                 <div class="verification-code">
                                     <small class="text-white-50 d-block" style="font-size: 0.68rem;">Código de Verificación</small>
@@ -58,7 +58,7 @@
 
             <!-- ===== ALERTA DE ERROR ===== -->
             <div v-if="errorMsg" class="alert alert-danger border-0 shadow-sm mb-4 d-flex align-items-center gap-3">
-                <i class="fad fa-exclamation-triangle fs-4"></i>
+                <i class="fad fa-exclamation-triangle fs-4" aria-hidden="true"></i>
                 <div>
                     <h6 class="mb-0 fw-semibold">Error de Validación</h6>
                     <small>{{ errorMsg }}</small>
@@ -101,7 +101,7 @@
                         <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="fad fa-route text-primary"></i>
+                                    <i class="fad fa-route text-primary" aria-hidden="true"></i>
                                 </div>
                                 <h6 class="mb-0 fw-semibold">Vigencia y Recorrido</h6>
                             </div>
@@ -110,35 +110,35 @@
                             <div class="row g-3">
                                 <div class="col-12 col-sm-6">
                                     <div class="info-tile p-3 rounded-3 bg-light h-100">
-                                        <label class="form-label text-muted small mb-1 d-block">Fecha Inicial</label>
+                                        <div class="form-label text-muted small mb-1 d-block">Fecha Inicial</div>
                                         <div class="d-flex align-items-center gap-2 fs-7">
-                                            <i class="fad fa-play-circle text-success flex-shrink-0"></i>
+                                            <i class="fad fa-play-circle text-success flex-shrink-0" aria-hidden="true"></i>
                                             <span class="fw-semibold text-dark">{{ formatDate(currentFuecData?.effective_date) }}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <div class="info-tile p-3 rounded-3 bg-light h-100">
-                                        <label class="form-label text-muted small mb-1 d-block">Fecha Final</label>
+                                        <div class="form-label text-muted small mb-1 d-block">Fecha Final</div>
                                         <div class="d-flex flex-wrap align-items-center gap-2 fs-7">
                                             <span class="d-inline-flex align-items-center gap-2">
-                                                <i class="fad fa-stop-circle text-danger flex-shrink-0"></i>
+                                                <i class="fad fa-stop-circle text-danger flex-shrink-0" aria-hidden="true"></i>
                                                 <span class="fw-semibold text-dark">{{ formatDate(currentFuecData?.expiration_date) }}</span>
                                             </span>
                                             <span v-if="isExpiringSoon(currentFuecData?.expiration_date)"
                                                 class="badge bg-warning-subtle text-warning border border-warning-subtle"
                                                 style="font-size: 0.65rem;">
-                                                <i class="fad fa-exclamation-triangle me-1"></i>Próximo a vencer
+                                                <i class="fad fa-exclamation-triangle me-1" aria-hidden="true"></i>Próximo a vencer
                                             </span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label text-muted small mb-2 d-block">Ruta del Servicio</label>
+                                    <div class="form-label text-muted small mb-2 d-block">Ruta del Servicio</div>
                                     <div class="route-box p-3 bg-light rounded-3">
                                         <div class="route-endpoint">
                                             <div class="route-pin bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                                <i class="fad fa-map-marker-alt"></i>
+                                                <i class="fad fa-map-marker-alt" aria-hidden="true"></i>
                                             </div>
                                             <div class="min-w-0">
                                                 <span class="form-label text-muted d-block mb-0">Origen</span>
@@ -146,11 +146,11 @@
                                             </div>
                                         </div>
                                         <div class="route-connector" aria-hidden="true">
-                                            <i class="fad fa-long-arrow-right text-muted"></i>
+                                            <i class="fad fa-long-arrow-right text-muted" aria-hidden="true"></i>
                                         </div>
                                         <div class="route-endpoint route-endpoint-end">
                                             <div class="route-pin bg-success text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                                <i class="fad fa-flag-checkered"></i>
+                                                <i class="fad fa-flag-checkered" aria-hidden="true"></i>
                                             </div>
                                             <div class="min-w-0">
                                                 <span class="form-label text-muted d-block mb-0">Destino</span>
@@ -168,7 +168,7 @@
                         <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="fad fa-building text-primary"></i>
+                                    <i class="fad fa-building text-primary" aria-hidden="true"></i>
                                 </div>
                                 <h6 class="mb-0 fw-semibold">Empresa de Transporte</h6>
                             </div>
@@ -185,28 +185,28 @@
                                     <div v-else
                                         class="bg-light rounded-3 d-flex align-items-center justify-content-center"
                                         style="height: 88px;">
-                                        <i class="fad fa-building fs-2 text-muted opacity-50"></i>
+                                        <i class="fad fa-building fs-2 text-muted opacity-50" aria-hidden="true"></i>
                                     </div>
                                 </div>
                                 <div class="col-12 col-sm-8">
                                     <div class="small fw-semibold text-dark mb-2 text-break">{{ currentFuecData?.company?.business_name || '-' }}</div>
                                     <div class="row g-2 fs-7">
                                         <div class="col-12 col-sm-6">
-                                            <label class="form-label text-muted d-block">NIT</label>
+                                            <div class="form-label text-muted d-block">NIT</div>
                                             <span class="font-monospace fw-medium text-dark">{{ currentFuecData?.company?.document_number }}-{{ currentFuecData?.company?.verification_digit }}</span>
                                         </div>
                                         <div class="col-12 col-sm-6">
-                                            <label class="form-label text-muted d-block">Teléfono</label>
+                                            <div class="form-label text-muted d-block">Teléfono</div>
                                             <a v-if="currentFuecData?.company?.phone" :href="`tel:${currentFuecData.company.phone}`"
                                                 class="text-decoration-none font-monospace">{{ currentFuecData.company.phone }}</a>
                                             <span v-else>-</span>
                                         </div>
                                         <div class="col-12 col-sm-6">
-                                            <label class="form-label text-muted d-block">Dirección</label>
+                                            <div class="form-label text-muted d-block">Dirección</div>
                                             <span class="text-dark text-break">{{ currentFuecData?.company?.address || '-' }}</span>
                                         </div>
                                         <div class="col-12 col-sm-6">
-                                            <label class="form-label text-muted d-block">Email</label>
+                                            <div class="form-label text-muted d-block">Email</div>
                                             <a v-if="currentFuecData?.company?.email" :href="`mailto:${currentFuecData.company.email}`"
                                                 class="text-decoration-none text-break">{{ currentFuecData.company.email }}</a>
                                             <span v-else>-</span>
@@ -222,7 +222,7 @@
                         <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="fad fa-user-tie text-primary"></i>
+                                    <i class="fad fa-user-tie text-primary" aria-hidden="true"></i>
                                 </div>
                                 <h6 class="mb-0 fw-semibold">Contratante</h6>
                             </div>
@@ -230,23 +230,23 @@
                         <div class="card-body p-3 p-sm-4">
                             <div class="row g-3">
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Nombre / Razón Social</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Nombre / Razón Social</div>
                                     <div class="fs-7 fw-semibold text-dark text-break">{{ currentFuecData?.contractor?.company_name || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Documento (NIT / CC)</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Documento (NIT / CC)</div>
                                     <div class="font-monospace fs-7 text-dark">{{ currentFuecData?.contractor?.document_number || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Responsable del Contratante</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Responsable del Contratante</div>
                                     <div class="fs-7 text-dark text-break">{{ currentFuecData?.contractor?.responsible_name || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Documento del Responsable</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Documento del Responsable</div>
                                     <div class="font-monospace fs-7 text-dark">{{ currentFuecData?.contractor?.responsible_document || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Teléfono</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Teléfono</div>
                                     <div class="fs-7">
                                         <a v-if="currentFuecData?.contractor?.responsible_phone"
                                             :href="`tel:${currentFuecData.contractor.responsible_phone}`"
@@ -255,7 +255,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Dirección</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Dirección</div>
                                     <div class="fs-7 text-dark text-break">{{ currentFuecData?.contractor?.responsible_address || '-' }}</div>
                                 </div>
                             </div>
@@ -268,12 +268,12 @@
                             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                        <i class="fad fa-car text-primary"></i>
+                                        <i class="fad fa-car text-primary" aria-hidden="true"></i>
                                     </div>
                                     <h6 class="mb-0 fw-semibold">Vehículo Asignado</h6>
                                 </div>
                                 <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 fs-7">
-                                    <i class="fad fa-id-card me-1"></i>
+                                    <i class="fad fa-id-card me-1" aria-hidden="true"></i>
                                     Tarjeta Op.: <span class="font-monospace">{{ currentFuecData?.vehicle?.operation_cards?.[0]?.operating_card_number || '-' }}</span>
                                 </span>
                             </div>
@@ -293,19 +293,19 @@
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="row g-3">
                                         <div class="col-6 col-sm-3">
-                                            <label class="form-label text-muted d-block">Marca / Línea</label>
+                                            <div class="form-label text-muted d-block">Marca / Línea</div>
                                             <span class="fw-semibold text-dark fs-7">{{ currentFuecData?.vehicle?.brand?.description || '-' }} {{ currentFuecData?.vehicle?.line || '' }}</span>
                                         </div>
                                         <div class="col-6 col-sm-3">
-                                            <label class="form-label text-muted d-block">Modelo</label>
+                                            <div class="form-label text-muted d-block">Modelo</div>
                                             <span class="fw-semibold text-dark font-monospace fs-7">{{ currentFuecData?.vehicle?.model || '-' }}</span>
                                         </div>
                                         <div class="col-6 col-sm-3">
-                                            <label class="form-label text-muted d-block">Clase</label>
+                                            <div class="form-label text-muted d-block">Clase</div>
                                             <span class="fw-semibold text-dark fs-7">{{ currentFuecData?.vehicle?.vehicle_class?.description || '-' }}</span>
                                         </div>
                                         <div class="col-6 col-sm-3">
-                                            <label class="form-label text-muted d-block">N.º Interno</label>
+                                            <div class="form-label text-muted d-block">N.º Interno</div>
                                             <span class="fw-semibold text-dark font-monospace fs-7">{{ currentFuecData?.vehicle?.internal_number || '-' }}</span>
                                         </div>
                                     </div>
@@ -328,19 +328,19 @@
                             <div v-for="(convenio, i) in convenios" :key="convenio.uuid || i"
                                 class="row g-3" :class="{ 'mb-3 pb-3 border-bottom': i < convenios.length - 1 }">
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Entidad</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Entidad</div>
                                     <div class="fs-7 fw-medium text-dark text-break">{{ convenio.contracting_entity_name || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">NIT</label>
+                                    <div class="form-label text-muted small mb-1 d-block">NIT</div>
                                     <div class="font-monospace fs-7 text-dark">{{ convenio.contracting_entity_nit || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">N.º de Resolución / Convenio</label>
+                                    <div class="form-label text-muted small mb-1 d-block">N.º de Resolución / Convenio</div>
                                     <div class="font-monospace fs-7 text-dark">{{ convenio.resolution_number || convenio.agreement_internal_id || '-' }}</div>
                                 </div>
                                 <div class="col-12 col-sm-6">
-                                    <label class="form-label text-muted small mb-1 d-block">Vigencia</label>
+                                    <div class="form-label text-muted small mb-1 d-block">Vigencia</div>
                                     <div class="fs-7 text-dark">{{ formatDateShort(convenio.effective_date) }} - {{ formatDateShort(convenio.expiry_date) }}</div>
                                 </div>
                             </div>
@@ -352,18 +352,18 @@
                         <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                    <i class="fad fa-file-alt text-primary"></i>
+                                    <i class="fad fa-file-alt text-primary" aria-hidden="true"></i>
                                 </div>
                                 <h6 class="mb-0 fw-semibold">Objeto del Contrato</h6>
                             </div>
                         </div>
                         <div class="card-body p-3 p-sm-4">
                             <div class="mb-3">
-                                <label class="form-label text-muted small mb-1 d-block">Nombre del Objeto</label>
+                                <div class="form-label text-muted small mb-1 d-block">Nombre del Objeto</div>
                                 <div class="fs-7 fw-semibold text-dark text-break">{{ currentFuecData?.objects_contract?.name || '-' }}</div>
                             </div>
                             <div>
-                                <label class="form-label text-muted small mb-1 d-block">Descripción</label>
+                                <div class="form-label text-muted small mb-1 d-block">Descripción</div>
                                 <p class="fs-7 text-muted mb-0 text-break" style="line-height: 1.6;">
                                     {{ currentFuecData?.objects_contract?.description || '-' }}
                                 </p>
@@ -429,11 +429,11 @@
 
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-outline-primary btn-sm" @click="printFUEC"><i
-                                            class="fad fa-print me-1"></i>Imprimir FUEC</button>
+                                            class="fad fa-print me-1" aria-hidden="true"></i>Imprimir FUEC</button>
                                     <button class="btn btn-outline-secondary btn-sm" @click="downloadPDF"><i
-                                            class="fad fa-file-pdf me-1"></i>Descargar PDF</button>
+                                            class="fad fa-file-pdf me-1" aria-hidden="true"></i>Descargar PDF</button>
                                     <button v-if="isLoggedIn" class="btn btn-primary btn-sm" @click="editFUEC"><i
-                                            class="fad fa-edit me-1"></i>Editar FUEC</button>
+                                            class="fad fa-edit me-1" aria-hidden="true"></i>Editar FUEC</button>
                                 </div>
                             </div>
                         </div>
@@ -443,7 +443,7 @@
                             <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="section-icon bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                        <i class="fad fa-shield-check text-success"></i>
+                                        <i class="fad fa-shield-check text-success" aria-hidden="true"></i>
                                     </div>
                                     <h6 class="mb-0 fw-semibold">Autenticidad del Documento</h6>
                                 </div>
@@ -467,16 +467,16 @@
                                 <div class="d-grid gap-2 mb-3">
                                     <button type="button" @click="verifyAuthenticity"
                                         class="btn btn-outline-success btn-sm">
-                                        <i class="fad fa-check-circle me-1"></i>Verificar Autenticidad
+                                        <i class="fad fa-check-circle me-1" aria-hidden="true"></i>Verificar Autenticidad
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" @click="copyVerificationCode">
-                                        <i class="fad fa-copy me-1"></i>Copiar Código de Verificación
+                                        <i class="fad fa-copy me-1" aria-hidden="true"></i>Copiar Código de Verificación
                                     </button>
                                 </div>
 
                                 <div class="legal-notice p-2 rounded">
                                     <small class="text-muted d-block">
-                                        <i class="fad fa-info-circle me-1"></i>
+                                        <i class="fad fa-info-circle me-1" aria-hidden="true"></i>
                                         Este documento tiene validez jurídica según Resolución {{ ministryResolution }} del
                                         Ministerio de Transporte de Colombia.
                                     </small>
@@ -489,7 +489,7 @@
                             <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                        <i class="fad fa-user-circle text-primary"></i>
+                                        <i class="fad fa-user-circle text-primary" aria-hidden="true"></i>
                                     </div>
                                     <h6 class="mb-0 fw-semibold">Conductores Asignados</h6>
                                 </div>
@@ -512,7 +512,7 @@
                                         <div v-for="license in currentFuecData.main_conductor.driver_licenses"
                                             :key="license.number"
                                             class="fs-7 text-muted text-break">
-                                            <i class="fad fa-id-card-alt me-1 text-primary"></i>
+                                            <i class="fad fa-id-card-alt me-1 text-primary" aria-hidden="true"></i>
                                             <span>Licencia <strong class="text-dark">{{ license.category }}</strong></span>
                                             <span class="mx-1">•</span>
                                             <span>Vence: <span class="font-monospace text-dark">{{ formatDateShort(license.expiration_date) }}</span></span>
@@ -537,7 +537,7 @@
                                         <div v-for="license in currentFuecData.secondary_conductor.driver_licenses"
                                             :key="license.number"
                                             class="fs-7 text-muted text-break">
-                                            <i class="fad fa-id-card-alt me-1 text-primary"></i>
+                                            <i class="fad fa-id-card-alt me-1 text-primary" aria-hidden="true"></i>
                                             <span>Licencia <strong class="text-dark">{{ license.category }}</strong></span>
                                             <span class="mx-1">•</span>
                                             <span>Vence: <span class="font-monospace text-dark">{{ formatDateShort(license.expiration_date) }}</span></span>
@@ -561,7 +561,7 @@
                                         <div v-for="license in currentFuecData.tertiary_conductor.driver_licenses"
                                             :key="license.number"
                                             class="fs-7 text-muted text-break">
-                                            <i class="fad fa-id-card-alt me-1 text-primary"></i>
+                                            <i class="fad fa-id-card-alt me-1 text-primary" aria-hidden="true"></i>
                                             <span>Licencia <strong class="text-dark">{{ license.category }}</strong></span>
                                             <span class="mx-1">•</span>
                                             <span>Vence: <span class="font-monospace text-dark">{{ formatDateShort(license.expiration_date) }}</span></span>
@@ -571,7 +571,7 @@
 
                                 <div v-if="!currentFuecData?.main_conductor && !currentFuecData?.secondary_conductor && !currentFuecData?.tertiary_conductor"
                                     class="text-center text-muted py-3">
-                                    <i class="fad fa-user-slash fs-4 d-block mb-2 opacity-50"></i>
+                                    <i class="fad fa-user-slash fs-4 d-block mb-2 opacity-50" aria-hidden="true"></i>
                                     <p class="mb-0 fs-7">No hay conductores asignados a este FUEC</p>
                                 </div>
                             </div>
@@ -583,7 +583,7 @@
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                            <i class="fad fa-users text-primary"></i>
+                                            <i class="fad fa-users text-primary" aria-hidden="true"></i>
                                         </div>
                                         <h6 class="mb-0 fw-semibold">Pasajeros</h6>
                                     </div>
@@ -611,7 +611,7 @@
                             <div class="card-header bg-white border-bottom py-3 px-3 px-sm-4">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="section-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                        <i class="fad fa-signature text-primary"></i>
+                                        <i class="fad fa-signature text-primary" aria-hidden="true"></i>
                                     </div>
                                     <h6 class="mb-0 fw-semibold">Firma Digital</h6>
                                 </div>
@@ -634,7 +634,7 @@
                 <div class="text-muted text-center px-2"
                     style="font-size: 0.78rem; line-height: 1.6; max-width: 780px; margin: 0 auto;">
                     <p class="mb-0">
-                        <i class="fad fa-info-circle me-1"></i>
+                        <i class="fad fa-info-circle me-1" aria-hidden="true"></i>
                         Este documento ha sido generado electrónicamente por
                         <strong>{{ appName }}</strong>, conforme a las disposiciones de la
                         Resolución {{ ministryResolution }} del Ministerio de Transporte de Colombia.
@@ -714,12 +714,12 @@ const verifyAuthenticity = () => {
             html: `
                 <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> aún no está en periodo de vigencia.</p>
                 <div class="alert alert-warning small mb-0 mt-2 text-start">
-                    <i class="fad fa-exclamation-triangle me-1"></i>
+                    <i class="fad fa-exclamation-triangle me-1" aria-hidden="true"></i>
                     La vigencia iniciará el <strong>${formatDateShort(currentFuecData.value.effective_date)}</strong>.
                 </div>
             `,
             icon: 'warning',
-            confirmButtonText: '<i class="fad fa-check me-1"></i>Aceptar',
+            confirmButtonText: '<i class="fad fa-check me-1" aria-hidden="true"></i>Aceptar',
             confirmButtonColor: '#ffc107',
             customClass: { popup: 'rounded-3 shadow', confirmButton: 'btn btn-warning px-4 mx-1 text-dark' },
             buttonsStyling: false
@@ -733,12 +733,12 @@ const verifyAuthenticity = () => {
             html: `
                 <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> se encuentra expirado.</p>
                 <div class="alert alert-danger small mb-0 mt-2 text-start">
-                    <i class="fad fa-times-circle me-1"></i>
+                    <i class="fad fa-times-circle me-1" aria-hidden="true"></i>
                     La validez del documento terminó el <strong>${formatDateShort(currentFuecData.value.expiration_date)}</strong>.
                 </div>
             `,
             icon: 'error',
-            confirmButtonText: '<i class="fad fa-check me-1"></i>Aceptar',
+            confirmButtonText: '<i class="fad fa-check me-1" aria-hidden="true"></i>Aceptar',
             confirmButtonColor: '#dc3545',
             customClass: { popup: 'rounded-3 shadow', confirmButton: 'btn btn-danger px-4 mx-1' },
             buttonsStyling: false
@@ -751,12 +751,12 @@ const verifyAuthenticity = () => {
         html: `
             <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> es válido y está vigente.</p>
             <div class="alert alert-success small mb-0 mt-2 text-start">
-                <i class="fad fa-shield-check me-1"></i>
+                <i class="fad fa-shield-check me-1" aria-hidden="true"></i>
                 Este documento es auténtico y cumple con la normativa de fechas.
             </div>
         `,
         icon: 'success',
-        confirmButtonText: '<i class="fad fa-check me-1"></i>Aceptar',
+        confirmButtonText: '<i class="fad fa-check me-1" aria-hidden="true"></i>Aceptar',
         confirmButtonColor: '#198754',
         customClass: {
             popup: 'rounded-3 shadow',
@@ -858,7 +858,7 @@ const copyVerificationCode = async (event) => {
         const btn = event?.currentTarget;
         if (btn) {
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fad fa-check me-1"></i>Copiado';
+            btn.innerHTML = '<i class="fad fa-check me-1" aria-hidden="true"></i>Copiado';
             btn.classList.add('btn-success');
             btn.classList.remove('btn-outline-secondary');
             setTimeout(() => {
@@ -943,7 +943,7 @@ onMounted(async () => {
             input: 'text',
             inputPlaceholder: 'Ej: AB1234',
             showCancelButton: true,
-            confirmButtonText: '<i class="fad fa-search me-1"></i>Consultar',
+            confirmButtonText: '<i class="fad fa-search me-1" aria-hidden="true"></i>Consultar',
             cancelButtonText: 'Regresar',
             confirmButtonColor: '#0d6efd',
             cancelButtonColor: '#6c757d',

@@ -8,7 +8,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <div class="avatar avatar-l">
                             <div class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle">
-                                <i class="fad fa-robot fs-10"></i>
+                                <i class="fad fa-robot fs-10" aria-hidden="true"></i>
                             </div>
                         </div>
                         <div class="lh-1">
@@ -20,7 +20,7 @@
                         </div>
                     </div>
                     <button class="btn btn-link text-400 p-0 text-decoration-none shadow-none hover-text-danger transition-base" @click="toggleChat" aria-label="Cerrar chat">
-                        <i class="fad fa-times"></i>
+                        <i class="fad fa-times" aria-hidden="true"></i>
                     </button>
                 </div>
 
@@ -31,7 +31,7 @@
                         <!-- Avatar Assistant (Pequeño) -->
                         <div v-if="msg.role !== 'user'" class="avatar avatar-s flex-shrink-0">
                             <div class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle">
-                                <i class="fad fa-robot" style="font-size: 0.7rem;"></i>
+                                <i class="fad fa-robot" style="font-size: 0.7rem;" aria-hidden="true"></i>
                             </div>
                         </div>
 
@@ -48,7 +48,7 @@
                     <div v-if="isTyping" class="d-flex w-100 gap-2 mb-3 justify-content-start">
                         <div class="avatar avatar-s flex-shrink-0">
                             <div class="avatar-name rounded-circle bg-primary-subtle text-primary border border-primary-subtle">
-                                <i class="fad fa-robot" style="font-size: 0.7rem;"></i>
+                                <i class="fad fa-robot" style="font-size: 0.7rem;" aria-hidden="true"></i>
                             </div>
                         </div>
                         <div class="bg-white border shadow-sm px-3 py-2 d-flex align-items-center gap-1" style="border-radius: 4px 12px 12px 12px;">
@@ -74,13 +74,13 @@
                 <!-- Footer / Input -->
                 <div class="card-footer bg-white border-top p-3">
                     <div class="input-group shadow-sm rounded-pill overflow-hidden border border-300 focus-within-primary transition-base">
-                        <input ref="inputRef" v-model="inputText" class="form-control border-0 bg-transparent shadow-none ps-3 py-2" 
+                        <input id="f-assistant-message" ref="inputRef" v-model="inputText" class="form-control border-0 bg-transparent shadow-none ps-3 py-2"
                                style="font-size: 0.8rem;" placeholder="Escribe un mensaje..."
                                aria-label="Mensaje" @keydown.enter.prevent="sendMessage()" />
                         <button class="btn btn-primary border-0 d-flex align-items-center justify-content-center p-0 me-1 my-1 rounded-circle" 
                                 style="width: 28px; height: 28px;"
                                 :disabled="isBusy || !inputText.trim()" @click="sendMessage()" aria-label="Enviar">
-                            <i class="fad fa-paper-plane" style="font-size: 10px; margin-right: 1px;"></i>
+                            <i class="fad fa-paper-plane" style="font-size: 10px; margin-right: 1px;" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
         <!-- Botón burbuja -->
         <button class="btn btn-primary rounded-circle shadow-lg bubble-btn d-flex align-items-center justify-content-center position-relative border-0" 
                 @click="toggleChat" aria-label="Abrir chat con NOA Assistant">
-            <i class="fad" :class="isOpen ? 'fa-times' : 'fa-comment-alt-dots'"></i>
+            <i class="fad" :class="isOpen ? 'fa-times' : 'fa-comment-alt-dots'" aria-hidden="true"></i>
             <span v-if="unreadCount > 0 && !isOpen" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-white" style="font-size: 0.6rem; padding: 0.25em 0.4em;">
                 {{ unreadCount }}
             </span>
