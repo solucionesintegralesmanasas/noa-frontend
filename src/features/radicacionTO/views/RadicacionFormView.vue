@@ -10,104 +10,176 @@
         @back="volver"
       />
 
-      <!-- ══════════════ Formulario: Nuevo trámite ══════════════ -->
-      <div class="card border-0 shadow-sm mt-3">
-        <div class="card-header bg-white py-3 px-4 border-bottom">
+      <!-- ══════════════ Formulario Principal: Nuevo Expediente ══════════════ -->
+      <main class="card rad-form-card border-0 shadow-sm mt-3 overflow-hidden">
+        <!-- Encabezado de validación -->
+        <div class="card-header rad-card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
           <div class="d-flex align-items-center gap-2">
-            <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:32px;height:32px;" aria-hidden="true">
-              <i class="fad fa-plus text-success"></i>
+            <span
+              class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+              style="width: 32px; height: 32px;"
+              aria-hidden="true"
+            >
+              <i class="fad fa-file-signature text-primary" aria-hidden="true"></i>
             </span>
-            <h2 class="h6 mb-0 fw-semibold">Nuevo trámite</h2>
-            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-2 fw-normal rounded-pill">
-              <i class="fas fa-asterisk me-1 obligatorio-icon" aria-hidden="true"></i>
+            <h2 class="h6 mb-0 fw-bold text-slate-900">Apertura de Expediente de Radicación</h2>
+            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1 fw-normal rounded-pill">
+              <i class="fas fa-asterisk me-1 obligatorio-icon text-danger" aria-hidden="true"></i>
               Campos obligatorios
             </span>
           </div>
+          <span class="rad-validated-pill d-inline-flex align-items-center gap-1">
+            <i class="fas fa-shield-alt text-primary" aria-hidden="true"></i>
+            Formulario validado con MinTransporte
+          </span>
         </div>
 
-        <div class="card-body px-4 py-4">
-          <form ref="formRef" @submit.prevent="guardar" novalidate>
-            <!-- Sección 1: Identificación -->
-            <div class="mb-4">
-              <p class="noa-section-label text-muted mb-3 border-bottom pb-2">
-                <i class="fas fa-tag me-1" aria-hidden="true"></i>Identificación del trámite
-              </p>
-              <div class="row g-3">
-                <div class="col-12 col-sm-6 col-md-4">
-                  <label class="form-label required noa-label" for="f-link_type">Tipo de trámite</label>
+        <form ref="formRef" @submit.prevent="guardar" novalidate>
+          <!-- SECTION 1: Identificación del trámite -->
+          <section class="rad-section p-4" data-purpose="seccion-identificacion">
+            <div class="rad-section-header d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+              <i class="fas fa-tag text-primary small" aria-hidden="true"></i>
+              <h2 class="rad-section-title mb-0">Identificación del trámite</h2>
+            </div>
+
+            <div class="row g-4">
+              <!-- Field: Tipo de trámite -->
+              <div class="col-12 col-md-4">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-link_type">
+                    Tipo de trámite
+                  </label>
+                </div>
+                <div>
                   <PrimeSelect
                     :input-id="'f-link_type'"
                     v-model="formData.link_type"
                     :options="tipos"
                     option-label="label"
                     option-value="value"
-                    placeholder="Seleccione el tipo"
-                    class="w-100"
+                    placeholder="Seleccione..."
+                    showClear
+                    class="w-100 rad-control"
                     :invalid="!!errors.link_type"
+                    :aria-invalid="!!errors.link_type"
+                    :aria-describedby="errors.link_type ? 'f-link_type-error' : undefined"
                   />
-                  <div v-if="errors.link_type" class="invalid-feedback d-block" id="f-link_type-error" role="alert">
-                    {{ errors.link_type }}
-                  </div>
                 </div>
+                <div v-if="errors.link_type" class="invalid-feedback d-block" id="f-link_type-error" role="alert">
+                  {{ errors.link_type }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Modalidad autorizada: Servicio Especial de Pasajeros.
+                </p>
+              </div>
 
-                <div class="col-12 col-sm-6 col-md-4">
-                  <label class="form-label required noa-label" for="f-procedure_code">Código del trámite</label>
+              <!-- Field: Código del trámite -->
+              <div class="col-12 col-md-4">
+                <div class="rad-label-row d-flex align-items-center justify-content-between mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-procedure_code">
+                    Código del trámite
+                  </label>
+                  <span class="rad-autogenerated-badge">Autogenerado</span>
+                </div>
+                <div class="position-relative">
+                  <span class="rad-input-icon-left" aria-hidden="true">
+                    <i class="fas fa-fingerprint" aria-hidden="true"></i>
+                  </span>
                   <input
                     id="f-procedure_code"
                     type="text"
                     autocomplete="off"
-                    class="form-control"
+                    class="form-control rad-control rad-input-readonly font-monospace fw-semibold ps-5 pe-5"
                     v-model="formData.procedure_code"
-                    placeholder="Ej. TO-2026-001"
+                    placeholder="AAAAMMDDHHMMSS"
+                    readonly
+                    aria-readonly="true"
                     :class="{ 'is-invalid': errors.procedure_code }"
                     :aria-invalid="!!errors.procedure_code"
-                    :aria-describedby="errors.procedure_code ? 'f-codigo-error' : undefined"
+                    :aria-describedby="errors.procedure_code ? 'f-procedure_code-error' : undefined"
                   />
-                  <div v-if="errors.procedure_code" class="invalid-feedback d-block" id="f-procedure_code-error" role="alert">
-                    {{ errors.procedure_code }}
-                  </div>
+                  <span
+                    class="rad-input-icon-right"
+                    title="Código de control no modificable"
+                    aria-hidden="true"
+                  >
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                  </span>
                 </div>
+                <div v-if="errors.procedure_code" class="invalid-feedback d-block" id="f-procedure_code-error" role="alert">
+                  {{ errors.procedure_code }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Consecutivo fiscal según vigencia {{ anioActual }}.
+                </p>
+              </div>
 
-                <div class="col-12 col-sm-6 col-md-4">
-                  <label class="form-label required noa-label" for="f-date_of_creation">Fecha de creación</label>
+              <!-- Field: Fecha de creación -->
+              <div class="col-12 col-md-4">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-date_of_creation">
+                    Fecha de creación
+                  </label>
+                </div>
+                <div>
                   <DateInput
                     id="f-date_of_creation"
                     v-model="formData.date_of_creation"
-                    class="form-control"
+                    class="form-control rad-control"
                     placeholder="dd/mm/aaaa"
                     autocomplete="off"
                     :class="{ 'is-invalid': errors.date_of_creation }"
                     :aria-invalid="!!errors.date_of_creation"
-                    :aria-describedby="errors.date_of_creation ? 'f-fecha-error' : undefined"
+                    :aria-describedby="errors.date_of_creation ? 'f-date_of_creation-error' : undefined"
                   />
-                  <div v-if="errors.date_of_creation" class="invalid-feedback d-block" id="f-date_of_creation-error" role="alert">
-                    {{ errors.date_of_creation }}
-                  </div>
                 </div>
+                <div v-if="errors.date_of_creation" class="invalid-feedback d-block" id="f-date_of_creation-error" role="alert">
+                  {{ errors.date_of_creation }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Fecha de radicación efectiva del expediente.
+                </p>
+              </div>
 
-                <div class="col-12 col-sm-6">
-                  <label class="form-label noa-label" for="f-subject">Asunto</label>
-                  <input
-                    id="f-subject"
-                    type="text"
-                    autocomplete="off"
-                    class="form-control"
-                    v-model="formData.subject"
-                    placeholder="Radicación de tarjeta de operación"
-                  />
-                  <div class="form-text">Opcional. Se usa como referencia interna del expediente.</div>
+              <!-- Field: Asunto / Referencia interna -->
+              <div class="col-12 pt-1">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label rad-field-label mb-0" for="f-subject">
+                    Asunto del trámite
+                  </label>
                 </div>
+                <input
+                  id="f-subject"
+                  type="text"
+                  autocomplete="off"
+                  class="form-control rad-control"
+                  v-model="formData.subject"
+                  placeholder="Ej. Radicación de tarjeta de operación para flota intermunicipal"
+                />
+                <p class="rad-help-text d-flex align-items-center gap-1 mb-0 mt-1">
+                  <i class="fas fa-info-circle text-primary" aria-hidden="true"></i>
+                  <span>Opcional. Se usa como referencia interna del expediente para trazabilidad jurídica.</span>
+                </p>
               </div>
             </div>
+          </section>
 
-            <!-- Sección 2: Vehículo y ubicación -->
-            <div class="mb-4">
-              <p class="noa-section-label text-muted mb-3 border-bottom pb-2">
-                <i class="fas fa-truck me-1" aria-hidden="true"></i>Vehículo y ubicación
-              </p>
-              <div class="row g-3">
-                <div class="col-12 col-sm-6">
-                  <label class="form-label required noa-label" for="f-vehicle_uuid">Vehículo</label>
+          <!-- SECTION 2: Vehículo y Ubicación Jurisdiccional -->
+          <section class="rad-section rad-section-alt p-4 border-top border-bottom" data-purpose="seccion-vehiculo-jurisdiccion">
+            <div class="rad-section-header d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+              <i class="fas fa-shuttle-van text-primary small" aria-hidden="true"></i>
+              <h2 class="rad-section-title mb-0">Vehículo y Ubicación Jurisdiccional</h2>
+            </div>
+
+            <div class="row g-4">
+              <!-- Field: Vehículo asignado -->
+              <div class="col-12 col-md-6">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-vehicle_uuid">
+                    Vehículo asignado
+                  </label>
+                </div>
+                <div>
                   <PrimeSelect
                     :input-id="'f-vehicle_uuid'"
                     v-model="formData.vehicle_uuid"
@@ -118,16 +190,28 @@
                     showClear
                     filter
                     :loading="cargandoListas"
-                    class="w-100"
+                    class="w-100 rad-control"
                     :invalid="!!errors.vehicle_uuid"
+                    :aria-invalid="!!errors.vehicle_uuid"
+                    :aria-describedby="errors.vehicle_uuid ? 'f-vehicle_uuid-error' : undefined"
                   />
-                  <div v-if="errors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">
-                    {{ errors.vehicle_uuid }}
-                  </div>
                 </div>
+                <div v-if="errors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">
+                  {{ errors.vehicle_uuid }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Seleccione el vehículo activo perteneciente a la empresa.
+                </p>
+              </div>
 
-                <div class="col-12 col-sm-6">
-                  <label class="form-label required noa-label" for="f-city_uuid">Ciudad de radicación</label>
+              <!-- Field: Ciudad de radicación -->
+              <div class="col-12 col-md-6">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-city_uuid">
+                    Ciudad de radicación
+                  </label>
+                </div>
+                <div>
                   <PrimeSelect
                     :input-id="'f-city_uuid'"
                     v-model="formData.city_uuid"
@@ -138,63 +222,272 @@
                     showClear
                     filter
                     :loading="cargandoListas"
-                    class="w-100"
+                    class="w-100 rad-control"
                     :invalid="!!errors.city_uuid"
+                    :aria-invalid="!!errors.city_uuid"
+                    :aria-describedby="errors.city_uuid ? 'f-city_uuid-error' : undefined"
                   />
-                  <div v-if="errors.city_uuid" class="invalid-feedback d-block" id="f-city_uuid-error" role="alert">
-                    {{ errors.city_uuid }}
-                  </div>
                 </div>
-
-                <div class="col-12">
-                  <label class="form-label required noa-label" for="f-territorial_director_uuid">Dirección territorial</label>
-                  <PrimeSelect
-                    :input-id="'f-territorial_director_uuid'"
-                    v-model="formData.territorial_director_uuid"
-                    :options="directores"
-                    option-label="label"
-                    option-value="value"
-                    placeholder="Seleccione la dirección territorial"
-                    showClear
-                    filter
-                    :loading="cargandoListas"
-                    class="w-100"
-                    :invalid="!!errors.territorial_director_uuid"
-                  />
-                  <div v-if="errors.territorial_director_uuid" class="invalid-feedback d-block" id="f-territorial_director_uuid-error" role="alert">
-                    {{ errors.territorial_director_uuid }}
-                  </div>
-                  <div v-if="directorSugerido" class="form-text">
-                    <i class="fas fa-circle-info me-1" aria-hidden="true"></i>
-                    Dirección por defecto de la empresa: <strong>{{ directorSugerido }}</strong>
-                  </div>
+                <div v-if="errors.city_uuid" class="invalid-feedback d-block" id="f-city_uuid-error" role="alert">
+                  {{ errors.city_uuid }}
                 </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Jurisdicción territorial del Ministerio donde se radicará.
+                </p>
               </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="pt-3">
-              <BaseFormActions
-                :submitting="isSubmitting"
-                :is-edit-mode="false"
-                submit-label="Crear expediente e iniciar trámite"
-                cancel-label="Cancelar"
-                @cancel="volver"
-              />
-            </div>
-          </form>
+            <!-- Contextual Vehicle Verification Card (Dynamic Info) -->
+            <div
+              v-if="vehiculoDetalle"
+              class="rad-vehicle-preview mt-3 p-3 rounded-3 bg-white shadow-sm d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3"
+              data-purpose="vehicle-context-preview"
+            >
+              <div class="d-flex flex-wrap flex-sm-nowrap align-items-center gap-3">
+                <!-- Placa Colombiana -->
+                <div
+                  class="colombian-plate flex-shrink-0"
+                  role="img"
+                  :aria-label="`Placa ${vehiculoDetalle.vehicle_license_plate || 'sin placa'}`"
+                >
+                  <span class="plate-number">{{ formatearPlaca(vehiculoDetalle.vehicle_license_plate) }}</span>
+                  <span class="plate-city">{{ ciudadSeleccionadaNombre || 'COLOMBIA' }}</span>
+                </div>
 
-        </div>
-      </div>
+                <div>
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <h3 class="rad-vehicle-title mb-0">
+                      {{ tituloVehiculo }}
+                    </h3>
+                    <span v-if="capacidadPasajeros" class="rad-capacity-chip font-monospace">
+                      Capacidad: {{ capacidadPasajeros }} Pasajeros
+                    </span>
+                    <span v-if="vehiculoDetalle.model" class="rad-capacity-chip font-monospace">
+                      Modelo: {{ vehiculoDetalle.model }}
+                    </span>
+                  </div>
+
+                  <p class="rad-vehicle-sub mb-0 mt-1">
+                    Propietario / Afiliado:
+                    <strong class="text-slate-700">{{ propietarioVehiculo }}</strong>
+                    <span v-if="vehiculoDetalle.internal_number"> • Móvil N.º <strong>{{ vehiculoDetalle.internal_number }}</strong></span>
+                  </p>
+
+                  <!-- Chips de estado documental -->
+                  <div class="d-flex flex-wrap align-items-center gap-3 mt-2 rad-doc-chips">
+                    <span
+                      class="d-inline-flex align-items-center gap-1 fw-semibold"
+                      :class="estadoDocSoat.vigente ? 'text-emerald' : 'text-amber'"
+                    >
+                      <i
+                        class="fas"
+                        :class="estadoDocSoat.vigente ? 'fa-check-circle' : 'fa-exclamation-circle'"
+                        aria-hidden="true"
+                      ></i>
+                      {{ estadoDocSoat.texto }}
+                    </span>
+
+                    <span
+                      class="d-inline-flex align-items-center gap-1 fw-semibold"
+                      :class="estadoDocRtm.vigente ? 'text-emerald' : 'text-amber'"
+                    >
+                      <i
+                        class="fas"
+                        :class="estadoDocRtm.vigente ? 'fa-check-circle' : 'fa-exclamation-circle'"
+                        aria-hidden="true"
+                      ></i>
+                      {{ estadoDocRtm.texto }}
+                    </span>
+
+                    <span
+                      class="d-inline-flex align-items-center gap-1 fw-semibold"
+                      :class="estadoDocPolizas.vigente ? 'text-emerald' : 'text-amber'"
+                    >
+                      <i
+                        class="fas"
+                        :class="estadoDocPolizas.vigente ? 'fa-check-circle' : 'fa-exclamation-circle'"
+                        aria-hidden="true"
+                      ></i>
+                      {{ estadoDocPolizas.texto }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rad-vehicle-status-box align-self-stretch align-self-md-auto d-flex flex-md-column justify-content-between justify-content-md-end align-items-center align-items-md-end pt-2 pt-md-0 ps-md-3">
+                <span class="rad-status-caption">Estado del automotor</span>
+                <span
+                  class="rad-status-pill mt-1 d-inline-flex align-items-center gap-1"
+                  :class="vehiculoActivo ? 'rad-status-pill-ok' : 'rad-status-pill-warn'"
+                >
+                  <i class="fas" :class="vehiculoActivo ? 'fa-shield-alt' : 'fa-exclamation-triangle'" aria-hidden="true"></i>
+                  {{ vehiculoActivo ? 'Habilitado RUNT' : 'Inactivo' }}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 3: Dirección Territorial Competente -->
+          <section class="rad-section p-4" data-purpose="seccion-direccion-territorial">
+            <div class="rad-section-header d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+              <i class="fas fa-landmark text-primary small" aria-hidden="true"></i>
+              <h2 class="rad-section-title mb-0">Dirección Territorial Competente</h2>
+            </div>
+
+            <div class="row g-4">
+              <!-- Field: Director del Ministerio -->
+              <div class="col-12 col-md-6">
+                <div class="rad-label-row-tall d-flex align-items-end mb-1">
+                  <label class="form-label rad-field-label mb-0" for="f-territorial_director_name">
+                    Nombre de la directora o director del Ministerio de Transporte
+                  </label>
+                </div>
+                <div class="position-relative">
+                  <span class="rad-input-icon-left" aria-hidden="true">
+                    <i class="fas fa-user-tie" aria-hidden="true"></i>
+                  </span>
+                  <input
+                    id="f-territorial_director_name"
+                    type="text"
+                    autocomplete="off"
+                    class="form-control rad-control rad-input-subtle ps-5"
+                    v-model="formData.territorial_director_name"
+                    placeholder="Ej. Nombre y apellidos"
+                  />
+                </div>
+                <p class="rad-help-text mb-0 mt-1">
+                  Funcionario emisor del certificado de radicación oficial.
+                </p>
+              </div>
+
+              <!-- Field: Territorial Asignada -->
+              <div class="col-12 col-md-6">
+                <div class="rad-label-row-tall d-flex align-items-end mb-1">
+                  <label class="form-label rad-field-label mb-0" for="f-territorial_name">
+                    Territorial Asignada
+                  </label>
+                </div>
+                <div class="position-relative">
+                  <span class="rad-input-icon-left" aria-hidden="true">
+                    <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
+                  </span>
+                  <input
+                    id="f-territorial_name"
+                    type="text"
+                    autocomplete="off"
+                    class="form-control rad-control rad-input-subtle ps-5"
+                    v-model="formData.territorial_name"
+                    placeholder="Ej. CÓRDOBA – SUCRE"
+                  />
+                </div>
+                <p class="rad-help-text mb-0 mt-1">
+                  Se radica ante la Dirección Territorial
+                  <strong class="text-slate-800">{{ formData.territorial_name || '—' }}</strong>
+                  conforme a la normativa de Mintransporte.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 4: Expediente Digital de Soporte -->
+          <section class="rad-section rad-section-alt p-4 border-top" data-purpose="seccion-documentos-requisitos">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-2 mb-3 border-bottom">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-folder-open text-primary small" aria-hidden="true"></i>
+                <h2 class="rad-section-title mb-0">Expediente Digital de Soporte</h2>
+              </div>
+              <span class="rad-doc-counter">
+                {{ etapasExpediente.length }} {{ etapasExpediente.length === 1 ? 'etapa habilitada' : 'etapas habilitadas' }}{{ formData.link_type ? ' para ' + etiquetaTipo(formData.link_type) : '' }}
+              </span>
+            </div>
+
+            <div class="rad-checklist-card border rounded-3 overflow-hidden bg-white shadow-sm">
+              <ul class="list-unstyled mb-0 rad-checklist-divide">
+                <li
+                  v-for="(item, idx) in etapasExpediente"
+                  :key="item.codigo"
+                  class="p-3 d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3"
+                  :class="item.listo ? 'rad-checklist-item' : 'rad-checklist-item-pending'"
+                >
+                  <div class="d-flex align-items-center gap-3">
+                    <div
+                      class="rad-step-icon rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                      :class="item.listo ? 'rad-step-icon-ok' : 'rad-step-icon-warn'"
+                      aria-hidden="true"
+                    >
+                      <i class="fas" :class="item.icono" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                      <p class="rad-step-title mb-0">
+                        {{ idx + 1 }}. {{ item.titulo }}
+                      </p>
+                      <p class="rad-step-desc mb-0" :class="{ 'text-amber fw-medium': !item.listo && item.alerta }">
+                        {{ item.descripcion }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2 align-self-end align-self-sm-center flex-shrink-0">
+                    <span
+                      class="rad-step-badge"
+                      :class="item.listo ? 'rad-step-badge-ok' : 'rad-step-badge-pending'"
+                    >
+                      {{ item.estadoTexto }}
+                    </span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- FOOTER: Barra de Acciones -->
+          <footer
+            class="rad-footer px-4 py-3 border-top d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3"
+            data-purpose="form-actions-toolbar"
+          >
+            <div class="d-flex align-items-center gap-2 rad-footer-note">
+              <i class="far fa-clock text-muted" aria-hidden="true"></i>
+              <span>
+                El expediente se inicializará en el paso 1 con código
+                <strong class="font-monospace text-slate-700">{{ formData.procedure_code || '—' }}</strong>
+              </span>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 w-100 w-sm-auto">
+              <button
+                type="button"
+                class="btn rad-btn-cancel"
+                :disabled="isSubmitting"
+                @click="volver"
+              >
+                <i class="fas fa-times text-muted" aria-hidden="true"></i>
+                <span>Cancelar</span>
+              </button>
+
+              <button
+                type="submit"
+                class="btn rad-btn-submit"
+                :disabled="isSubmitting"
+              >
+                <i
+                  class="fas"
+                  :class="isSubmitting ? 'fa-spinner fa-spin' : 'fa-check'"
+                  aria-hidden="true"
+                ></i>
+                <span>{{ isSubmitting ? 'Creando expediente...' : 'Crear expediente e iniciar trámite' }}</span>
+              </button>
+            </div>
+          </footer>
+        </form>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import BaseFormActions from '@/components/BaseFormActions.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import { useAccessibleForm } from '@/hooks/useAccessibleForm.js';
@@ -205,36 +498,233 @@ import { useUserStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import { dateUtils } from '@/utils/date.js';
 import { logger } from '@/utils/logger.js';
-import { tiposDeTramite as tipos } from '../utils/pasosRadicacion.js';
+import { tiposDeTramite as tipos, etiquetaTipo } from '../utils/pasosRadicacion.js';
 
 const router = useRouter();
 const formRef = ref(null);
+const anioActual = new Date().getFullYear();
 
 const { formData, errors, isSubmitting, validateAndFocus, submit } = useAccessibleForm(
   {
-    link_type: 'CAMBIO_DE_EMPRESA',
+    link_type: '',
     vehicle_uuid: '',
     procedure_code: '',
     date_of_creation: dateUtils.now('YYYY-MM-DD'),
     subject: 'Radicación de tarjeta de operación',
     city_uuid: '',
-    territorial_director_uuid: '',
+    territorial_director_name: '',
+    territorial_name: '',
   },
   {
     link_type: { required: true, label: 'Tipo de trámite' },
-    vehicle_uuid: { required: true, label: 'Vehículo' },
+    vehicle_uuid: { required: true, label: 'Vehículo asignado' },
     procedure_code: { required: true, label: 'Código del trámite', maxLength: 50 },
     date_of_creation: { required: true, label: 'Fecha de creación' },
     city_uuid: { required: true, label: 'Ciudad de radicación' },
-    territorial_director_uuid: { required: true, label: 'Dirección territorial' },
   },
 );
 
 const cargandoListas = ref(true);
 const vehiculos = ref([]);
+const vehiculosMapa = ref({});
+const vehiculoPerfil = ref(null);
 const ciudades = ref([]);
-const directores = ref([]);
-const directorSugerido = ref('');
+
+const vehiculoDetalle = computed(() => {
+  if (!formData.vehicle_uuid) return null;
+  if (vehiculoPerfil.value && vehiculoPerfil.value.uuid === formData.vehicle_uuid) {
+    return vehiculoPerfil.value;
+  }
+  return vehiculosMapa.value[formData.vehicle_uuid] ?? null;
+});
+
+const ciudadSeleccionadaNombre = computed(() => {
+  if (!formData.city_uuid) return '';
+  const encontrada = ciudades.value.find((c) => c.value === formData.city_uuid);
+  return encontrada?.label ?? '';
+});
+
+const formatearPlaca = (placa) => {
+  if (!placa) return '---';
+  const limpia = String(placa).trim().toUpperCase().replace(/[\s-]+/g, '');
+  if (/^[A-Z]{3}\d{2}[A-Z0-9]$/.test(limpia)) {
+    return `${limpia.slice(0, 3)}-${limpia.slice(3)}`;
+  }
+  return limpia;
+};
+
+const tituloVehiculo = computed(() => {
+  const v = vehiculoDetalle.value;
+  if (!v) return '';
+  const marca = v.brand?.description ?? v.brand_name ?? '';
+  const linea = v.line ?? '';
+  const clase = v.vehicle_class?.description ?? '';
+  const base = [marca, linea].filter(Boolean).join(' ').trim();
+  if (base && clase) return `${base} - ${clase}`;
+  return base || clase || `Vehículo ${v.vehicle_license_plate ?? ''}`;
+});
+
+const capacidadPasajeros = computed(() => {
+  const v = vehiculoDetalle.value;
+  if (!v) return null;
+  return v.passenger_capacity ?? v.seated_passenger_capacity ?? null;
+});
+
+const propietarioVehiculo = computed(() => {
+  const v = vehiculoDetalle.value;
+  if (!v) return 'Empresa operadora';
+  const tp = v.third_party;
+  if (tp) {
+    const nombre = tp.company_name || [tp.first_name, tp.last_name].filter(Boolean).join(' ').trim();
+    if (nombre) return nombre;
+  }
+  return v.company?.business_name || 'Vinculación activa';
+});
+
+const vehiculoActivo = computed(() => {
+  const v = vehiculoDetalle.value;
+  if (!v) return false;
+  return v.is_active === undefined || v.is_active === null || Boolean(Number(v.is_active)) || v.is_active === true;
+});
+
+function buscarDocVigente(tiposBuscados) {
+  const docs = vehiculoDetalle.value?.vehicle_documents;
+  if (!Array.isArray(docs) || !docs.length) return null;
+  const hoy = dateUtils.now('YYYY-MM-DD');
+  const candidatos = docs.filter((d) =>
+    tiposBuscados.some((t) => String(d.document_type ?? '').toUpperCase().includes(t)),
+  );
+  if (!candidatos.length) return null;
+  const vigentes = candidatos.filter((d) => !d.expiry_date || String(d.expiry_date).slice(0, 10) >= hoy);
+  return vigentes[0] ?? candidatos[0];
+}
+
+const estadoDocSoat = computed(() => {
+  const doc = buscarDocVigente(['SOAT']);
+  const hoy = dateUtils.now('YYYY-MM-DD');
+  if (doc && (!doc.expiry_date || String(doc.expiry_date).slice(0, 10) >= hoy)) {
+    const vence = doc.expiry_date ? dateUtils.format(doc.expiry_date, 'DD/MM/YYYY') : '';
+    return { vigente: true, texto: vence ? `SOAT Vigente (Vence: ${vence})` : 'SOAT Vigente' };
+  }
+  return { vigente: false, texto: 'SOAT por verificar en expediente' };
+});
+
+const estadoDocRtm = computed(() => {
+  const doc = buscarDocVigente(['RTM', 'TECNICO', 'TÉCNICO']);
+  const hoy = dateUtils.now('YYYY-MM-DD');
+  if (doc && (!doc.expiry_date || String(doc.expiry_date).slice(0, 10) >= hoy)) {
+    const vence = doc.expiry_date ? dateUtils.format(doc.expiry_date, 'DD/MM/YYYY') : '';
+    return { vigente: true, texto: vence ? `RTM Vigente (Vence: ${vence})` : 'RTM Vigente' };
+  }
+  return { vigente: false, texto: 'RTM según modelo / vigencia' };
+});
+
+const estadoDocPolizas = computed(() => {
+  const rcc = buscarDocVigente(['RCC']);
+  const rce = buscarDocVigente(['RCE']);
+  const hoy = dateUtils.now('YYYY-MM-DD');
+  const rccOk = rcc && (!rcc.expiry_date || String(rcc.expiry_date).slice(0, 10) >= hoy);
+  const rceOk = rce && (!rce.expiry_date || String(rce.expiry_date).slice(0, 10) >= hoy);
+  if (rccOk && rceOk) {
+    return { vigente: true, texto: 'Pólizas RCC y RCE al día' };
+  }
+  return { vigente: true, texto: 'Pólizas RCC y RCE (corporativas / individuales)' };
+});
+
+const etapasExpediente = computed(() => {
+  const tipo = formData.link_type;
+  if (tipo === 'RENOVACION') {
+    return [
+      {
+        codigo: 'RENOVACION_TARJETA',
+        titulo: 'Renovación de Tarjeta de Operación (SOAT, RTM y SIMIT)',
+        descripcion: 'Validación de documentos vigentes en RUNT, paz y salvo SIMIT y generación de contratos.',
+        icono: 'fa-sync-alt',
+        listo: Boolean(formData.vehicle_uuid),
+        alerta: !formData.vehicle_uuid,
+        estadoTexto: formData.vehicle_uuid ? 'Habilitado ✓' : 'Seleccione vehículo',
+      },
+    ];
+  }
+  if (tipo === 'DESVINCULACION_MUTUO' || tipo === 'DESVINCULACION_UNILATERAL') {
+    return [
+      {
+        codigo: tipo,
+        titulo: tipo === 'DESVINCULACION_MUTUO'
+          ? 'Acta y Paz y Salvo de Desvinculación por Mutuo Acuerdo'
+          : 'Solicitud de Desvinculación Administrativa Unilateral',
+        descripcion: 'Soporte documental para radicar la desvinculación ante la Dirección Territorial del Ministerio.',
+        icono: 'fa-file-Upload',
+        listo: Boolean(formData.vehicle_uuid),
+        alerta: !formData.vehicle_uuid,
+        estadoTexto: formData.vehicle_uuid ? 'Habilitado ✓' : 'Seleccione vehículo',
+      },
+    ];
+  }
+
+  const pasosComunes = [
+    {
+      codigo: 'CAPACIDAD_TRANSPORTADORA',
+      titulo: 'Certificación de Capacidad Transportadora y Cupo Disponible',
+      descripcion: 'Verificación automática de resolución habilitante y cupo disponible para la clase de vehículo.',
+      icono: 'fa-check',
+      listo: true,
+      alerta: false,
+      estadoTexto: 'Automatizado ✓',
+    },
+    {
+      codigo: 'CARTA_DE_ACEPTACION',
+      titulo: 'Carta de Aceptación de Vinculación de la Empresa Transportadora',
+      descripcion: 'PDF generado electrónicamente con firma del Representante Legal para la Dirección Territorial.',
+      icono: 'fa-check',
+      listo: true,
+      alerta: false,
+      estadoTexto: 'Autogenerado ✓',
+    },
+    {
+      codigo: 'INCLUSION_DE_POLIZAS',
+      titulo: 'Pólizas de Responsabilidad Civil Contractual y Extracontractual (RCC y RCE)',
+      descripcion: 'Certificado de inclusión en pólizas corporativas o individuales vigentes de la empresa.',
+      icono: 'fa-shield-alt',
+      listo: true,
+      alerta: false,
+      estadoTexto: 'Verificable ✓',
+    },
+    {
+      codigo: 'TARJETA_DE_OPERACION',
+      titulo: 'Contratos de Vinculación / Administración de Flota y Archivo Plano RUNT',
+      descripcion: tipo === 'CAMBIO_DE_EMPRESA'
+        ? 'Requisito para "Cambio de empresa": contratos firmados digitalmente y generación de lote TXT RUNT.'
+        : 'Contratos firmados digitalmente con propietario y generación de lote TXT RUNT.',
+      icono: 'fa-file-signature',
+      listo: Boolean(formData.vehicle_uuid),
+      alerta: !formData.vehicle_uuid,
+      estadoTexto: formData.vehicle_uuid ? 'Paso final ✓' : 'Requiere vehículo',
+    },
+  ];
+
+  if (tipo === 'CAMBIO_DE_EMPRESA') {
+    return [pasosComunes[2], pasosComunes[1], pasosComunes[0], pasosComunes[3]];
+  }
+  return pasosComunes;
+});
+
+watch(
+  () => formData.vehicle_uuid,
+  async (uuid) => {
+    vehiculoPerfil.value = null;
+    if (!uuid) return;
+    try {
+      const res = await vehiclesService.getProfile(uuid);
+      const data = res?.data?.data ?? res?.data ?? null;
+      if (data && formData.vehicle_uuid === uuid) {
+        vehiculoPerfil.value = data;
+      }
+    } catch {
+      // Si el perfil detallado no está disponible, se usa el resumen cargado en vehiculosMapa
+    }
+  },
+);
 
 async function cargarListas() {
   cargandoListas.value = true;
@@ -242,28 +732,67 @@ async function cargarListas() {
     const v = await vehiclesService.list({ per_page: 100 });
     const items = v.data?.data?.data ?? v.data?.data ?? v.data ?? [];
     const vistos = new Set();
-    vehiculos.value = (Array.isArray(items) ? items : []).filter((x) => {
-      const k = x?.uuid ?? x?.vehicle_license_plate;
-      if (!k || vistos.has(k)) return false;
-      vistos.add(k);
-      return true;
-    }).map((x) => ({ label: `${x.vehicle_license_plate ?? 'Sin placa'} — ${x.line ?? ''}`, value: x.uuid }));
-  } catch (e) { logger.warn('No se cargaron vehículos'); }
-  try { ciudades.value = await service.listarCiudades(); } catch { ciudades.value = []; }
-  try { directores.value = await service.listarDirectores(); } catch { directores.value = []; }
+    const mapa = {};
+    vehiculos.value = (Array.isArray(items) ? items : [])
+      .filter((x) => {
+        const k = x?.uuid ?? x?.vehicle_license_plate;
+        if (!k || vistos.has(k)) return false;
+        vistos.add(k);
+        return true;
+      })
+      .map((x) => {
+        mapa[x.uuid] = x;
+        const marca = x.brand?.description ?? '';
+        const linea = x.line ?? '';
+        const clase = x.vehicle_class?.description ?? '';
+        const modelo = x.model ? `(${x.model})` : '';
+        const detalle = [marca, linea, clase, modelo].filter(Boolean).join(' ').trim();
+        return {
+          label: `${x.vehicle_license_plate ?? 'Sin placa'}${detalle ? ' — ' + detalle : ''}`,
+          value: x.uuid,
+        };
+      });
+    vehiculosMapa.value = mapa;
+  } catch (e) {
+    logger.warn('No se cargaron vehículos');
+  }
   try {
+    ciudades.value = await service.listarCiudades();
+  } catch {
+    ciudades.value = [];
+  }
+  try {
+    // Mismos datos que se registran en Configuración del sistema (SystemConfigurationView).
     const userStore = useUserStore();
-    if (userStore.company_uuid) {
-      const cfg = await systemConfigurationService.getByCompany(userStore.company_uuid);
-      const data = cfg.data?.data ?? cfg.data ?? {};
-      if (data.default_territorial_director_uuid && !formData.territorial_director_uuid) formData.territorial_director_uuid = data.default_territorial_director_uuid;
-      directorSugerido.value = data.default_territorial_director_name || '';
+    const companyUuid = userStore.company_uuid || userStore.companies?.[0]?.uuid;
+    if (companyUuid) {
+      const cfg = await systemConfigurationService.getByCompany(companyUuid);
+      const data = cfg?.data?.data ?? cfg?.data ?? {};
+      if (data.default_territorial_director_name) {
+        formData.territorial_director_name = data.default_territorial_director_name;
+      }
+      if (data.territorial_name) {
+        formData.territorial_name = data.territorial_name;
+      }
     }
-  } catch (e) { logger.warn('No se cargó la dirección territorial por defecto'); }
-  finally { cargandoListas.value = false; }
+  } catch (e) {
+    logger.warn('No se cargó la dirección territorial por defecto');
+  }
+  cargandoListas.value = false;
 }
 
 const volver = () => router.push('/radicacion');
+
+/** Código del trámite autogenerado por el backend (YYYYMMDDHHmmss), único por empresa. */
+async function cargarCodigoTramite() {
+  try {
+    const r = await service.siguienteCodigo();
+    const codigo = r.data?.data?.procedure_code ?? r.data?.procedure_code;
+    if (codigo) formData.procedure_code = codigo;
+  } catch (e) {
+    logger.warn('No se generó el código de trámite');
+  }
+}
 
 async function guardar() {
   if (!(await validateAndFocus(formRef.value ?? document))) {
@@ -278,19 +807,395 @@ async function guardar() {
       router.push(`/radicacion/${creado.expediente.uuid}`);
     } catch (e) {
       const detalles = e.response?.data?.errors ?? e.response?.data?.error?.details ?? {};
-      if (Array.isArray(detalles)) detalles.forEach((d) => { if (d?.field) errors[d.field] = (d.messages ?? []).join(' '); });
-      else Object.assign(errors, detalles);
+      if (Array.isArray(detalles)) {
+        detalles.forEach((d) => {
+          if (d?.field) errors[d.field] = (d.messages ?? []).join(' ');
+        });
+      } else {
+        Object.assign(errors, detalles);
+      }
+      // Si el código ya estaba tomado, se genera uno nuevo (el campo es de solo lectura).
+      if (errors.procedure_code) {
+        delete errors.procedure_code;
+        await cargarCodigoTramite();
+      }
       toast('Revise los datos del formulario', mensajeDeError(e), 'error');
     }
   });
 }
 
-onMounted(cargarListas);
+onMounted(async () => {
+  await cargarCodigoTramite();
+  await cargarListas();
+});
 </script>
 
 <style scoped>
-.required::after { content: " *"; color: #dc3545; }
-.noa-label         { font-size: 0.85rem; font-weight: 600; }
-.noa-section-label { font-size: 0.85rem; font-weight: 600; }
-.obligatorio-icon  { font-size: 0.55rem; }
+.required::after {
+  content: " *";
+  color: #f43f5e;
+  font-weight: 700;
+}
+
+.obligatorio-icon {
+  font-size: 0.55rem;
+}
+
+.text-slate-900 { color: #0f172a; }
+.text-slate-800 { color: #1e293b; }
+.text-slate-700 { color: #334155; }
+.text-emerald   { color: #059669; }
+.text-amber     { color: #d97706; }
+
+.rad-form-card {
+  border-radius: 0.875rem !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.rad-card-header {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+.rad-validated-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.rad-section-alt {
+  background-color: rgba(248, 250, 252, 0.7);
+}
+
+.rad-section-header {
+  border-color: #f1f5f9 !important;
+}
+
+.rad-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.rad-label-row {
+  min-height: 1.5rem;
+}
+
+.rad-label-row-tall {
+  min-height: 2.1rem;
+}
+
+.rad-field-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #334155;
+}
+
+.rad-autogenerated-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  line-height: 1.1;
+}
+
+.rad-control,
+:deep(.p-select.rad-control) {
+  height: var(--noa-form-control-height, 36px) !important;
+  min-height: var(--noa-form-control-height, 36px) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  border-radius: 0.375rem !important;
+  padding-top: 0.3125rem;
+  padding-bottom: 0.3125rem;
+}
+
+:deep(.p-select.rad-control .p-select-label) {
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+}
+
+.rad-input-readonly {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+  cursor: not-allowed;
+}
+
+.rad-input-subtle {
+  background-color: rgba(248, 250, 252, 0.6);
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.rad-input-icon-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  padding-left: 0.85rem;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  z-index: 2;
+}
+
+.rad-input-icon-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  padding-right: 0.85rem;
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  z-index: 2;
+}
+
+.rad-help-text {
+  font-size: 0.72rem;
+  color: #64748b;
+  min-height: 1rem;
+  line-height: 1.35;
+}
+
+/* ===== TARJETA CONTEXTUAL DEL VEHÍCULO ===== */
+.rad-vehicle-preview {
+  border: 1px solid #bfdbfe;
+  border-radius: 0.75rem;
+}
+
+.colombian-plate {
+  width: 7.2rem;
+  height: 3.6rem;
+  background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
+  border: 2px solid #1e293b;
+  border-radius: 0.45rem;
+  box-shadow: inset 0 0 0 2px rgba(30, 41, 59, 0.15), 0 2px 6px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.4rem;
+  user-select: none;
+}
+
+.plate-number {
+  font-family: "FE-Schrift", "Arial Black", SFMono-Regular, Consolas, monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.plate-city {
+  font-size: 0.52rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1e293b;
+  margin-top: 0.2rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rad-vehicle-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rad-capacity-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+}
+
+.rad-vehicle-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.rad-doc-chips {
+  font-size: 0.75rem;
+}
+
+.rad-vehicle-status-box {
+  border-top: 1px solid #f1f5f9;
+}
+
+@media (min-width: 768px) {
+  .rad-vehicle-status-box {
+    border-top: 0;
+    border-left: 1px solid #f1f5f9;
+  }
+}
+
+.rad-status-caption {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.rad-status-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.4rem;
+}
+
+.rad-status-pill-ok {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.rad-status-pill-warn {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+/* ===== EXPEDIENTE DIGITAL DE SOPORTE ===== */
+.rad-doc-counter {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.rad-checklist-card {
+  border-color: #e2e8f0 !important;
+}
+
+.rad-checklist-divide > li + li {
+  border-top: 1px solid #f1f5f9;
+}
+
+.rad-checklist-item {
+  transition: background-color 150ms ease;
+}
+
+.rad-checklist-item:hover {
+  background-color: #f8fafc;
+}
+
+.rad-checklist-item-pending {
+  background-color: rgba(254, 243, 199, 0.35);
+}
+
+.rad-step-icon {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.82rem;
+}
+
+.rad-step-icon-ok {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.rad-step-icon-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.rad-step-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.rad-step-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.rad-step-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+}
+
+.rad-step-badge-ok {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.rad-step-badge-pending {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+/* ===== FOOTER DE ACCIONES ===== */
+.rad-footer {
+  background-color: #f8fafc;
+}
+
+.rad-footer-note {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.rad-btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.rad-btn-cancel:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.rad-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.35rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: #059669;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.22);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.rad-btn-submit:hover:not(:disabled) {
+  background: #047857;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.3);
+}
 </style>
+
