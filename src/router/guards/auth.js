@@ -18,6 +18,10 @@ function getDashboardRoute() {
 }
 
 export async function authGuard(to, from, next) {
+    // Si la ruta es pública y no es exclusiva para invitados (ej: validación de FUEC, firma pública),
+    // permitir el paso de inmediato sin bloquear ni requerir sesión.
+    if (to.meta?.public && !to.meta?.guestOnly) return next();
+
     const authStore = useAuthStore();
 
     try {
