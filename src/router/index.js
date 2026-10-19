@@ -123,6 +123,12 @@ const routes = [
     meta: { title: 'Error del servidor' }
   },
   {
+    path: '/firma-documentos/:uuid',
+    name: 'public.signature',
+    component: () => import('@/pages/public/PublicSignatureView.vue'),
+    meta: { layout: 'minimal', public: true, title: 'Firma Digital de Inspección' }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/404'
   }
@@ -132,6 +138,41 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes
 })
+
+const CHUNK_RELOAD_KEY = 'noa_chunk_reload'
+
+function tryReloadOnChunkError(error) {
+  if (typeof window === 'undefined') return false
+  const msg = String(error?.message || error || '')
+  const isChunkError =
+    msg.includes('Unable to preload CSS') ||
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+
+  if (!isChunkError) return false
+
+  try {
+    const targetPath = window.location.hash || window.location.pathname
+    const lastReload = sessionStorage.getItem(CHUNK_RELOAD_KEY)
+    if (lastReload !== targetPath) {
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, targetPath)
+      window.location.reload()
+      return true
+    }
+  } catch {
+    // Ignorar errores de sessionStorage
+  }
+  return false
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    if (tryReloadOnChunkError(event?.payload || new Error('Unable to preload CSS'))) {
+      event.preventDefault?.()
+    }
+  })
+}
 
 // Puerta de licencia desactivada: ninguna ruta exige licencia.
 // Para reactivarla, poner LICENSE_REQUIRED en true.
@@ -217,6 +258,19 @@ router.beforeEach(async (to, from, next) => {
 router.beforeEach((to, from, next) => authGuard(to, from, next))
 router.beforeEach((to, from, next) => twoFAGuard(to, from, next))
 router.beforeEach((to, from, next) => permissionsGuard(to, from, next))
+
+router.afterEach((to) => {
+  document.title = `${import.meta.env.VITE_APP_NAME || 'NOA Transportes'} - ${to.meta?.title || 'Inicio'}`
+  try {
+    sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+  } catch {
+    // Ignorar
+  }
+})
+
+router.onError((error) => {
+  tryReloadOnChunkError(error)
+})
 
 export default router
 export { licenseGuard }

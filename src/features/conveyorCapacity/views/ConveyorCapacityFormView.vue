@@ -1,14 +1,8 @@
 <template>
     <div class="row gx-3">
         <div class="col-12 col-xxl-10 offset-xxl-1 col-xl-12">
-            <BasePageHeader
-                :title="pageTitle"
-                :subtitle="pageSubtitle"
-                icon="fad fa-truck-loading text-primary"
-                :breadcrumbs="breadcrumbs"
-                :show-back="true"
-                @back="goBack"
-            />
+            <BasePageHeader :title="pageTitle" :subtitle="pageSubtitle" icon="fad fa-truck-loading text-primary"
+                :breadcrumbs="breadcrumbs" :show-back="true" @back="goBack" />
 
             <div class="card border-0 shadow-sm fade-in-up" style="animation-delay: 0.1s;">
                 <div class="card-header bg-light py-2 px-3 border-bottom">
@@ -23,85 +17,95 @@
                 </div>
 
                 <div class="card-body">
-                                                                                <form @submit.prevent="handleSubmit" class="row g-3" novalidate>
-                        
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="enabling_resolution_uuid">Resolución
-                                    Habilitante</label>
-                                <PrimeSelect :input-id="'f-enabling_resolution_uuid'" v-model="formData.enabling_resolution_uuid"
-                                    :options="store.catalogs.enabling_resolutions" option-value="uuid" option-label="resolution_number"
-                                    placeholder="Seleccione una resolución..." showClear filter class="w-100"
-                                    :invalid="!!validationErrors.enabling_resolution_uuid" />
-                                <div v-if="validationErrors.enabling_resolution_uuid" class="invalid-feedback d-block" id="f-enabling_resolution_uuid-error" role="alert">
-                                    {{ validationErrors.enabling_resolution_uuid }}
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="vehicle_type">
-                                    Tipo de Vehículo
-                                </label>
-                                <input id="vehicle_type" v-model="formData.vehicle_type" class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.vehicle_type }" type="text" autocomplete="off"
-                                    placeholder="Ej: Camión Doble Troque" maxlength="20" />
-                                <div v-if="validationErrors.vehicle_type" class="invalid-feedback d-block" id="f-vehicle_type-error" role="alert">
-                                    {{ validationErrors.vehicle_type }}
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="statusSelect">
-                                    Estado de Habilitación
-                                </label>
-                                <PrimeSelect :input-id="'f-status'" v-model="formData.status"
-                                    :options="[{ label: 'Habilitado', value: '1' }, { label: 'Deshabilitado', value: '0' }]"
-                                    option-label="label" option-value="value" class="w-100"
-                                    :invalid="!!validationErrors.status" />
-                                <div v-if="validationErrors.status" class="invalid-feedback d-block" id="f-status-error" role="alert">
-                                    {{ validationErrors.status }}
-                                </div>
-                            </div>
-                        
+                    <form @submit.prevent="handleSubmit" class="row g-3" novalidate>
 
-                        
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="authorized_capacity">
-                                    Capacidad Autorizada
-                                </label>
-                                <input id="authorized_capacity" v-model.number="formData.authorized_capacity"
-                                    class="form-control" :class="{ 'is-invalid': validationErrors.authorized_capacity }"
-                                    type="number" placeholder="0" min="0" />
-                                <div v-if="validationErrors.authorized_capacity" class="invalid-feedback d-block" id="f-authorized_capacity-error" role="alert">
-                                    {{ validationErrors.authorized_capacity }}
-                                </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="enabling_resolution_uuid">Resolución
+                                Habilitante</label>
+                            <PrimeSelect :input-id="'f-enabling_resolution_uuid'"
+                                v-model="formData.enabling_resolution_uuid"
+                                :options="store.catalogs.enabling_resolutions" option-value="uuid"
+                                option-label="resolution_number" placeholder="Seleccione una resolución..." showClear
+                                filter class="w-100" :invalid="!!validationErrors.enabling_resolution_uuid" />
+                            <div v-if="validationErrors.enabling_resolution_uuid" class="invalid-feedback d-block"
+                                id="f-enabling_resolution_uuid-error" role="alert">
+                                {{ validationErrors.enabling_resolution_uuid }}
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="current_capacity">
-                                    Capacidad Operativa Actual
-                                </label>
-                                <input id="current_capacity" v-model.number="formData.current_capacity"
-                                    class="form-control" :class="{ 'is-invalid': validationErrors.current_capacity }"
-                                    type="number" placeholder="0" min="0" />
-                                <div v-if="validationErrors.current_capacity" class="invalid-feedback d-block" id="f-current_capacity-error" role="alert">
-                                    {{ validationErrors.current_capacity }}
-                                </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="f-vehicle_type">
+                                Tipo de Vehículo
+                            </label>
+                            <PrimeSelect :input-id="'f-vehicle_type'" v-model="formData.vehicle_type"
+                                :options="vehicleTypeOptions" option-label="label" option-value="value"
+                                placeholder="Seleccione un tipo..." showClear filter class="w-100"
+                                :invalid="!!validationErrors.vehicle_type"
+                                :aria-invalid="!!validationErrors.vehicle_type"
+                                :aria-describedby="validationErrors.vehicle_type ? 'f-vehicle_type-error' : undefined" />
+                            <div v-if="validationErrors.vehicle_type" class="invalid-feedback d-block"
+                                id="f-vehicle_type-error" role="alert">
+                                {{ validationErrors.vehicle_type }}
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <label class="form-label required" for="minimum_own_capacity">
-                                    Capacidad Mínima Propia
-                                </label>
-                                <input id="minimum_own_capacity" v-model.number="formData.minimum_own_capacity"
-                                    class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.minimum_own_capacity }" type="number"
-                                    placeholder="0" min="0" />
-                                <div v-if="validationErrors.minimum_own_capacity" class="invalid-feedback d-block" id="f-minimum_own_capacity-error" role="alert">
-                                    {{ validationErrors.minimum_own_capacity }}
-                                </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="statusSelect">
+                                Estado de Habilitación
+                            </label>
+                            <PrimeSelect :input-id="'f-status'" v-model="formData.status"
+                                :options="[{ label: 'Habilitado', value: '1' }, { label: 'Deshabilitado', value: '0' }]"
+                                option-label="label" option-value="value" class="w-100"
+                                :invalid="!!validationErrors.status" />
+                            <div v-if="validationErrors.status" class="invalid-feedback d-block" id="f-status-error"
+                                role="alert">
+                                {{ validationErrors.status }}
                             </div>
-                        
+                        </div>
+
+
+
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="authorized_capacity">
+                                Capacidad Autorizada
+                            </label>
+                            <input id="authorized_capacity" v-model.number="formData.authorized_capacity"
+                                class="form-control" :class="{ 'is-invalid': validationErrors.authorized_capacity }"
+                                type="number" placeholder="0" min="0" />
+                            <div v-if="validationErrors.authorized_capacity" class="invalid-feedback d-block"
+                                id="f-authorized_capacity-error" role="alert">
+                                {{ validationErrors.authorized_capacity }}
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="current_capacity">
+                                Capacidad Operativa Actual
+                            </label>
+                            <input id="current_capacity" v-model.number="formData.current_capacity" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.current_capacity }" type="number"
+                                placeholder="0" min="0" />
+                            <div v-if="validationErrors.current_capacity" class="invalid-feedback d-block"
+                                id="f-current_capacity-error" role="alert">
+                                {{ validationErrors.current_capacity }}
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label required" for="minimum_own_capacity">
+                                Capacidad Mínima Propia
+                            </label>
+                            <input id="minimum_own_capacity" v-model.number="formData.minimum_own_capacity"
+                                class="form-control" :class="{ 'is-invalid': validationErrors.minimum_own_capacity }"
+                                type="number" placeholder="0" min="0" />
+                            <div v-if="validationErrors.minimum_own_capacity" class="invalid-feedback d-block"
+                                id="f-minimum_own_capacity-error" role="alert">
+                                {{ validationErrors.minimum_own_capacity }}
+                            </div>
+                        </div>
+
 
                         <div class="col-12">
-                        <BaseFormActions :submitting="submitting" :is-edit-mode="isEditMode" @cancel="goBack" /><!-- BOTONES -->
+                            <BaseFormActions :submitting="submitting" :is-edit-mode="isEditMode" @cancel="goBack" />
+                            <!-- BOTONES -->
                         </div>
-                        </form>
+                    </form>
                 </div>
             </div>
 
@@ -175,7 +179,7 @@ const isEditMode = computed(() => route.params.id !== undefined);
 /** Computed para BasePageHeader (evita expresiones complejas en el template) */
 const pageTitle = computed(() => isEditMode.value ? 'Actualizar Capacidad de Transporte' : 'Registrar Capacidad de Transporte');
 const pageSubtitle = computed(() => isEditMode.value ? 'Modifica los datos de la capacidad de transporte autorizada' : 'Completa los datos para registrar una nueva capacidad de transporte asociada a una resolución habilitante');
-const breadcrumbs = computed(() => [ { label: 'Capacidad de Transporte', to: '/empresas/capacidad-transportadora', }, { label: isEditMode.value ? 'Editar' : 'Nuevo' }, ]);
+const breadcrumbs = computed(() => [{ label: 'Capacidad de Transporte', to: '/empresas/capacidad-transportadora', }, { label: isEditMode.value ? 'Editar' : 'Nuevo' },]);
 
 
 /** @type {import('vue').Ref<boolean>} Indicador de carga inicial */
@@ -204,6 +208,24 @@ const formData = reactive({
     current_capacity: 0,
     minimum_own_capacity: 0,
     status: '1',
+});
+
+const baseVehicleTypes = [
+    { label: 'AUTOMÓVIL', value: 'AUTOMÓVIL' },
+    { label: 'CAMPERO', value: 'CAMPERO' },
+    { label: 'CAMIONETA', value: 'CAMIONETA' },
+    { label: 'MICROBÚS', value: 'MICROBÚS' },
+    { label: 'BUSETA', value: 'BUSETA' },
+    { label: 'BUS', value: 'BUS' },
+];
+
+/** Opciones de Tipo de Vehículo (incluye el valor actual en edición si no está en la lista base) */
+const vehicleTypeOptions = computed(() => {
+    const current = formData.vehicle_type?.trim();
+    if (current && !baseVehicleTypes.some(opt => opt.value === current)) {
+        return [{ label: current, value: current }, ...baseVehicleTypes];
+    }
+    return baseVehicleTypes;
 });
 
 /**
@@ -391,6 +413,7 @@ onMounted(async () => {
         opacity: 0;
         transform: translate3d(0, 15px, 0);
     }
+
     to {
         opacity: 1;
         transform: translate3d(0, 0, 0);

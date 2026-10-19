@@ -30,6 +30,12 @@ const primeVueOptions = {
         reject: 'Cancelar',
         emptyMessage: 'Sin opciones',
         emptyFilterMessage: 'Sin resultados',
+        // PrimeVue mantiene sus textos en inglés si no se sobreescriben aquí
+        // (el merge del locale es profundo: estas claves no pisan las demás).
+        aria: {
+            selectAll: 'Seleccionar todos',
+            unselectAll: 'Desmarcar todos',
+        },
     },
 };
 

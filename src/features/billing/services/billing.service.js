@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { logger } from '@utils/logger.js';
 
 /**
  * Servicios API del módulo de facturación comercial.
@@ -39,6 +40,8 @@ class CommercialInvoicesService extends BillingApiService {
                 const body = res.data?.data ?? res.data ?? [];
                 return Array.isArray(body) ? body : (body.data ?? []);
             } catch (err) {
+                // Un catálogo que falla no debe tumbar el formulario, pero sí deja huella para diagnosticar.
+                logger.warn(`Opciones del formulario no disponibles (${url}):`, err?.message ?? err);
                 return [];
             }
         };
@@ -60,6 +63,7 @@ class CommercialInvoicesService extends BillingApiService {
             const body = res.data?.data ?? res.data ?? [];
             return Array.isArray(body) ? body : (body.data ?? []);
         } catch (err) {
+            logger.warn('Clientes del formulario no disponibles:', err?.message ?? err);
             return [];
         }
     }

@@ -31,6 +31,7 @@ class RadicacionService extends BaseService {
   validar(uuid) { return this._request('GET', `/${uuid}/validar`); }
   crearExpediente(data) { return this._request('POST', '/expediente', { data }); }
   expedientes(params = {}) { return this._request('GET', '/expedientes', { params }); }
+  siguienteCodigo(params = {}) { return this._request('GET', '/next-code', { params }); }
   detalle(uuid) { return this._request('GET', `/${uuid}/detalle`); }
   avanzar(hijoUuid) { return this._request('POST', `/${hijoUuid}/avanzar`); }
   async listarCiudades() {
@@ -38,13 +39,6 @@ class RadicacionService extends BaseService {
       const r = await this._getInstance().get('catalogs/cities/list');
       const items = r.data?.data ?? r.data ?? [];
       return (Array.isArray(items) ? items : []).map((x) => ({ label: x.name ?? x.nombre ?? 'Ciudad', value: x.uuid }));
-    } catch { return []; }
-  }
-  async listarDirectores() {
-    try {
-      const r = await this._getInstance().get('procedure/territorial-directors/list');
-      const items = r.data?.data ?? r.data ?? [];
-      return (Array.isArray(items) ? items : []).map((x) => ({ label: [x.name, x.territorial_director].filter(Boolean).join(' — ') || 'Dirección', value: x.uuid }));
     } catch { return []; }
   }
   enlaceFirma(data) { return this._request('POST', '/enlace-firma', { data }); }

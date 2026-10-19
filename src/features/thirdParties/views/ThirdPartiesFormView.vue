@@ -271,10 +271,8 @@
                                 <label class="form-label required" for="partyTypes">Tipo de Tercero</label>
                                 <PrimeMultiSelect :input-id="'f-partyTypes'" :invalid="!!validationErrors['partyTypes']" v-model="formData.partyTypes" :options="partyTypeOptions"
                                     option-value="value" option-label="label"
-                                    :placeholder="isEmployeeSelected ? 'Empleado (solo)' : 'Seleccione tipo(s)'" class="w-100"
-                                    :selectionLimit="isEmployeeSelected ? 1 : null" :maxSelectedLabels="isEmployeeSelected ? 1 : 3"
+                                    placeholder="Seleccione tipo(s)" class="w-100" :maxSelectedLabels="3"
                                     :class="{'p-invalid': validationErrors.partyTypes}" />
-                                <small v-if="isEmployeeSelected" class="text-info d-block mt-1" style="font-size:.72rem"><i class="fas fa-info-circle me-1"></i>Empleado solo puede tener el tipo Empleado.</small>
                                 <div v-if="validationErrors.partyTypes" class="text-danger small mt-1" id="f-partyTypes-error" role="alert">
                                     {{ validationErrors.partyTypes }}
                                 </div>
@@ -282,12 +280,10 @@
 
                             <div :class="bottomRowColClass">
                                 <label class="form-label" for="rbacRoles">Roles de Acceso</label>
-                                <PrimeMultiSelect :input-id="'f-rbacRoles'" :invalid="!!validationErrors['rbacRoles']" v-model="formData.rbacRoles" :options="filteredRbacRoleOptions"
+                                <PrimeMultiSelect :input-id="'f-rbacRoles'" :invalid="!!validationErrors['rbacRoles']" v-model="formData.rbacRoles" :options="rbacRoleOptions"
                                     option-value="value" option-label="label"
-                                    :placeholder="isEmployeeSelected ? 'Seleccione un único rol' : 'Seleccione rol(es) de usuario'" class="w-100"
-                                    :selectionLimit="isEmployeeSelected ? 1 : null" :maxSelectedLabels="isEmployeeSelected ? 1 : 3"
+                                    placeholder="Seleccione rol(es) de usuario" class="w-100" :maxSelectedLabels="3"
                                     :class="{'p-invalid': validationErrors.rbacRoles}" />
-                                <small v-if="isEmployeeSelected" class="text-info d-block mt-1" style="font-size:.72rem"><i class="fas fa-info-circle me-1"></i>Empleado solo puede tener un único rol (cualquiera, no ligado al tipo).</small>
                                 <div v-if="validationErrors.rbacRoles" class="text-danger small mt-1" id="f-rbacRoles-error" role="alert">
                                     {{ validationErrors.rbacRoles }}
                                 </div>
@@ -445,13 +441,15 @@ import { toast } from '@/utils/toast.js';
  * @resource {ThirdParty}
  */
 
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
 import thirdPartiesService from '../services/thirdParties.service.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import { logger } from '@/utils/logger.js';
 import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
+import { licenciaDesdeDocumento } from '../utils/licenciaDeConductor.js';
+import { esRolReservado, rolesVisibles } from '../../auth/utils/rolesPrivilegiados.js';
 import { elegirLicencia } from '@/utils/driverLicense.js';
 import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -556,6 +554,35 @@ const filePreviews = reactive({});
 
 const isOwnerDriver = computed(() => formData.partyTypes && formData.partyTypes.includes('is_affiliate') && formData.partyTypes.includes('is_driver'));
 
+// Licencia de conducción autollenada con el número de documento (coinciden en
+// Colombia). Espejo de UNA vía: documento → licencia, nunca licencia →
+// documento; y si la licencia ya se tecleó distinta, se respeta.
+const esDriverSeleccionado = computed(() => Boolean(formData.partyTypes?.includes('is_driver')));
+
+// Bandera de carga del registro (crear o editar): mientras el formulario se
+// puebla programáticamente NO se autollena la licencia, para no activar la
+// validación dura (categoría, fechas, afiliado) de un conductor que todavía no
+// tiene licencia registrada. El autollenado queda solo para el tecleo del usuario.
+const cargandoRegistro = ref(false);
+
+// Documento → licencia: cuando el documento cambia y la licencia sigue
+// espejada (vacía o igual al documento anterior), la licencia la acompaña.
+// Flush sincrónico: el watcher corre dentro de la asignación y por eso ve la
+// bandera en true durante toda la carga del registro, sin depender de los turnos.
+watch(() => formData.document_number, (docNuevo, docPrevio) => {
+    if (cargandoRegistro.value || !esDriverSeleccionado.value) return;
+    const licencia = licenciaDesdeDocumento({ documento: docNuevo, licenciaActual: formData.license_number, documentoAnterior: docPrevio });
+    if (licencia !== null) formData.license_number = licencia;
+}, { flush: 'sync' });
+
+// Se marca el tipo Conductor con documento ya escrito y licencia vacía: autollena
+// (los casos restantes de la regla quedan cubiertos por la misma utilidad).
+watch(esDriverSeleccionado, (esDriver) => {
+    if (cargandoRegistro.value || !esDriver) return;
+    const licencia = licenciaDesdeDocumento({ documento: formData.document_number, licenciaActual: formData.license_number, documentoAnterior: formData.document_number });
+    if (licencia !== null) formData.license_number = licencia;
+}, { flush: 'sync' });
+
 /**
  * Opciones del selector "Tipo de Tercero".
  * Son los tipos fijos de tercero (flags is_*) que determinan el perfil del
@@ -576,18 +603,14 @@ const partyTypeOptions = [
  * nuevo en el sistema, aparecerá automáticamente aquí.
  */
 const rbacRoleOptions = computed(() =>
-    (store.catalogs.roles || [])
+    rolesVisibles(store.catalogs.roles, isSuperAdmin.value)
         .map(r => r?.name)
         .filter(Boolean)
         .map(name => ({ value: name, label: name }))
 );
 
-// --- Regla: Empleado solo puede tener un único tipo y un único rol (tipo y rol son independientes) ---
-const isEmployeeSelected = computed(() => formData.partyTypes?.includes('is_employee'));
-const filteredRbacRoleOptions = computed(() => {
-    // Mostrar TODOS los roles siempre, solo limitar selección a 1 cuando es empleado
-    return rbacRoleOptions.value;
-});
+// El rol por defecto y los tipos ya no imponen restricciones: un tercero puede
+// combinar tipos (p. ej. empleado y afiliado) y llevar varios roles de acceso.
 
 // Rol por defecto al crear desde un listado (afiliado/conductor/empleado).
 // Solo si hay sugerencia válida en catálogo y el usuario no eligió nada:
@@ -606,24 +629,6 @@ const bottomRowColClass = computed(() => {
     return isSuperAdmin.value
         ? 'col-12 col-sm-6 col-md-3 col-lg-3'
         : 'col-12 col-sm-6 col-md-4 col-lg-4';
-});
-
-// Forzar regla: si se marca Empleado, solo puede quedar un tipo y un rol (cualquiera)
-watch(isEmployeeSelected, (isEmp) => {
-    if (isEmp) {
-        if (formData.partyTypes.length > 1) formData.partyTypes = ['is_employee'];
-        if (formData.rbacRoles.length > 1) formData.rbacRoles = [formData.rbacRoles[formData.rbacRoles.length - 1]];
-    }
-});
-watch(() => formData.partyTypes, (val) => {
-    if (val?.includes('is_employee') && val.length > 1) {
-        formData.partyTypes = ['is_employee'];
-    }
-}, { deep: true });
-watch(() => formData.rbacRoles, (val) => {
-    if (isEmployeeSelected.value && val?.length > 1) {
-        formData.rbacRoles = [val[val.length - 1]];
-    }
 });
 
 // ─── RUES Lookup ─────────────────────────────────────────────────────────────
@@ -694,16 +699,6 @@ const validateForm = () => {
     if (isEmpty(formData.tax_responsibility_uuid)) validationErrors.tax_responsibility_uuid = 'Este campo es obligatorio';
     if (isEmpty(formData.is_active)) validationErrors.is_active = 'Este campo es obligatorio';
     if (isEmpty(formData.partyTypes) || formData.partyTypes.length === 0) validationErrors.partyTypes = 'Debe seleccionar al menos un tipo de tercero';
-
-    // Regla: Empleado solo puede tener un único tipo y un único rol (independientes)
-    if (isEmployeeSelected.value) {
-        if (formData.partyTypes.length > 1) {
-            validationErrors.partyTypes = 'Un empleado solo puede tener el tipo Empleado (sin combinar con otros).';
-        }
-        if (formData.rbacRoles && formData.rbacRoles.length > 1) {
-            validationErrors.rbacRoles = 'Un empleado solo puede tener un único rol de acceso.';
-        }
-    }
 
     // Validar licencia si es conductor. En edición no se exige cuando el
     // conductor no tiene licencia registrada ni se está diligenciando una,
@@ -867,6 +862,7 @@ const handleSubmit = async () => {
 };
 
 onMounted(async () => {
+    cargandoRegistro.value = true;
     isViewLoading.value = true;
     try {
         await store.loadFormOptions();
@@ -891,7 +887,12 @@ onMounted(async () => {
 
                 // Roles de acceso RBAC que vienen del perfil (p. ej. ADMIN_EMPRESA).
                 // Se normalizan sin perder valores: strings u objetos {name}, sin flags is_*.
-                formData.rbacRoles = normalizarRolesDelPerfil(item.roles);
+                // Los reservados no se seleccionan en la UI salvo para un SUPERADMIN
+                // (el backend los conserva igualmente al sincronizar).
+                const rolesPerfil = normalizarRolesDelPerfil(item.roles);
+                formData.rbacRoles = isSuperAdmin.value
+                    ? rolesPerfil
+                    : rolesPerfil.filter((rol) => !esRolReservado(rol));
 
                 formData.is_active = (item.is_active == 1 || item.is_active === true || item.is_active === '1') ? '1' : '0';
 
@@ -934,6 +935,9 @@ onMounted(async () => {
             formData.partyTypes = [routeType.value];
         }
         aplicarRolPorDefecto();
+        // Última asignación del arranque: desde aquí el tecleo del usuario vuelve
+        // a activar el espejo documento → licencia.
+        cargandoRegistro.value = false;
     }
 });
 </script>
