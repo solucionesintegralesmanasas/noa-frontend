@@ -42,5 +42,16 @@ export const fuecRoutes = [
             layout: 'dashboard',
             permissions: ['fuec.profile'],
         },
+    },
+    {
+        // Ruta pública a la que apunta el QR del FUEC (sin sesión)
+        path: '/validacion-de-fuec/:id?',
+        name: 'fuec.validation',
+        component: () => import('@pages/FuecValidationView.vue'),
+        meta: {
+            title: 'Validación de FUEC',
+            public: true,
+            layout: 'minimal',
+        },
     }
 ];
