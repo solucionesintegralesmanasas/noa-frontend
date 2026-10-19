@@ -271,10 +271,8 @@
                                 <label class="form-label required" for="partyTypes">Tipo de Tercero</label>
                                 <PrimeMultiSelect :input-id="'f-partyTypes'" :invalid="!!validationErrors['partyTypes']" v-model="formData.partyTypes" :options="partyTypeOptions"
                                     option-value="value" option-label="label"
-                                    :placeholder="isEmployeeSelected ? 'Empleado (solo)' : 'Seleccione tipo(s)'" class="w-100"
-                                    :selectionLimit="isEmployeeSelected ? 1 : null" :maxSelectedLabels="isEmployeeSelected ? 1 : 3"
+                                    placeholder="Seleccione tipo(s)" class="w-100" :maxSelectedLabels="3"
                                     :class="{'p-invalid': validationErrors.partyTypes}" />
-                                <small v-if="isEmployeeSelected" class="text-info d-block mt-1" style="font-size:.72rem"><i class="fas fa-info-circle me-1"></i>Empleado solo puede tener el tipo Empleado.</small>
                                 <div v-if="validationErrors.partyTypes" class="text-danger small mt-1" id="f-partyTypes-error" role="alert">
                                     {{ validationErrors.partyTypes }}
                                 </div>
@@ -282,12 +280,10 @@
 
                             <div :class="bottomRowColClass">
                                 <label class="form-label" for="rbacRoles">Roles de Acceso</label>
-                                <PrimeMultiSelect :input-id="'f-rbacRoles'" :invalid="!!validationErrors['rbacRoles']" v-model="formData.rbacRoles" :options="filteredRbacRoleOptions"
+                                <PrimeMultiSelect :input-id="'f-rbacRoles'" :invalid="!!validationErrors['rbacRoles']" v-model="formData.rbacRoles" :options="rbacRoleOptions"
                                     option-value="value" option-label="label"
-                                    :placeholder="isEmployeeSelected ? 'Seleccione un único rol' : 'Seleccione rol(es) de usuario'" class="w-100"
-                                    :selectionLimit="isEmployeeSelected ? 1 : null" :maxSelectedLabels="isEmployeeSelected ? 1 : 3"
+                                    placeholder="Seleccione rol(es) de usuario" class="w-100" :maxSelectedLabels="3"
                                     :class="{'p-invalid': validationErrors.rbacRoles}" />
-                                <small v-if="isEmployeeSelected" class="text-info d-block mt-1" style="font-size:.72rem"><i class="fas fa-info-circle me-1"></i>Empleado solo puede tener un único rol (cualquiera, no ligado al tipo).</small>
                                 <div v-if="validationErrors.rbacRoles" class="text-danger small mt-1" id="f-rbacRoles-error" role="alert">
                                     {{ validationErrors.rbacRoles }}
                                 </div>
@@ -445,7 +441,7 @@ import { toast } from '@/utils/toast.js';
  * @resource {ThirdParty}
  */
 
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
 import thirdPartiesService from '../services/thirdParties.service.js';
@@ -582,12 +578,8 @@ const rbacRoleOptions = computed(() =>
         .map(name => ({ value: name, label: name }))
 );
 
-// --- Regla: Empleado solo puede tener un único tipo y un único rol (tipo y rol son independientes) ---
-const isEmployeeSelected = computed(() => formData.partyTypes?.includes('is_employee'));
-const filteredRbacRoleOptions = computed(() => {
-    // Mostrar TODOS los roles siempre, solo limitar selección a 1 cuando es empleado
-    return rbacRoleOptions.value;
-});
+// El rol por defecto y los tipos ya no imponen restricciones: un tercero puede
+// combinar tipos (p. ej. empleado y afiliado) y llevar varios roles de acceso.
 
 // Rol por defecto al crear desde un listado (afiliado/conductor/empleado).
 // Solo si hay sugerencia válida en catálogo y el usuario no eligió nada:
@@ -606,24 +598,6 @@ const bottomRowColClass = computed(() => {
     return isSuperAdmin.value
         ? 'col-12 col-sm-6 col-md-3 col-lg-3'
         : 'col-12 col-sm-6 col-md-4 col-lg-4';
-});
-
-// Forzar regla: si se marca Empleado, solo puede quedar un tipo y un rol (cualquiera)
-watch(isEmployeeSelected, (isEmp) => {
-    if (isEmp) {
-        if (formData.partyTypes.length > 1) formData.partyTypes = ['is_employee'];
-        if (formData.rbacRoles.length > 1) formData.rbacRoles = [formData.rbacRoles[formData.rbacRoles.length - 1]];
-    }
-});
-watch(() => formData.partyTypes, (val) => {
-    if (val?.includes('is_employee') && val.length > 1) {
-        formData.partyTypes = ['is_employee'];
-    }
-}, { deep: true });
-watch(() => formData.rbacRoles, (val) => {
-    if (isEmployeeSelected.value && val?.length > 1) {
-        formData.rbacRoles = [val[val.length - 1]];
-    }
 });
 
 // ─── RUES Lookup ─────────────────────────────────────────────────────────────
@@ -694,16 +668,6 @@ const validateForm = () => {
     if (isEmpty(formData.tax_responsibility_uuid)) validationErrors.tax_responsibility_uuid = 'Este campo es obligatorio';
     if (isEmpty(formData.is_active)) validationErrors.is_active = 'Este campo es obligatorio';
     if (isEmpty(formData.partyTypes) || formData.partyTypes.length === 0) validationErrors.partyTypes = 'Debe seleccionar al menos un tipo de tercero';
-
-    // Regla: Empleado solo puede tener un único tipo y un único rol (independientes)
-    if (isEmployeeSelected.value) {
-        if (formData.partyTypes.length > 1) {
-            validationErrors.partyTypes = 'Un empleado solo puede tener el tipo Empleado (sin combinar con otros).';
-        }
-        if (formData.rbacRoles && formData.rbacRoles.length > 1) {
-            validationErrors.rbacRoles = 'Un empleado solo puede tener un único rol de acceso.';
-        }
-    }
 
     // Validar licencia si es conductor. En edición no se exige cuando el
     // conductor no tiene licencia registrada ni se está diligenciando una,

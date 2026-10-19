@@ -86,6 +86,7 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - Error routes: `/401`, `/403`, `/404`, `/500`. Catch-all redirects to `/404`.
 - `permissionsStore.hasRole()` normaliza separadores: `super-admin` = `super_admin` = `SUPERADMIN`. Usar `hasRole('superadmin')` / `hasRole('administrador')`.
 - **Roles reservados (2026-10-19):** SUPERADMIN y ADMIN_EMPRESA solo se muestran y gestionan para `hasRole('superadmin')`: el backend los oculta de `auth/roles` y `auth/roles/list` para el resto y el frontend filtra además con `features/auth/utils/rolesPrivilegiados.js` (usado en `UsersListView` y `Rolepermissionsform`; en el listado de usuarios se ocultan "Editar roles" y "Quitar rol" para quien tenga un rol reservado). Prueba: `rolesPrivilegiados.test.js`.
+- **Terceros multi-tipo y multi-rol (2026-10-19):** se retiró del formulario (`ThirdPartiesFormView.vue`, uses y validación inline) la regla "empleado = único tipo y único rol": ahora se pueden marcar varios tipos de tercero y varios roles de acceso (un empleado también puede ser el coordinador de una sede). El backend acepta la combinación y preserva los roles no gestionados al guardar; los roles reservados siguen ocultos según el bullet anterior.
 
 ## Dynamic Layout Resolution
 
