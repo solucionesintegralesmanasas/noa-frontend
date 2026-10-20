@@ -80,16 +80,7 @@ export class BaseService {
         const fullUrl = url.startsWith("http") ? url : `${this.resourcePath}${url}`;
 
         // Inyectar filtro automáticamente si es AFILIADO y es una petición GET
-        const requestParams = { ...params };
-        if (method.toUpperCase() === 'GET') {
-            const { isAfiliado, thirdPartyUuid } = this._getUserContext();
-            if (isAfiliado && thirdPartyUuid) {
-                // Se envía a nivel plano en lugar de anidado en 'filter'
-                // Esto evita que Axios lo envíe como [object Object] y que Spatie QueryBuilder 
-                // explote con un error 400 (InvalidFilterQuery) en catálogos que no lo admiten.
-                requestParams.third_party_uuid = thirdPartyUuid;
-            }
-        }
+        const requestParams = method.toUpperCase() === 'GET' ? this.parametrosDeLectura(params) : { ...params };
 
         try {
             const response = await this._getInstance()({ method, url: fullUrl, data, params: requestParams, ...config });
@@ -98,6 +89,26 @@ export class BaseService {
             logger.error(`💥 ${method} Failed`, { url: fullUrl, message: error.message });
             throw error;
         }
+    }
+
+    /**
+     * Parámetros de una petición GET con el filtro de afiliado inyectado si el rol lo exige.
+     * SOLO con el rol AFILIADO: el filtro por tercero acota al dueño de la flota y el backend
+     * ya impone su propio alcance para conductor. Con EMPLEADO (p. ej. un coordinador de sede
+     * con tercero vinculado) el parámetro dejaba los listados en 0 (filtraba por SU tercero)
+     * o exponía el de otro afiliado si el usuario lo enviaba a mano.
+     */
+    parametrosDeLectura(params = {}) {
+        const requestParams = { ...params };
+        const { isAfiliadoRole, thirdPartyUuid } = this._getUserContext();
+        if (isAfiliadoRole && thirdPartyUuid) {
+            // Se envía a nivel plano en lugar de anidado en 'filter'
+            // Esto evita que Axios lo envíe como [object Object] y que Spatie QueryBuilder
+            // explote con un error 400 (InvalidFilterQuery) en catálogos que no lo admiten.
+            requestParams.third_party_uuid = thirdPartyUuid;
+        }
+
+        return requestParams;
     }
 
     // ─── Helpers multipart ────────────────────────────────────────────────
