@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import axios from 'axios'
+import { useConfigStore } from '@store/modules/config.js'
 import LoginView from '@/features/auth/views/LoginView.vue'
 import LicenseView from '@/views/LicenciaView.vue'
 import NotFoundView from '@/views/NotFound.vue'
@@ -266,10 +267,21 @@ router.afterEach((to) => {
   } catch {
     // Ignorar
   }
+  // Salvaguarda: ninguna vista queda con la barra de navegación al 85% si se le olvidó apagarla
+  try {
+    useConfigStore().endNavigation()
+  } catch {
+    // Ignorar si el store aún no está disponible
+  }
 })
 
 router.onError((error) => {
   tryReloadOnChunkError(error)
+  try {
+    useConfigStore().endNavigation()
+  } catch {
+    // Ignorar si el store aún no está disponible
+  }
 })
 
 export default router

@@ -7,7 +7,13 @@ import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-    plugins: [vue()],
+    plugins: [
+        vue({
+            // En tests los <img src="/..."> de raíz no se transforman a imports:
+            // vitest no puede resolver assets del public/ como módulos de archivo.
+            template: { transformAssetUrls: false },
+        }),
+    ],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
