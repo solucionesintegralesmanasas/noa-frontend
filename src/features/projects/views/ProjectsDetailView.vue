@@ -144,8 +144,89 @@
                                 {{ inactiveAssignments.length }} retirado{{ inactiveAssignments.length !== 1 ? 's' : '' }}
                             </span>
                         </h6>
+                        <button v-if="can('projects.update')" ref="addAssignmentButton" type="button"
+                            class="btn btn-add-assignment ms-auto" :aria-expanded="showAddAssignment"
+                            aria-controls="f-nueva-asignacion"
+                            :aria-label="showAddAssignment ? 'Cerrar el formulario de asignación' : 'Agregar conductor y vehículo'"
+                            :title="showAddAssignment ? 'Cerrar' : 'Agregar conductor + vehículo'"
+                            @click="toggleAddAssignment">
+                            <i :class="showAddAssignment ? 'fad fa-times' : 'fad fa-plus'" aria-hidden="true" />
+                        </button>
                     </div>
                     <div class="card-body py-2">
+                        <!-- Nueva asignación: panel inline para no salir del detalle -->
+                        <div v-if="showAddAssignment" id="f-nueva-asignacion"
+                            class="nueva-asignacion border rounded-3 p-3 mb-2">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <span class="small fw-semibold text-dark">
+                                    <i class="fad fa-user-plus me-1" aria-hidden="true" />
+                                    Nueva asignación de conductor a vehículo
+                                </span>
+                                <span class="small text-muted">Completa ambos campos para vincular</span>
+                            </div>
+
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label small mb-1" for="f-nuevo-conductor">Conductor</label>
+                                    <PrimeSelect v-model="newAssignment.third_party_uuid"
+                                        :options="availableDrivers" optionLabel="label" optionValue="uuid"
+                                        :filter="true" showClear placeholder="Seleccione conductor..."
+                                        class="w-100" :inputId="'f-nuevo-conductor'"
+                                        :invalid="!!addAssignmentError"
+                                        :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small mb-1" for="f-nuevo-vehiculo">Vehículo</label>
+                                    <PrimeSelect v-model="newAssignment.vehicle_uuid"
+                                        :options="availableVehicles" optionLabel="label" optionValue="uuid"
+                                        :filter="true" showClear placeholder="Seleccione vehículo..."
+                                        class="w-100" :inputId="'f-nuevo-vehiculo'"
+                                        :invalid="!!addAssignmentError"
+                                        :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
+                                </div>
+                                <div class="col-12 col-md-3 d-flex gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1"
+                                        :disabled="savingAssignment || !newAssignment.third_party_uuid || !newAssignment.vehicle_uuid"
+                                        @click="submitNewAssignment">
+                                        <span v-if="savingAssignment" class="spinner-border spinner-border-sm"
+                                            aria-hidden="true"></span>
+                                        <i v-else class="fad fa-plus" aria-hidden="true" />
+                                        Asignar
+                                    </button>
+                                    <button type="button" class="btn btn-falcon-default btn-sm"
+                                        :disabled="savingAssignment" @click="closeAddAssignment">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="catalogsLoading" class="small text-muted mt-2" role="status">
+                                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                Cargando conductores y vehículos…
+                            </div>
+                            <div v-else-if="catalogError" class="alert alert-warning py-2 px-3 mt-2 mb-0 small"
+                                role="alert">
+                                <i class="fad fa-triangle-exclamation me-1" aria-hidden="true" />{{ catalogError }}
+                            </div>
+                            <p v-else-if="!availableDrivers.length || !availableVehicles.length"
+                                class="alert alert-light border py-2 px-3 mt-2 mb-0 small">
+                                <i class="fad fa-info-circle me-1" aria-hidden="true" />
+                                <template v-if="!availableDrivers.length && !availableVehicles.length">
+                                    No quedan conductores ni vehículos disponibles para asignar.
+                                </template>
+                                <template v-else-if="!availableDrivers.length">
+                                    No quedan conductores disponibles: todos los conductores activos ya están asignados.
+                                </template>
+                                <template v-else>
+                                    No quedan vehículos disponibles: todos los vehículos activos ya están asignados.
+                                </template>
+                            </p>
+                            <div v-if="addAssignmentError" id="f-nueva-asignacion-error"
+                                class="invalid-feedback d-block mt-2" role="alert">
+                                {{ addAssignmentError }}
+                            </div>
+                        </div>
+
                         <div v-if="project.assignments?.length" class="list-group list-group-flush small">
                             <div v-for="assignment in project.assignments" :key="assignment.uuid"
                                 class="list-group-item py-2 px-0 border-0 d-flex flex-wrap align-items-center"
@@ -343,7 +424,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, nextTick, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectsStore } from '../store/projects.store.js';
 import { useServiceDeliveryControlSheetStore } from '../../serviceDeliveryControlSheet/store/serviceDeliveryControlSheet.store.js';
@@ -352,8 +433,10 @@ import { formatRango, diasHijos, recorridosCount, esCerrado } from '../../servic
 import { usePermissionsStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import { getMediaUrl } from '@/utils/media.js';
 import { claseEstadoServicio, etiquetaEstadoServicio, tituloEstadoServicio } from '@/utils/serviceDeliveryStatus.js';
+import { payloadConAlternancia, payloadConNuevaAsignacion } from '../utils/assignments.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -396,18 +479,120 @@ const toggleAssignment = async (assignment) => {
     if (togglingUuid.value) return;
     togglingUuid.value = assignment.uuid;
     try {
-        const assignments = (project.value.assignments || []).map((a) => ({
-            third_party_uuid: a.third_party_uuid,
-            vehicle_uuid: a.vehicle_uuid,
-            is_active: a.uuid === assignment.uuid ? !(a.is_active !== false) : a.is_active !== false,
-        }));
-
-        await store.updateItem(route.params.id, { assignments });
+        await store.updateItem(route.params.id, {
+            assignments: payloadConAlternancia(project.value.assignments, assignment),
+        });
         project.value = await store.fetchProfileById(route.params.id);
-    } catch (err) {
+    } catch {
         await toast('Error', 'No se pudo actualizar la asignación', 'error');
     } finally {
         togglingUuid.value = null;
+    }
+};
+
+// --- Nueva asignación desde el detalle (panel inline del "+") ---
+const showAddAssignment = ref(false);
+const addAssignmentButton = ref(null);
+const savingAssignment = ref(false);
+const catalogsLoading = ref(false);
+const catalogsLoaded = ref(false);
+const catalogError = ref('');
+const addAssignmentError = ref('');
+const newAssignment = reactive({ third_party_uuid: '', vehicle_uuid: '' });
+
+const assignedDriverUuids = computed(() => new Set(activeAssignments.value.map((a) => a.third_party_uuid)));
+const assignedVehicleUuids = computed(() => new Set(activeAssignments.value.map((a) => a.vehicle_uuid)));
+
+const driverOptionLabel = (conductor) => {
+    const nombre = driverName(conductor);
+    const documento = conductor.document_number && !nombre.includes(conductor.document_number)
+        ? ` (CC: ${conductor.document_number})`
+        : '';
+    return `${nombre}${documento}`;
+};
+
+const vehicleOptionLabel = (vehiculo) => {
+    const base = vehiculo.vehicle_license_plate || vehiculo.internal_number || 'Vehículo';
+    return vehiculo.vehicle_license_plate && vehiculo.internal_number
+        ? `${base} · No. interno: ${vehiculo.internal_number}`
+        : base;
+};
+
+/** Conductores activos que aún no están asignados al proyecto. */
+const availableDrivers = computed(() =>
+    (store.catalogs.drivers || [])
+        .filter((conductor) => conductor.is_active !== false && !assignedDriverUuids.value.has(conductor.uuid))
+        .map((conductor) => ({ uuid: conductor.uuid, label: driverOptionLabel(conductor) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'))
+);
+
+/** Vehículos activos que aún no están asignados al proyecto. */
+const availableVehicles = computed(() =>
+    (store.catalogs.vehicles || [])
+        .filter((vehiculo) => vehiculo.is_active !== false && !assignedVehicleUuids.value.has(vehiculo.uuid))
+        .map((vehiculo) => ({ uuid: vehiculo.uuid, label: vehicleOptionLabel(vehiculo) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es'))
+);
+
+const loadAssignmentCatalogs = async () => {
+    if (catalogsLoaded.value || catalogsLoading.value) return;
+    catalogsLoading.value = true;
+    catalogError.value = '';
+    try {
+        await store.loadCatalogs();
+        catalogsLoaded.value = true;
+    } catch {
+        catalogError.value = 'No se pudieron cargar los conductores y vehículos.';
+    } finally {
+        catalogsLoading.value = false;
+    }
+};
+
+const toggleAddAssignment = async () => {
+    if (showAddAssignment.value) {
+        closeAddAssignment();
+        return;
+    }
+    showAddAssignment.value = true;
+    addAssignmentError.value = '';
+    await loadAssignmentCatalogs();
+    await nextTick();
+    document.getElementById('f-nuevo-conductor')?.focus();
+};
+
+const closeAddAssignment = () => {
+    showAddAssignment.value = false;
+    addAssignmentError.value = '';
+    newAssignment.third_party_uuid = '';
+    newAssignment.vehicle_uuid = '';
+    nextTick(() => addAssignmentButton.value?.focus());
+};
+
+const submitNewAssignment = async () => {
+    addAssignmentError.value = '';
+    if (!newAssignment.third_party_uuid || !newAssignment.vehicle_uuid) {
+        addAssignmentError.value = 'Selecciona el conductor y el vehículo.';
+        return;
+    }
+    if (savingAssignment.value) return;
+
+    savingAssignment.value = true;
+    try {
+        await store.updateItem(route.params.id, {
+            assignments: payloadConNuevaAsignacion(project.value?.assignments, {
+                third_party_uuid: newAssignment.third_party_uuid,
+                vehicle_uuid: newAssignment.vehicle_uuid,
+            }),
+        });
+        project.value = await store.fetchProfileById(route.params.id);
+        closeAddAssignment();
+    } catch (err) {
+        const detalles = err?.response?.data?.error?.details;
+        addAssignmentError.value = Array.isArray(detalles) && detalles[0]?.messages?.[0]
+            ? detalles[0].messages[0]
+            : 'No se pudo agregar la asignación. Revisa los datos e inténtalo de nuevo.';
+    } finally {
+        savingAssignment.value = false;
     }
 };
 
@@ -622,6 +807,28 @@ dd {
     background: #f8f9fa;
     border-color: #e9ecef;
     color: #212529;
+}
+
+/* Botón "+" del panel de asignaciones: solo icono, con tooltip y aria-label. */
+.btn-add-assignment {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.25);
+    color: #0d6efd;
+    flex-shrink: 0;
+}
+
+.btn-add-assignment:hover:not(:disabled) {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.nueva-asignacion {
+    background: #f8f9fa;
 }
 
 .btn:hover:not(:disabled) {
