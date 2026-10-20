@@ -134,108 +134,27 @@
 
             <!-- Asignaciones conductor → vehículo -->
             <div class="col-12 col-sm-12 col-md-12 col-lg-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center gap-2">
-                        <i class="fad fa-users text-primary" style="font-size: 14px;"></i>
-                        <h6 class="mb-0 fw-medium" style="font-size: 0.9rem;">
-                            Conductores y sus vehículos ({{ activeAssignments.length }})
-                            <span v-if="inactiveAssignments.length" class="badge badge-subtle-danger ms-1"
-                                style="font-size:0.65rem;">
+                <div class="card assignments-card">
+                    <div class="card-header assignments-header">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <i class="fad fa-users assignments-header-icon" aria-hidden="true"></i>
+                            <h6 class="assignments-title mb-0">
+                                Conductores y sus vehículos
+                                <span class="assignments-count">({{ activeAssignments.length }})</span>
+                            </h6>
+                            <span v-if="inactiveAssignments.length" class="badge assignment-badge-inactive ms-1">
                                 {{ inactiveAssignments.length }} retirado{{ inactiveAssignments.length !== 1 ? 's' : '' }}
                             </span>
-                        </h6>
-                        <button v-if="can('projects.update')" ref="addAssignmentButton" type="button"
-                            class="btn btn-add-assignment ms-auto" :aria-expanded="showAddAssignment"
-                            aria-controls="f-nueva-asignacion"
-                            :aria-label="showAddAssignment ? 'Cerrar el formulario de asignación' : 'Agregar conductor y vehículo'"
-                            :title="showAddAssignment ? 'Cerrar' : 'Agregar conductor + vehículo'"
-                            @click="toggleAddAssignment">
-                            <i :class="showAddAssignment ? 'fad fa-times' : 'fad fa-plus'" aria-hidden="true" />
-                        </button>
-                    </div>
-                    <div class="card-body py-2">
-                        <!-- Nueva asignación: panel inline para no salir del detalle -->
-                        <div v-if="showAddAssignment" id="f-nueva-asignacion"
-                            class="nueva-asignacion border rounded-3 p-3 mb-2">
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                <span class="small fw-semibold text-dark">
-                                    <i class="fad fa-user-plus me-1" aria-hidden="true" />
-                                    Nueva asignación de conductor a vehículo
-                                </span>
-                                <span class="small text-muted">Completa ambos campos para vincular</span>
-                            </div>
-
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label small mb-1" for="f-nuevo-conductor">Conductor</label>
-                                    <PrimeSelect v-model="newAssignment.third_party_uuid"
-                                        :options="availableDrivers" optionLabel="label" optionValue="uuid"
-                                        :filter="true" showClear placeholder="Seleccione conductor..."
-                                        class="w-100" :inputId="'f-nuevo-conductor'"
-                                        :invalid="!!addAssignmentError"
-                                        :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small mb-1" for="f-nuevo-vehiculo">Vehículo</label>
-                                    <PrimeSelect v-model="newAssignment.vehicle_uuid"
-                                        :options="availableVehicles" optionLabel="label" optionValue="uuid"
-                                        :filter="true" showClear placeholder="Seleccione vehículo..."
-                                        class="w-100" :inputId="'f-nuevo-vehiculo'"
-                                        :invalid="!!addAssignmentError"
-                                        :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
-                                </div>
-                                <div class="col-12 col-md-3 d-flex gap-2">
-                                    <button type="button" class="btn btn-primary btn-sm flex-grow-1"
-                                        :disabled="savingAssignment || !newAssignment.third_party_uuid || !newAssignment.vehicle_uuid"
-                                        @click="submitNewAssignment">
-                                        <span v-if="savingAssignment" class="spinner-border spinner-border-sm"
-                                            aria-hidden="true"></span>
-                                        <i v-else class="fad fa-plus" aria-hidden="true" />
-                                        Asignar
-                                    </button>
-                                    <button type="button" class="btn btn-falcon-default btn-sm"
-                                        :disabled="savingAssignment" @click="closeAddAssignment">
-                                        Cancelar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div v-if="catalogsLoading" class="small text-muted mt-2" role="status">
-                                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                                Cargando conductores y vehículos…
-                            </div>
-                            <div v-else-if="catalogError" class="alert alert-warning py-2 px-3 mt-2 mb-0 small"
-                                role="alert">
-                                <i class="fad fa-triangle-exclamation me-1" aria-hidden="true" />{{ catalogError }}
-                            </div>
-                            <p v-else-if="!availableDrivers.length || !availableVehicles.length"
-                                class="alert alert-light border py-2 px-3 mt-2 mb-0 small">
-                                <i class="fad fa-info-circle me-1" aria-hidden="true" />
-                                <template v-if="!availableDrivers.length && !availableVehicles.length">
-                                    No quedan conductores ni vehículos disponibles para asignar.
-                                </template>
-                                <template v-else-if="!availableDrivers.length">
-                                    No quedan conductores disponibles: todos los conductores activos ya están asignados.
-                                </template>
-                                <template v-else>
-                                    No quedan vehículos disponibles: todos los vehículos activos ya están asignados.
-                                </template>
-                            </p>
-                            <div v-if="addAssignmentError" id="f-nueva-asignacion-error"
-                                class="invalid-feedback d-block mt-2" role="alert">
-                                {{ addAssignmentError }}
-                            </div>
                         </div>
-
-                        <div v-if="project.assignments?.length" class="list-group list-group-flush small">
+                    </div>
+                    <div class="card-body p-0">
+                        <div v-if="project.assignments?.length" class="assignments-list">
                             <div v-for="assignment in project.assignments" :key="assignment.uuid"
-                                class="list-group-item py-2 px-0 border-0 d-flex flex-wrap align-items-center"
-                                style="border-bottom: 1px solid #e9ecef !important;">
+                                class="assignment-row d-flex flex-wrap align-items-center">
                                 <div class="row w-100 g-2 g-md-3 align-items-center">
                                     <!-- Conductor -->
                                     <div class="col-12 col-md-5 d-flex align-items-center gap-2">
-                                        <div
-                                            class="avatar-placeholder bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
+                                        <div class="assignment-avatar assignment-avatar-driver">
                                             <i class="fad fa-user" style="font-size: 14px;" />
                                         </div>
                                         <div class="min-w-0 flex-grow-1">
@@ -245,11 +164,11 @@
                                                 {{ assignment.conductor?.document_number || 'Sin documento' }}
                                             </small>
                                         </div>
-                                        <span v-if="assignment.is_active" class="badge badge-subtle-success flex-shrink-0"
-                                            style="font-size:0.65rem;">
+                                        <span v-if="assignment.is_active"
+                                            class="badge assignment-badge-active flex-shrink-0">
                                             Activo
                                         </span>
-                                        <span v-else class="badge badge-subtle-danger flex-shrink-0" style="font-size:0.65rem;">
+                                        <span v-else class="badge assignment-badge-inactive flex-shrink-0">
                                             Retirado
                                         </span>
                                     </div>
@@ -261,8 +180,7 @@
 
                                     <!-- Vehículo del conductor -->
                                     <div class="col-12 col-md d-flex align-items-center gap-2">
-                                        <div
-                                            class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0">
+                                        <div class="assignment-avatar assignment-avatar-vehicle">
                                             <i class="fad fa-truck" style="font-size: 14px;" />
                                         </div>
                                         <div class="min-w-0">
@@ -280,7 +198,9 @@
 
                                     <!-- Acciones -->
                                     <div v-if="can('projects.update')" class="col-auto ms-auto flex-shrink-0">
-                                        <button type="button" class="btn btn-sm btn-falcon-default py-0 px-2"
+                                        <button type="button"
+                                            class="btn btn-sm assignment-action"
+                                            :class="assignment.is_active ? 'assignment-action-retirar' : 'assignment-action-reactivar'"
                                             :disabled="togglingUuid === assignment.uuid"
                                             :title="assignment.is_active ? 'Retirar asignación' : 'Reactivar asignación'"
                                             @click="toggleAssignment(assignment)">
@@ -294,9 +214,111 @@
                                 </div>
                             </div>
                         </div>
-                        <p v-else class="text-muted small mb-0 mt-2">
+                        <p v-if="!project.assignments?.length" class="assignment-empty">
                             <i class="fad fa-info-circle me-1" aria-hidden="true" />Este proyecto aún no tiene conductores con vehículos asignados.
                         </p>
+
+                        <!-- Alta al final: lo último asignado queda al final del historial -->
+                        <div v-if="can('projects.update')" class="assignment-add">
+                            <div class="assignment-add-row">
+                                <span class="assignment-add-line" aria-hidden="true"></span>
+                                <button ref="addAssignmentButton" type="button" class="assignment-add-button"
+                                    :aria-expanded="showAddAssignment" aria-controls="f-nueva-asignacion"
+                                    :aria-label="showAddAssignment ? 'Cerrar el formulario de asignación' : 'Agregar conductor y vehículo'"
+                                    :title="showAddAssignment ? 'Cerrar' : 'Agregar conductor + vehículo'"
+                                    @click="toggleAddAssignment">
+                                    <i :class="showAddAssignment ? 'fad fa-times' : 'fad fa-plus'"
+                                        aria-hidden="true" />
+                                </button>
+                                <span class="assignment-add-line" aria-hidden="true"></span>
+                            </div>
+
+                            <div v-if="showAddAssignment" id="f-nueva-asignacion" class="assignment-form">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <span class="assignment-form-title d-inline-flex align-items-center gap-2">
+                                        <span class="assignment-form-dot" aria-hidden="true"></span>
+                                        Nueva asignación de conductor a vehículo
+                                    </span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">Completa ambos campos
+                                        para vincular</span>
+                                </div>
+
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-5">
+                                        <label class="form-label small mb-1" for="f-nuevo-conductor">Conductor</label>
+                                        <PrimeSelect v-model="newAssignment.third_party_uuid"
+                                            :options="availableDrivers" optionLabel="label" optionValue="uuid"
+                                            :filter="true" showClear placeholder="Seleccione conductor..."
+                                            class="w-100" :inputId="'f-nuevo-conductor'"
+                                            :invalid="!!addAssignmentError"
+                                            :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small mb-1" for="f-nuevo-vehiculo">Vehículo</label>
+                                        <PrimeSelect v-model="newAssignment.vehicle_uuid"
+                                            :options="availableVehicles" optionLabel="label" optionValue="uuid"
+                                            :filter="true" showClear placeholder="Seleccione vehículo..."
+                                            class="w-100" :inputId="'f-nuevo-vehiculo'"
+                                            :invalid="!!addAssignmentError"
+                                            :aria-describedby="addAssignmentError ? 'f-nueva-asignacion-error' : undefined" />
+                                    </div>
+                                    <div class="col-12 col-md-3 d-flex gap-2">
+                                        <button type="button" class="assignment-btn-primary flex-grow-1"
+                                            :disabled="savingAssignment || !newAssignment.third_party_uuid || !newAssignment.vehicle_uuid"
+                                            @click="submitNewAssignment">
+                                            <span v-if="savingAssignment" class="spinner-border spinner-border-sm"
+                                                aria-hidden="true"></span>
+                                            <i v-else class="fad fa-plus" aria-hidden="true" />
+                                            Asignar
+                                        </button>
+                                        <button type="button" class="assignment-btn-ghost"
+                                            :disabled="savingAssignment" @click="closeAddAssignment">
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div v-if="catalogsLoading" class="text-muted mt-2" style="font-size: 0.75rem;"
+                                    role="status">
+                                    <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                                    Cargando conductores y vehículos…
+                                </div>
+                                <div v-else-if="catalogError" class="assignment-form-alert" role="alert">
+                                    <i class="fad fa-triangle-exclamation me-1" aria-hidden="true" />{{ catalogError }}
+                                </div>
+                                <p v-else-if="!availableDrivers.length || !availableVehicles.length"
+                                    class="assignment-form-note">
+                                    <i class="fad fa-info-circle me-1" aria-hidden="true" />
+                                    <template v-if="!availableDrivers.length && !availableVehicles.length">
+                                        No quedan conductores ni vehículos disponibles para asignar.
+                                    </template>
+                                    <template v-else-if="!availableDrivers.length">
+                                        No quedan conductores disponibles: todos los conductores activos ya están asignados.
+                                    </template>
+                                    <template v-else>
+                                        No quedan vehículos disponibles: todos los vehículos activos ya están asignados.
+                                    </template>
+                                </p>
+                                <div v-if="addAssignmentError" id="f-nueva-asignacion-error"
+                                    class="assignment-form-error" role="alert">
+                                    {{ addAssignmentError }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="assignment-footer">
+                        <span>Mostrando <strong>{{ activeAssignments.length }}</strong> activos de
+                            <strong>{{ (project.assignments || []).length }}</strong> registros</span>
+                        <span class="d-inline-flex align-items-center gap-3">
+                            <span class="assignment-footer-stat">
+                                <span class="assignment-dot assignment-dot-active" aria-hidden="true"></span>
+                                Activos: {{ activeAssignments.length }}
+                            </span>
+                            <span class="assignment-footer-stat">
+                                <span class="assignment-dot assignment-dot-inactive" aria-hidden="true"></span>
+                                Retirados: {{ inactiveAssignments.length }}
+                            </span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -809,26 +831,316 @@ dd {
     color: #212529;
 }
 
-/* Botón "+" del panel de asignaciones: solo icono, con tooltip y aria-label. */
-.btn-add-assignment {
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border-radius: 50%;
-    background: rgba(13, 110, 253, 0.1);
-    border: 1px solid rgba(13, 110, 253, 0.25);
-    color: #0d6efd;
+/* ===== ASIGNACIONES (estilo Stitch) ===== */
+.assignments-card {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    overflow: hidden;
+}
+
+.assignments-card:hover {
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07) !important;
+}
+
+.assignments-header {
+    background: #fff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 14px 18px;
+}
+
+.assignments-header-icon {
+    color: #2563eb;
+    font-size: 14px;
+}
+
+.assignments-title {
+    color: #1e293b;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.assignments-count {
+    color: #64748b;
+    font-weight: 400;
+}
+
+.assignment-badge-inactive {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+    border-radius: 999px !important;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.assignment-row {
+    padding: 12px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+}
+
+.assignments-list .assignment-row:last-child {
+    border-bottom: none;
+}
+
+.assignment-row:hover {
+    background: #f8fafc;
+}
+
+.assignment-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
-.btn-add-assignment:hover:not(:disabled) {
-    background: #0d6efd;
-    border-color: #0d6efd;
+.assignment-avatar-driver {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.assignment-avatar-vehicle {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.assignment-badge-active {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px !important;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.assignment-action {
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 9px;
+}
+
+.assignment-action-retirar {
+    border: 1px solid #fecdd3;
+    color: #e11d48;
+}
+
+.assignment-action-retirar:hover:not(:disabled) {
+    background: #fff1f2;
+    border-color: #fda4af;
+    color: #be123c;
+}
+
+.assignment-action-reactivar {
+    border: 1px solid #a7f3d0;
+    color: #047857;
+}
+
+.assignment-action-reactivar:hover:not(:disabled) {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+.assignment-empty {
+    margin: 0;
+    padding: 16px 18px;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.assignment-add {
+    padding: 12px 18px 16px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.assignment-add-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.assignment-add-line {
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.assignment-add-button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #fff;
+    border: 1px solid #bfdbfe;
+    color: #2563eb;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition: all 0.15s ease;
+}
+
+.assignment-add-button:hover:not(:disabled) {
+    background: #2563eb;
+    border-color: #2563eb;
     color: #fff;
 }
 
-.nueva-asignacion {
-    background: #f8f9fa;
+.assignment-form {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background: #f8fbff;
+}
+
+.assignment-form-title {
+    color: #1e3a8a;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.assignment-form-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2563eb;
+}
+
+.assignment-form .form-label {
+    color: #334155;
+    font-weight: 600;
+}
+
+.assignment-form-alert {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 0.75rem;
+}
+
+.assignment-form-note {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.assignment-form-error {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid #fecdd3;
+    border-radius: 8px;
+    background: #fff1f2;
+    color: #be123c;
+    font-size: 0.75rem;
+}
+
+.assignment-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 6px 12px;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+
+.assignment-btn-primary:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.assignment-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.assignment-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+
+.assignment-btn-ghost:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.assignment-btn-ghost:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.assignment-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 18px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.72rem;
+}
+
+.assignment-footer-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.assignment-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.assignment-dot-active {
+    background: #10b981;
+}
+
+.assignment-dot-inactive {
+    background: #f43f5e;
 }
 
 .btn:hover:not(:disabled) {
