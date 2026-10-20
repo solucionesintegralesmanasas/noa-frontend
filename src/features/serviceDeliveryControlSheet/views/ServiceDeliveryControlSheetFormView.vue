@@ -155,19 +155,32 @@
                                 <hr class="my-2">
                                 <h6 class="fw-medium text-primary"><i class="fad fa-file-contract me-1"></i>Control
                                     Directo con la Empresa
-                                    <span v-if="formData.project_uuid" class="badge bg-info ms-2">Filtrado por proyecto</span>
+                                    <span v-if="formData.project_uuid && !mostrarTodos && proyectoCargado"
+                                        class="badge bg-info ms-2">
+                                        {{ asignacionesProyecto.length }} del proyecto
+                                    </span>
                                 </h6>
                             </div>
-                            <div class="col-12 col-sm-6 col-xl-5">
-                                <label class="form-label" for="fuec_uuid">FUEC asociado</label>
-                                <PrimeSelect :input-id="'fuec_uuid'" v-model="formData.fuec_uuid"
-                                    :options="store.catalogs.fuecs" option-value="uuid"
-                                    :option-label="(opt) => opt.fuec_number ?? opt.uuid" placeholder="Seleccione..."
-                                    showClear filter class="w-100" :invalid="!!validationErrors['fuec_uuid']" />
-                                <div v-if="validationErrors.fuec_uuid" class="invalid-feedback d-block" id="f-fuec_uuid-error" role="alert">{{
-                                    validationErrors.fuec_uuid }}</div>
+
+                            <div class="col-12" v-if="formData.project_uuid && !mostrarTodos">
+                                <div v-if="sinAsignacionesProyecto"
+                                    class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-0 small"
+                                    role="alert">
+                                    <i class="fad fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+                                    <span>
+                                        El proyecto seleccionado no tiene conductores ni vehículos activos asignados.
+                                        Asígnalos desde el detalle del proyecto o activa «Mostrar todos» para elegir
+                                        fuera del proyecto.
+                                    </span>
+                                </div>
+                                <div v-else class="form-text text-muted small">
+                                    <i class="fad fa-project-diagram me-1" aria-hidden="true"></i>
+                                    {{ resumenAsignaciones }}. Al elegir un conductor se completa su vehículo y
+                                    viceversa.
+                                </div>
                             </div>
-                            <div class="col-12 col-sm-6 col-xl-3">
+
+                            <div class="col-12 col-sm-6 col-xl-6">
                                 <label class="form-label required" for="vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
                                     :options="vehiculosFiltrados" option-value="uuid"
@@ -177,7 +190,7 @@
                                     validationErrors.vehicle_uuid }}</div>
                             </div>
 
-                            <div class="col-12 col-sm-6 col-xl-4">
+                            <div class="col-12 col-sm-6 col-xl-6">
                                 <label class="form-label required" for="third_party_uuid">Conductor</label>
                                 <PrimeSelect :input-id="'third_party_uuid'" v-model="formData.third_party_uuid"
                                     :options="conductoresFiltrados" option-value="uuid"
@@ -188,7 +201,7 @@
                                     validationErrors.third_party_uuid }}</div>
                                 <div class="form-check form-switch mt-2" v-if="formData.project_uuid">
                                     <input class="form-check-input" type="checkbox" id="showAllDrivers" v-model="mostrarTodos">
-                                    <label class="form-check-label small text-muted" for="showAllDrivers">Mostrar todos los conductores/vehículos (fuera del proyecto)</label>
+                                    <label class="form-check-label small text-muted" for="showAllDrivers">Mostrar todos los conductores y vehículos de la empresa (fuera del proyecto)</label>
                                 </div>
                             </div>
                         </template>
@@ -306,6 +319,13 @@ import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
+import {
+    asignacionesActivas,
+    asignacionDeConductor,
+    asignacionDeVehiculo,
+    opcionesConductores,
+    opcionesVehiculos,
+} from '../utils/projectAssignments.js';
 
 // --- STORES Y ROUTER ---
 const route = useRoute();
@@ -403,45 +423,103 @@ const fueraDeVigencia = computed(() => {
     return false;
 });
 
-const asignacionesProyecto = computed(() => {
-    const d = store.projectDetail;
-    if (!d || d.uuid !== formData.project_uuid) return [];
-    const todas = d.driverVehicleAssignments || d.driver_vehicle_assignments || d.assignments || [];
-    const activas = todas.filter(a => a.is_active !== false && a.is_active !== 0);
-    return activas.length ? activas : todas;
+const asignacionesProyecto = computed(() =>
+    asignacionesActivas(store.projectDetail, formData.project_uuid)
+);
+
+const proyectoCargado = computed(() =>
+    !!store.projectDetail && store.projectDetail.uuid === formData.project_uuid
+);
+
+const sinAsignacionesProyecto = computed(() =>
+    proyectoCargado.value
+    && !mostrarTodos.value
+    && asignacionesProyecto.value.length === 0
+);
+
+const resumenAsignaciones = computed(() => {
+    const total = asignacionesProyecto.value.length;
+    return `${total} ${total === 1 ? 'asignación activa' : 'asignaciones activas'} en el proyecto`;
 });
 
+// Con el proyecto cargado, las opciones salen exactamente de sus asignaciones
+// activas (no del catálogo general). Si el detalle aún no llega o falla, se
+// mantiene el catálogo para no dejar los campos vacíos.
 const vehiculosFiltrados = computed(() => {
     const all = store.catalogs.vehicles || [];
-    if (!formData.project_uuid || mostrarTodos.value || !asignacionesProyecto.value.length) return all;
-    const uuids = new Set(asignacionesProyecto.value.map(a => a.vehicle_uuid).filter(Boolean));
-    const filtered = all.filter(v => uuids.has(v.uuid));
-    return filtered.length ? filtered : all;
+    if (!formData.project_uuid || mostrarTodos.value || !proyectoCargado.value) return all;
+    return opcionesVehiculos(asignacionesProyecto.value);
 });
 
 const conductoresFiltrados = computed(() => {
     const all = store.catalogs.drivers || [];
-    if (!formData.project_uuid || mostrarTodos.value || !asignacionesProyecto.value.length) return all;
-    const uuids = new Set(asignacionesProyecto.value.map(a => a.third_party_uuid).filter(Boolean));
-    const filtered = all.filter(c => uuids.has(c.uuid));
-    return filtered.length ? filtered : all;
+    if (!formData.project_uuid || mostrarTodos.value || !proyectoCargado.value) return all;
+    return opcionesConductores(asignacionesProyecto.value);
 });
+
+/**
+ * Completa el otro extremo del par conductor ↔ vehículo con la asignación
+ * activa del proyecto. Evita que se guarden combinaciones que no existen.
+ *
+ * @param {'conductor'|'vehiculo'} origen - Campo que cambió.
+ */
+const completarParDelProyecto = (origen) => {
+    if (mostrarTodos.value || !formData.project_uuid || !proyectoCargado.value) return;
+    const asignaciones = asignacionesProyecto.value;
+    if (!asignaciones.length) return;
+
+    if (origen === 'conductor' && formData.third_party_uuid) {
+        const asignacion = asignacionDeConductor(asignaciones, formData.third_party_uuid);
+        if (asignacion?.vehicle_uuid && asignacion.vehicle_uuid !== formData.vehicle_uuid) {
+            formData.vehicle_uuid = asignacion.vehicle_uuid;
+        }
+    }
+
+    if (origen === 'vehiculo' && formData.vehicle_uuid) {
+        const asignacion = asignacionDeVehiculo(asignaciones, formData.vehicle_uuid);
+        if (asignacion?.third_party_uuid && asignacion.third_party_uuid !== formData.third_party_uuid) {
+            formData.third_party_uuid = asignacion.third_party_uuid;
+        }
+    }
+};
 
 
 
 // --- LOGICA DEL COMPONENTE ---
 
-// Autocompletar nombre de conductor al seleccionar uno
+// Autocompletar el nombre del responsable y el vehículo del conductor elegido.
 watch(() => formData.third_party_uuid, (newUuid) => {
-    if (newUuid && store.catalogs.drivers) {
-        const selectedDriver = store.catalogs.drivers.find(d => d.uuid === newUuid);
-        if (selectedDriver) {
-            formData.official_name_and_surname = `${selectedDriver.first_name} ${selectedDriver.last_name}`;
-        } else if (!isExternalType.value) {
-            formData.official_name_and_surname = '';
-        }
+    const listaProyecto = conductoresFiltrados.value || [];
+    const selectedDriver = newUuid
+        ? listaProyecto.find((d) => d.uuid === newUuid)
+            || (store.catalogs.drivers || []).find((d) => d.uuid === newUuid)
+        : null;
+
+    if (selectedDriver) {
+        formData.official_name_and_surname = `${selectedDriver.first_name || ''} ${selectedDriver.last_name || ''}`.trim();
     } else if (!isExternalType.value) {
         formData.official_name_and_surname = '';
+    }
+
+    completarParDelProyecto('conductor');
+});
+
+// Al elegir el vehículo, traer el conductor que el proyecto tiene asignado.
+watch(() => formData.vehicle_uuid, () => {
+    completarParDelProyecto('vehiculo');
+});
+
+// Al salir de «Mostrar todos», descartar valores ajenos al proyecto.
+watch(mostrarTodos, (todos) => {
+    if (todos || !formData.project_uuid || !proyectoCargado.value) return;
+    const asignaciones = asignacionesProyecto.value;
+    if (!asignaciones.length) return;
+
+    if (formData.vehicle_uuid && !asignacionDeVehiculo(asignaciones, formData.vehicle_uuid)) {
+        formData.vehicle_uuid = '';
+    }
+    if (formData.third_party_uuid && !asignacionDeConductor(asignaciones, formData.third_party_uuid)) {
+        formData.third_party_uuid = '';
     }
 });
 
@@ -454,13 +532,14 @@ watch(() => formData.company_uuid, async (newCompany) => {
     }
 });
 
-// Al elegir proyecto: cargar asignaciones y sugerir fechas del proyecto
+// Al elegir proyecto: cargar sus asignaciones actuales y sugerir fechas del proyecto.
 watch(() => formData.project_uuid, async (newProject) => {
     mostrarTodos.value = false;
     if (!newProject) {
         store.projectDetail = null;
         return;
     }
+
     const detail = await store.loadProjectDetail(newProject);
     const proj = detail || proyectoSeleccionado.value;
     if (proj) {
@@ -470,13 +549,24 @@ watch(() => formData.project_uuid, async (newProject) => {
             if (pStart && !formData.start_date) formData.start_date = pStart;
             if (pEnd && !formData.end_date) formData.end_date = pEnd;
         }
-        // Si el conductor/vehículo actual no pertenece al proyecto, limpiarlos
-        if (asignacionesProyecto.value.length && !mostrarTodos.value) {
-            const vOk = asignacionesProyecto.value.some(a => a.vehicle_uuid === formData.vehicle_uuid);
-            const cOk = asignacionesProyecto.value.some(a => a.third_party_uuid === formData.third_party_uuid);
-            if (formData.vehicle_uuid && !vOk) formData.vehicle_uuid = '';
-            if (formData.third_party_uuid && !cOk) formData.third_party_uuid = '';
-        }
+    }
+
+    if (!detail) return;
+
+    const asignaciones = asignacionesActivas(detail, newProject);
+
+    // Si el recurso guardado ya no pertenece al proyecto, limpiarlo.
+    if (formData.vehicle_uuid && !asignacionDeVehiculo(asignaciones, formData.vehicle_uuid)) {
+        formData.vehicle_uuid = '';
+    }
+    if (formData.third_party_uuid && !asignacionDeConductor(asignaciones, formData.third_party_uuid)) {
+        formData.third_party_uuid = '';
+    }
+
+    // Un único par activo: traerlo sin obligar a elegir dos veces.
+    if (asignaciones.length === 1) {
+        if (!formData.vehicle_uuid) formData.vehicle_uuid = asignaciones[0].vehicle_uuid;
+        if (!formData.third_party_uuid) formData.third_party_uuid = asignaciones[0].third_party_uuid;
     }
 });
 
@@ -616,6 +706,9 @@ const buildPayload = () => {
     const payload = { ...formData };
     if (!payload.daily_route || !payload.daily_route.trim()) payload.daily_route = null;
     if (payload.vehicle_license_plate) payload.vehicle_license_plate = payload.vehicle_license_plate.toUpperCase().trim();
+    // La sección de Control Directo ya no captura FUEC: no se envía para no
+    // pisar el valor histórico al editar. El control externo sí lo conserva.
+    if (!isExternalType.value) delete payload.fuec_uuid;
     return payload;
 };
 
@@ -673,14 +766,17 @@ onMounted(async () => {
                 if (internal) {
                     formData.vehicle_uuid = internal.vehicle_uuid || formData.vehicle_uuid || '';
                     formData.third_party_uuid = internal.third_party_uuid || formData.third_party_uuid || '';
-                    if (!formData.fuec_uuid) formData.fuec_uuid = internal.fuec_uuid || '';
                 }
                 if (sub) {
                     formData.vehicle_license_plate = sub.vehicle_license_plate || '';
                     formData.driver_name_and_surname = sub.driver_name_and_surname || '';
                     formData.driver_license_number = sub.driver_license_number || '';
                     formData.vehicle_class_uuid = sub.vehicle_class_uuid || '';
+                    formData.fuec_uuid = sub.fuec_uuid || formData.fuec_uuid || '';
                 }
+                // El FUEC solo se captura en el control externo; en directo se
+                // conserva el histórico en el backend sin mostrarlo en el formulario.
+                if (!isExternalType.value) formData.fuec_uuid = '';
                 const norm = (v) => typeof v === 'string' && v.includes('T') ? v.slice(0, 10) : (v || '');
                 formData.service_date = norm(formData.service_date);
                 formData.start_date = norm(formData.start_date) || norm(item.service_date);
