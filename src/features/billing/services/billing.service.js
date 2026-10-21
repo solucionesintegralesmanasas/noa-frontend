@@ -74,9 +74,41 @@ class NotasService extends BillingApiService {
     anular(uuid) { return this._request('POST', `/${uuid}/anular`); }
 }
 
+/**
+ * Documentos electrónicos genéricos ApiDian (fase 3): documento soporte y su
+ * nota, equivalentes POS, nómina 102, eventos RADIAN 030-051, lote y zip.
+ * La bandera `send` la pone el proveedor de la empresa en el backend.
+ */
+class DocumentosElectronicosService extends BillingApiService {
+    constructor() { super('/billing/electronic-documents'); }
+
+    emitir(uuid) { return this._request('POST', `/${uuid}/emitir`, {}); }
+    estado(uuid) { return this._request('GET', `/${uuid}/estado`); }
+}
+
+/**
+ * Módulo 01 - Configuraciones Básicas de ApiDian.
+ * Proxy de los pasos de configuración de la cuenta del proveedor.
+ */
+class BillingProviderConfigService extends BillingApiService {
+    constructor() { super('/billing/billing-providers'); }
+
+    consultar(uuid) { return this._request('GET', `/${uuid}/configuracion`); }
+    guardarEmpresa(uuid, data) { return this._request('POST', `/${uuid}/configuracion`, { data }); }
+    software(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/software`, { data }); }
+    softwareNomina(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/software-nomina`, { data }); }
+    certificado(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/certificado`, { data }); }
+    resolucion(uuid, data) { return this._request('POST', `/${uuid}/configuracion/resoluciones`, { data }); }
+    ambiente(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/ambiente`, { data }); }
+    webhook(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/webhook`, { data }); }
+    eliminarEmpresa(uuid) { return this._request('DELETE', `/${uuid}/configuracion/empresa`); }
+}
+
 export const billingService = new CommercialInvoicesService();
 export const billingResolutionsService = new BillingApiService('/billing/billing-resolutions');
 export const billingProvidersService = new BillingApiService('/billing/billing-providers');
+export const billingProviderConfigService = new BillingProviderConfigService();
+export const electronicDocumentsService = new DocumentosElectronicosService();
 export const creditNotesService = new (class extends NotasService { constructor() { super('/billing/credit-notes'); } })();
 export const debitNotesService = new (class extends NotasService { constructor() { super('/billing/debit-notes'); } })();
 

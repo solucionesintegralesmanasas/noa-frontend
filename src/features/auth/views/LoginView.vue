@@ -139,11 +139,12 @@ const handleLogin = async () => {
     await authStore.login(formData);
     router.push('/dashboard');
   } catch (error) {
-    configStore.endNavigation();
     loginError.value = error?.response?.data?.message ?? 'Correo o contraseña incorrectos.';
     handleGlobalError(error, 'LoginView', { redirectToLogin: false });
   } finally {
     isSubmitting.value = false;
+    // La barra se apaga haya ido a dashboard, a 2FA o haya fallado el login
+    configStore.endNavigation();
   }
 };
 

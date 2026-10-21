@@ -88,6 +88,14 @@ class ServiceDeliveryControlSheetService extends BaseService {
     listAll() { return this._request('GET', '/list'); }
 
     /**
+     * Creación masiva por proyecto (SPEC-009): una hoja por cada coche
+     * marcado en `vehicle_uuids`, que debe tener asignación activa.
+     * @param {Object} data - Payload con project_uuid, fechas y vehicle_uuids.
+     * @returns {Promise<Object>} { created, daily_sheets, sheets }.
+     */
+    createBulk(data) { return this._request('POST', '/bulk', { data }); }
+
+    /**
      * Obtiene las opciones de los catálogos relacionados (Empresas, Vehículos, Conductores).
      * @returns {Promise<Object>} Objeto con los arreglos de opciones.
      */

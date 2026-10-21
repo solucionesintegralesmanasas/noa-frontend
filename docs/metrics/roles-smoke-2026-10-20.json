@@ -1,0 +1,209 @@
+{
+  "fecha": "2026-10-20T15:20:23.733Z",
+  "entorno": "http://localhost:5173",
+  "usuarios": [
+    {
+      "nombre": "afiliado+conductor",
+      "meetingHash": null,
+      "rutas": [
+        {
+          "ruta": "/dashboard",
+          "hashFinal": "#/dashboard/conductor",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": true
+        },
+        {
+          "ruta": "/dashboard/conductor",
+          "hashFinal": "#/dashboard/conductor",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/vehiculos",
+          "hashFinal": "#/vehiculos",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/vehiculos-documentos",
+          "hashFinal": "#/vehiculos-documentos",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/terceros/conductores",
+          "hashFinal": "#/terceros/conductores",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/rastreo/mapa-en-vivo",
+          "hashFinal": "#/rastreo/mapa-en-vivo",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/extracto-de-contrato",
+          "hashFinal": "#/extracto-de-contrato",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/inspeccion-vehiculos",
+          "hashFinal": "#/inspeccion-vehiculos",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/planilla-de-control-de-prestacion-servicios",
+          "hashFinal": "#/planilla-de-control-de-prestacion-servicios",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        }
+      ],
+      "errores": [],
+      "imagenesDir": "docs\\metrics\\roles-smoke\\afiliado+conductor",
+      "hashInicio": "#/dashboard/conductor"
+    },
+    {
+      "nombre": "empleado+coordinador",
+      "meetingHash": null,
+      "rutas": [
+        {
+          "ruta": "/dashboard",
+          "hashFinal": "#/dashboard",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/dashboard/conductor",
+          "hashFinal": "#/401",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": true
+        },
+        {
+          "ruta": "/vehiculos",
+          "hashFinal": "#/vehiculos",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/proyectos",
+          "hashFinal": "#/proyectos",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/planillas-de-control-de-servicios",
+          "hashFinal": "#/planillas-de-control-de-servicios",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/planilla-de-control-de-prestacion-servicios",
+          "hashFinal": "#/planilla-de-control-de-prestacion-servicios",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/rastreo/mapa-en-vivo",
+          "hashFinal": "#/rastreo/mapa-en-vivo",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/rastreo/geocercas",
+          "hashFinal": "#/rastreo/geocercas",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/notificaciones",
+          "hashFinal": "#/notificaciones",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        }
+      ],
+      "errores": [],
+      "imagenesDir": "docs\\metrics\\roles-smoke\\empleado+coordinador",
+      "hashInicio": "#/dashboard"
+    },
+    {
+      "nombre": "empleado",
+      "meetingHash": null,
+      "rutas": [
+        {
+          "ruta": "/dashboard",
+          "hashFinal": "#/dashboard",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": false
+        },
+        {
+          "ruta": "/dashboard/conductor",
+          "hashFinal": "#/401",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": true
+        },
+        {
+          "ruta": "/terceros",
+          "hashFinal": "#/401",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": true
+        },
+        {
+          "ruta": "/vehiculos",
+          "hashFinal": "#/401",
+          "http400": [],
+          "barraColgada": false,
+          "erroresConsola": [],
+          "redirigida": true
+        }
+      ],
+      "errores": [],
+      "imagenesDir": "docs\\metrics\\roles-smoke\\empleado",
+      "hashInicio": "#/dashboard"
+    }
+  ]
+}

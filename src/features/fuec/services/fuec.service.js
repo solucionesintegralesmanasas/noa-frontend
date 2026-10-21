@@ -256,14 +256,20 @@ class FuecService extends BaseService {
     }
 
     /**
-     * Obtiene el Blob del PDF generado por el servidor (útil para iframes).
+     * Obtiene el Blob del PDF generado por el servidor junto con su nombre real
+     * (Content-Disposition), que el backend expone vía CORS para que la descarga
+     * no caiga al genérico "documento.pdf".
      * @param {string} uuid - UUID del FUEC.
-     * @returns {Promise<Blob>} Archivo PDF binario.
+     * @returns {Promise<{blob: Blob, fileName: string|null}>} Binario y nombre sugerido.
      */
     async getRawPdf(uuid) {
-        return this._request('GET', `/${uuid}/pdf`, {
-            config: { responseType: 'blob' }
+        const response = await this._getInstance().get(`${this.resourcePath}/${uuid}/pdf`, {
+            responseType: 'blob',
         });
+        return {
+            blob: response.data,
+            fileName: this._fileNameFromDisposition(response?.headers?.['content-disposition']),
+        };
     }
 
     /**

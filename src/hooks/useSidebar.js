@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 
 // Mapa ordenado de rutas para despliegue automático de secciones en el Sidebar
 const ROUTE_COLLAPSE_MAP = [
-    { collapseId: 'informacion-tecnica', prefixes: ['/empresas/experiencias'] },
+    { collapseId: 'informacion-tecnica', prefixes: ['/empresas/experiencias', '/convenios-colaboracion'] },
     { collapseId: 'informacion-financiera', prefixes: ['/empresas/registro-unico-de-proponentes', '/empresas/declaraciones-de-renta', '/empresas/estados-financieros'] },
     { collapseId: 'company', prefixes: ['/empresa', '/empresas'] },
 ];

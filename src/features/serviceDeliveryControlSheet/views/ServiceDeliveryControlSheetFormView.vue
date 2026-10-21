@@ -64,7 +64,8 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <!-- En creación directa el responsable sale de la asignación de cada coche (SPEC-009) -->
+                        <div class="col-12 col-sm-6 col-lg-3" v-if="!esModoMasivo">
                             <label class="form-label" for="official_name_and_surname">Responsable de servicio</label>
                             <input id="official_name_and_surname" v-model="formData.official_name_and_surname"
                                 class="form-control"
@@ -150,47 +151,124 @@
                         </div>
 
                         <!-- SECCIÓN 2: CONTROL DIRECTO CON LA EMPRESA -->
-                        <template v-if="formData.type_of_control_sheet === 'DIRECTO_CON_LA_EMPRESA'">
+                        <template v-if="esDirecto">
                             <div class="col-12">
                                 <hr class="my-2">
                                 <h6 class="fw-medium text-primary"><i class="fad fa-file-contract me-1"></i>Control
                                     Directo con la Empresa
-                                    <span v-if="formData.project_uuid" class="badge bg-info ms-2">Filtrado por proyecto</span>
+                                    <span v-if="formData.project_uuid && proyectoCargado" class="badge bg-info ms-2">
+                                        {{ filasProyecto.length }} del proyecto
+                                    </span>
                                 </h6>
                             </div>
-                            <div class="col-12 col-sm-6 col-xl-5">
-                                <label class="form-label" for="fuec_uuid">FUEC asociado</label>
-                                <PrimeSelect :input-id="'fuec_uuid'" v-model="formData.fuec_uuid"
-                                    :options="store.catalogs.fuecs" option-value="uuid"
-                                    :option-label="(opt) => opt.fuec_number ?? opt.uuid" placeholder="Seleccione..."
-                                    showClear filter class="w-100" :invalid="!!validationErrors['fuec_uuid']" />
-                                <div v-if="validationErrors.fuec_uuid" class="invalid-feedback d-block" id="f-fuec_uuid-error" role="alert">{{
-                                    validationErrors.fuec_uuid }}</div>
-                            </div>
-                            <div class="col-12 col-sm-6 col-xl-3">
-                                <label class="form-label required" for="vehicle_uuid">Vehículo</label>
-                                <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
-                                    :options="vehiculosFiltrados" option-value="uuid"
-                                    option-label="vehicle_license_plate" placeholder="Seleccione..." showClear filter
-                                    class="w-100" :invalid="!!validationErrors['vehicle_uuid']" />
-                                <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">{{
-                                    validationErrors.vehicle_uuid }}</div>
+
+                            <!-- CREACIÓN (SPEC-009): una hoja por coche del proyecto, masiva.
+                                 Sin proyecto: indicación; con él: carga desde el servidor. -->
+                            <div class="col-12" v-if="esModoMasivo">
+                                <div v-if="!formData.project_uuid" class="form-text text-muted small mb-0">
+                                    <i class="fad fa-project-diagram me-1" aria-hidden="true"></i>
+                                    Elige un proyecto: la hoja se crea por proyecto, una por cada coche con
+                                    asignación activa.
+                                </div>
+                                <div v-else-if="cargandoProyecto"
+                                    class="alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-0 small">
+                                    <i class="fad fa-spinner fa-spin" aria-hidden="true"></i>
+                                    <span>Cargando las asignaciones activas del proyecto...</span>
+                                </div>
+                                <div v-else-if="falloProyecto"
+                                    class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-1 small"
+                                    role="alert">
+                                    <i class="fad fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+                                    <span class="flex-grow-1">
+                                        No se pudieron cargar las asignaciones del proyecto. Comprueba tu conexión e
+                                        inténtalo de nuevo.
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                        @click="cargarAsignacionesDelProyecto">Reintentar</button>
+                                </div>
+                                <div v-else-if="!filasProyecto.length"
+                                    class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-0 small"
+                                    role="alert">
+                                    <i class="fad fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+                                    <span>
+                                        El proyecto seleccionado no tiene coches con asignación activa. Asígnalos
+                                        desde el detalle del proyecto: la creación por proyecto no admite coches
+                                        fuera de sus asignaciones.
+                                    </span>
+                                </div>
+                                <template v-else>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-2">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:2.5rem" scope="col">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            id="f-coches-todos" :checked="todasSeleccionadas"
+                                                            @change="alternarTodos"
+                                                            :aria-describedby="validationErrors.vehicle_uuids ? 'f-vehicle_uuids-error' : undefined" />
+                                                        <label class="visually-hidden" for="f-coches-todos">Marcar o
+                                                            desmarcar todos los coches del proyecto</label>
+                                                    </th>
+                                                    <th scope="col">Placa</th>
+                                                    <th scope="col">Interno</th>
+                                                    <th scope="col">Conductor</th>
+                                                    <th scope="col">Documento</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="fila in filasProyecto" :key="fila.vehicle_uuid">
+                                                    <td>
+                                                        <input class="form-check-input" type="checkbox"
+                                                            :id="`f-coche-${fila.vehicle_uuid}`"
+                                                            :value="fila.vehicle_uuid"
+                                                            v-model="cochesSeleccionados" />
+                                                        <label class="visually-hidden"
+                                                            :for="`f-coche-${fila.vehicle_uuid}`">Incluir el vehículo
+                                                            {{ fila.placa }}</label>
+                                                    </td>
+                                                    <td class="fw-medium text-uppercase">{{ fila.placa }}</td>
+                                                    <td>{{ fila.internal_number || '—' }}</td>
+                                                    <td>{{ fila.conductor_nombre || '—' }}</td>
+                                                    <td>{{ fila.document_number || '—' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div v-if="validationErrors.vehicle_uuids" class="invalid-feedback d-block"
+                                        id="f-vehicle_uuids-error" role="alert">
+                                        {{ validationErrors.vehicle_uuids }}
+                                    </div>
+                                    <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 mb-0 small"
+                                        role="status">
+                                        <i class="fad fa-circle-check" aria-hidden="true"></i>
+                                        <span v-html="textoResumenCreacion"></span>
+                                    </div>
+                                </template>
                             </div>
 
-                            <div class="col-12 col-sm-6 col-xl-4">
-                                <label class="form-label required" for="third_party_uuid">Conductor</label>
-                                <PrimeSelect :input-id="'third_party_uuid'" v-model="formData.third_party_uuid"
-                                    :options="conductoresFiltrados" option-value="uuid"
-                                    :option-label="(opt) => `${opt.first_name || ''} ${opt.last_name || ''}`.trim()"
-                                    placeholder="Seleccione..." showClear filter class="w-100"
-                                    :invalid="!!validationErrors['third_party_uuid']" />
-                                <div v-if="validationErrors.third_party_uuid" class="invalid-feedback d-block" id="f-third_party_uuid-error" role="alert">{{
-                                    validationErrors.third_party_uuid }}</div>
-                                <div class="form-check form-switch mt-2" v-if="formData.project_uuid">
-                                    <input class="form-check-input" type="checkbox" id="showAllDrivers" v-model="mostrarTodos">
-                                    <label class="form-check-label small text-muted" for="showAllDrivers">Mostrar todos los conductores/vehículos (fuera del proyecto)</label>
+                            <!-- EDICIÓN: una sola hoja con su par histórico (editable) -->
+                            <template v-else>
+                                <div class="col-12 col-sm-6 col-xl-6">
+                                    <label class="form-label required" for="vehicle_uuid">Vehículo</label>
+                                    <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
+                                        :options="vehiculosFiltrados" option-value="uuid"
+                                        option-label="vehicle_license_plate" placeholder="Seleccione..." showClear filter
+                                        class="w-100" :invalid="!!validationErrors['vehicle_uuid']" />
+                                    <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">{{
+                                        validationErrors.vehicle_uuid }}</div>
                                 </div>
-                            </div>
+
+                                <div class="col-12 col-sm-6 col-xl-6">
+                                    <label class="form-label required" for="third_party_uuid">Conductor</label>
+                                    <PrimeSelect :input-id="'third_party_uuid'" v-model="formData.third_party_uuid"
+                                        :options="conductoresFiltrados" option-value="uuid"
+                                        :option-label="(opt) => `${opt.first_name || ''} ${opt.last_name || ''}`.trim()"
+                                        placeholder="Seleccione..." showClear filter class="w-100"
+                                        :invalid="!!validationErrors['third_party_uuid']" />
+                                    <div v-if="validationErrors.third_party_uuid" class="invalid-feedback d-block" id="f-third_party_uuid-error" role="alert">{{
+                                        validationErrors.third_party_uuid }}</div>
+                                </div>
+                            </template>
                         </template>
 
                         <!-- SECCIÓN 2B: VEHÍCULO EXTERNO / SUBCONTRATADO (plataforma) -->
@@ -306,6 +384,16 @@ import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
+import {
+    armarPayloadCreacion,
+    asignacionesActivas,
+    asignacionDeConductor,
+    asignacionDeVehiculo,
+    filasDeProyecto,
+    opcionesConductores,
+    opcionesVehiculos,
+    resumenCreacion,
+} from '../utils/projectAssignments.js';
 
 // --- STORES Y ROUTER ---
 const route = useRoute();
@@ -373,9 +461,11 @@ const formData = reactive({
     is_active: '1',
 });
 
-const mostrarTodos = ref(false);
-
 // --- COMPUTADOS DE PROYECTO / TIPO / FILTRADO ---
+const esDirecto = computed(() => formData.type_of_control_sheet === 'DIRECTO_CON_LA_EMPRESA');
+// SPEC-009: en la creación directa el backend crea N hojas (una por coche del
+// proyecto); la edición sigue siendo de una sola hoja con su par histórico.
+const esModoMasivo = computed(() => esDirecto.value && !isEditMode.value);
 const isExternalType = computed(() => ['SUBCONTRATADO', 'CON_VEHICULO_CONTRATADO', 'EXTERNO_PLATAFORMA'].includes(formData.type_of_control_sheet));
 const tipoLabel = computed(() => ({
     SUBCONTRATADO: 'Subcontratado',
@@ -403,46 +493,134 @@ const fueraDeVigencia = computed(() => {
     return false;
 });
 
-const asignacionesProyecto = computed(() => {
-    const d = store.projectDetail;
-    if (!d || d.uuid !== formData.project_uuid) return [];
-    const todas = d.driverVehicleAssignments || d.driver_vehicle_assignments || d.assignments || [];
-    const activas = todas.filter(a => a.is_active !== false && a.is_active !== 0);
-    return activas.length ? activas : todas;
+const asignacionesProyecto = computed(() =>
+    asignacionesActivas(store.projectDetail, formData.project_uuid)
+);
+
+const proyectoCargado = computed(() =>
+    !!store.projectDetail && store.projectDetail.uuid === formData.project_uuid
+);
+
+// --- TABLA DE CREACIÓN MASIVA (SPEC-009) ---
+const filasProyecto = computed(() => filasDeProyecto(asignacionesProyecto.value));
+const cochesSeleccionados = ref([]);
+const cargandoProyecto = ref(false);
+const falloProyecto = ref(false);
+
+const todasSeleccionadas = computed(() =>
+    filasProyecto.value.length > 0
+    && cochesSeleccionados.value.length === filasProyecto.value.length
+);
+
+const resumenBulk = computed(() =>
+    resumenCreacion(cochesSeleccionados.value, diasServicio.value)
+);
+
+/**
+ * Texto compartido del resumen (pastilla de estado y confirmación), para que
+ * ambos digan lo mismo: solo números armados en el propio formulario, nunca
+ * datos del usuario.
+ */
+const textoResumenCreacion = computed(() => {
+    const { hojas, planillasDiarias } = resumenBulk.value;
+    const hojasTexto = `<b>${hojas}</b> ${hojas === 1 ? 'hoja' : 'hojas'} (una por coche)`;
+
+    if (planillasDiarias <= 1) {
+        return `Se crearán ${hojasTexto}. Un solo día: cada hoja es su propia planilla diaria.`;
+    }
+
+    return `Se crearán ${hojasTexto} y <b>${planillasDiarias}</b> ${planillasDiarias === 1 ? 'planilla diaria' : 'planillas diarias'}.`;
 });
 
+const alternarTodos = () => {
+    cochesSeleccionados.value = todasSeleccionadas.value
+        ? []
+        : filasProyecto.value.map((fila) => fila.vehicle_uuid);
+};
+
+// Con el proyecto cargado, las opciones de los selects de EDICIÓN salen de sus
+// asignaciones activas (no del catálogo general). La hoja ya creada es
+// histórico editable: si su vehículo/conductor ya no está activo en el
+// proyecto, se conserva en opciones aparte y NO se limpia (SPEC-009
+// decisión 2). Si el detalle aún no llega o falla, se mantiene el catálogo.
 const vehiculosFiltrados = computed(() => {
     const all = store.catalogs.vehicles || [];
-    if (!formData.project_uuid || mostrarTodos.value || !asignacionesProyecto.value.length) return all;
-    const uuids = new Set(asignacionesProyecto.value.map(a => a.vehicle_uuid).filter(Boolean));
-    const filtered = all.filter(v => uuids.has(v.uuid));
-    return filtered.length ? filtered : all;
+    if (!formData.project_uuid || !proyectoCargado.value || esModoMasivo.value) return all;
+    const opciones = [...opcionesVehiculos(asignacionesProyecto.value)];
+    if (isEditMode.value && formData.vehicle_uuid && !opciones.some((v) => v.uuid === formData.vehicle_uuid)) {
+        const actual = all.find((v) => v.uuid === formData.vehicle_uuid)
+            ?? { uuid: formData.vehicle_uuid, vehicle_license_plate: `${formData.vehicle_uuid} (retirado del proyecto)` };
+        opciones.unshift(actual);
+    }
+    return opciones;
 });
 
 const conductoresFiltrados = computed(() => {
     const all = store.catalogs.drivers || [];
-    if (!formData.project_uuid || mostrarTodos.value || !asignacionesProyecto.value.length) return all;
-    const uuids = new Set(asignacionesProyecto.value.map(a => a.third_party_uuid).filter(Boolean));
-    const filtered = all.filter(c => uuids.has(c.uuid));
-    return filtered.length ? filtered : all;
+    if (!formData.project_uuid || !proyectoCargado.value || esModoMasivo.value) return all;
+    const opciones = [...opcionesConductores(asignacionesProyecto.value)];
+    if (isEditMode.value && formData.third_party_uuid && !opciones.some((d) => d.uuid === formData.third_party_uuid)) {
+        const actual = all.find((d) => d.uuid === formData.third_party_uuid)
+            ?? {
+                uuid: formData.third_party_uuid,
+                first_name: formData.official_name_and_surname || `${formData.third_party_uuid} (retirado del proyecto)`,
+                last_name: '',
+            };
+        opciones.unshift(actual);
+    }
+    return opciones;
 });
+
+/**
+ * Completa el otro extremo del par conductor ↔ vehículo con la asignación
+ * activa del proyecto. Evita que se guarden combinaciones que no existen.
+ *
+ * @param {'conductor'|'vehiculo'} origen - Campo que cambió.
+ */
+const completarParDelProyecto = (origen) => {
+    if (esModoMasivo.value || !formData.project_uuid || !proyectoCargado.value) return;
+    const asignaciones = asignacionesProyecto.value;
+    if (!asignaciones.length) return;
+
+    if (origen === 'conductor' && formData.third_party_uuid) {
+        const asignacion = asignacionDeConductor(asignaciones, formData.third_party_uuid);
+        if (asignacion?.vehicle_uuid && asignacion.vehicle_uuid !== formData.vehicle_uuid) {
+            formData.vehicle_uuid = asignacion.vehicle_uuid;
+        }
+    }
+
+    if (origen === 'vehiculo' && formData.vehicle_uuid) {
+        const asignacion = asignacionDeVehiculo(asignaciones, formData.vehicle_uuid);
+        if (asignacion?.third_party_uuid && asignacion.third_party_uuid !== formData.third_party_uuid) {
+            formData.third_party_uuid = asignacion.third_party_uuid;
+        }
+    }
+};
 
 
 
 // --- LOGICA DEL COMPONENTE ---
 
-// Autocompletar nombre de conductor al seleccionar uno
+// Autocompletar el nombre del responsable y el vehículo del conductor elegido.
 watch(() => formData.third_party_uuid, (newUuid) => {
-    if (newUuid && store.catalogs.drivers) {
-        const selectedDriver = store.catalogs.drivers.find(d => d.uuid === newUuid);
-        if (selectedDriver) {
-            formData.official_name_and_surname = `${selectedDriver.first_name} ${selectedDriver.last_name}`;
-        } else if (!isExternalType.value) {
-            formData.official_name_and_surname = '';
-        }
+    const listaProyecto = conductoresFiltrados.value || [];
+    const selectedDriver = newUuid
+        ? listaProyecto.find((d) => d.uuid === newUuid)
+            || (store.catalogs.drivers || []).find((d) => d.uuid === newUuid)
+        : null;
+
+    if (selectedDriver) {
+        formData.official_name_and_surname = `${selectedDriver.first_name || ''} ${selectedDriver.last_name || ''}`.trim();
     } else if (!isExternalType.value) {
         formData.official_name_and_surname = '';
     }
+
+    completarParDelProyecto('conductor');
+});
+
+// Al elegir el vehículo, traer el conductor que el proyecto tiene asignado.
+watch(() => formData.vehicle_uuid, () => {
+    completarParDelProyecto('vehiculo');
 });
 
 // Al cambiar de empresa, recargar proyectos
@@ -454,30 +632,68 @@ watch(() => formData.company_uuid, async (newCompany) => {
     }
 });
 
-// Al elegir proyecto: cargar asignaciones y sugerir fechas del proyecto
-watch(() => formData.project_uuid, async (newProject) => {
-    mostrarTodos.value = false;
+/**
+ * Carga el detalle del proyecto y la selección masiva desde sus asignaciones
+ * activas. La tabla SIEMPRE se regenera desde el servidor: si al proyecto se
+ * le agregó o retiró un coche+conductor (desde el detalle del proyecto), el
+ * nuevo estado entra al elegir el proyecto de nuevo o al reintentar tras un
+ * fallo de red.
+ */
+const cargarAsignacionesDelProyecto = async () => {
+    const newProject = formData.project_uuid;
     if (!newProject) {
         store.projectDetail = null;
+        cochesSeleccionados.value = [];
+        falloProyecto.value = false;
         return;
     }
-    const detail = await store.loadProjectDetail(newProject);
-    const proj = detail || proyectoSeleccionado.value;
-    if (proj) {
-        const pStart = typeof proj.start_date === 'string' ? proj.start_date.slice(0, 10) : '';
-        const pEnd = typeof proj.completion_date === 'string' ? proj.completion_date.slice(0, 10) : '';
-        if (!isEditMode.value) {
-            if (pStart && !formData.start_date) formData.start_date = pStart;
-            if (pEnd && !formData.end_date) formData.end_date = pEnd;
+
+    cargandoProyecto.value = true;
+    try {
+        const detail = await store.loadProjectDetail(newProject);
+        falloProyecto.value = !detail;
+        if (!detail) {
+            // Sin asignaciones cargadas, la selección anterior no puede seguir:
+            // evitaría un envío con coches del proyecto previo.
+            cochesSeleccionados.value = [];
+            return;
         }
-        // Si el conductor/vehículo actual no pertenece al proyecto, limpiarlos
-        if (asignacionesProyecto.value.length && !mostrarTodos.value) {
-            const vOk = asignacionesProyecto.value.some(a => a.vehicle_uuid === formData.vehicle_uuid);
-            const cOk = asignacionesProyecto.value.some(a => a.third_party_uuid === formData.third_party_uuid);
-            if (formData.vehicle_uuid && !vOk) formData.vehicle_uuid = '';
-            if (formData.third_party_uuid && !cOk) formData.third_party_uuid = '';
+
+        const proj = detail || proyectoSeleccionado.value;
+        if (proj) {
+            const pStart = typeof proj.start_date === 'string' ? proj.start_date.slice(0, 10) : '';
+            const pEnd = typeof proj.completion_date === 'string' ? proj.completion_date.slice(0, 10) : '';
+            if (!isEditMode.value) {
+                if (pStart && !formData.start_date) formData.start_date = pStart;
+                if (pEnd && !formData.end_date) formData.end_date = pEnd;
+            }
         }
+
+        // Creación masiva: todos los coches del proyecto van marcados de entrada.
+        // La edición NO limpia: su hoja es histórico editable (SPEC-009 decisión 2).
+        const asignaciones = asignacionesActivas(detail, newProject);
+
+        if (isEditMode.value) {
+            // La hoja ya creada es histórico editable: aunque el proyecto retirara
+            // a su vehículo o conductor, los valores NO se limpian (SPEC-009
+            // decisión 2); el select los oferta aunque no estén activos.
+            if (asignaciones.length === 1) {
+                if (!formData.vehicle_uuid) formData.vehicle_uuid = asignaciones[0].vehicle_uuid;
+                if (!formData.third_party_uuid) formData.third_party_uuid = asignaciones[0].third_party_uuid;
+            }
+            return;
+        }
+
+        // Creación masiva: todos los coches del proyecto van marcados de entrada.
+        cochesSeleccionados.value = filasDeProyecto(asignaciones).map((fila) => fila.vehicle_uuid);
+    } finally {
+        cargandoProyecto.value = false;
     }
+};
+
+// Al elegir (o limpiar) proyecto: recargar asignaciones y sugerir fechas.
+watch(() => formData.project_uuid, () => {
+    cargarAsignacionesDelProyecto();
 });
 
 // Al cambiar a tipo externo, autocompletar responsable con conductor manual
@@ -530,7 +746,13 @@ const validateForm = () => {
         }
     }
 
-    if (formData.type_of_control_sheet === 'DIRECTO_CON_LA_EMPRESA') {
+    if (esModoMasivo.value) {
+        // El backend resuelve el par y el responsable desde la asignación de
+        // cada coche; aquí solo se exige marcar al menos un coche.
+        if (!cochesSeleccionados.value.length) {
+            validationErrors.vehicle_uuids = 'Marca al menos un coche del proyecto';
+        }
+    } else if (esDirecto.value) {
         ['vehicle_uuid', 'third_party_uuid'].forEach(field => {
             if (!formData[field]) validationErrors[field] = 'Este campo es obligatorio';
         });
@@ -616,6 +838,9 @@ const buildPayload = () => {
     const payload = { ...formData };
     if (!payload.daily_route || !payload.daily_route.trim()) payload.daily_route = null;
     if (payload.vehicle_license_plate) payload.vehicle_license_plate = payload.vehicle_license_plate.toUpperCase().trim();
+    // La sección de Control Directo ya no captura FUEC: no se envía para no
+    // pisar el valor histórico al editar. El control externo sí lo conserva.
+    if (!isExternalType.value) delete payload.fuec_uuid;
     return payload;
 };
 
@@ -633,11 +858,24 @@ const handleSubmit = async () => {
 
     try {
         submitting.value = true;
-        const payload = buildPayload();
         if (isEditMode.value) {
-            await store.updateItem(route.params.id, payload);
+            await store.updateItem(route.params.id, buildPayload());
+        } else if (esModoMasivo.value) {
+            // SPEC-009: confirmación con el conteo antes de crear N hojas.
+            const confirmacion = await Swal.fire({
+                title: 'Crear hojas por proyecto',
+                html: textoResumenCreacion.value,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Crear hojas',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#aaa',
+            });
+            if (!confirmacion.isConfirmed) return;
+            await store.createBulk(armarPayloadCreacion(formData, cochesSeleccionados.value));
         } else {
-            await store.createItem(payload);
+            await store.createItem(buildPayload());
         }
         goBack();
     } catch (error) {
@@ -673,14 +911,17 @@ onMounted(async () => {
                 if (internal) {
                     formData.vehicle_uuid = internal.vehicle_uuid || formData.vehicle_uuid || '';
                     formData.third_party_uuid = internal.third_party_uuid || formData.third_party_uuid || '';
-                    if (!formData.fuec_uuid) formData.fuec_uuid = internal.fuec_uuid || '';
                 }
                 if (sub) {
                     formData.vehicle_license_plate = sub.vehicle_license_plate || '';
                     formData.driver_name_and_surname = sub.driver_name_and_surname || '';
                     formData.driver_license_number = sub.driver_license_number || '';
                     formData.vehicle_class_uuid = sub.vehicle_class_uuid || '';
+                    formData.fuec_uuid = sub.fuec_uuid || formData.fuec_uuid || '';
                 }
+                // El FUEC solo se captura en el control externo; en directo se
+                // conserva el histórico en el backend sin mostrarlo en el formulario.
+                if (!isExternalType.value) formData.fuec_uuid = '';
                 const norm = (v) => typeof v === 'string' && v.includes('T') ? v.slice(0, 10) : (v || '');
                 formData.service_date = norm(formData.service_date);
                 formData.start_date = norm(formData.start_date) || norm(item.service_date);

@@ -55,6 +55,50 @@ export const billingRoutes = [
         },
     },
     {
+        path: '/facturacion/proveedores',
+        name: 'billing.providers',
+        component: () => import('./views/BillingProvidersView.vue'),
+        meta: {
+            title: 'Proveedores de Facturación',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.index'],
+        },
+    },
+    {
+        path: '/facturacion/documentos-electronicos',
+        name: 'billing.electronic-documents',
+        component: () => import('./views/ElectronicDocumentsView.vue'),
+        meta: {
+            title: 'Documentos Electrónicos',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['electronic_documents.index'],
+        },
+    },
+    {
+        path: '/facturacion/configuracion',
+        name: 'billing.config',
+        component: () => import('./views/BillingProviderConfigView.vue'),
+        meta: {
+            title: 'Configuración ApiDian',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.update'],
+        },
+    },
+    {
+        path: '/facturacion/proveedores/:uuid/configuracion',
+        name: 'billing.provider.config',
+        component: () => import('./views/BillingProviderConfigView.vue'),
+        meta: {
+            title: 'Configuración ApiDian',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.update'],
+        },
+    },
+    {
         path: '/facturacion/:id',
         name: 'billing.profile',
         component: () => import('./views/BillingDetailView.vue'),

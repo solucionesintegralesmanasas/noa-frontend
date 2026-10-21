@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Servicio para la gestión de terceros (clientes, proveedores, empleados).
@@ -103,19 +104,20 @@ class ThirdPartiesService extends BaseService {
                 const res = await this._getInstance().get(url);
                 return res.data?.data ?? res.data ?? [];
             } catch (err) {
-                console.warn(`Error cargando catálogo: ${url}`, err.message);
+                logger.warn(`Error cargando catálogo: ${url}`, err.message);
                 return [];
             }
         };
         const { companyUuid } = this._getUserContext();
 
-        const [companies, documentTypes, cities, taxResponsibilities, affiliate, roles] = await Promise.all([
+        const [companies, documentTypes, cities, taxResponsibilities, affiliate, roles, branches] = await Promise.all([
             fetchSafe(`administration/companies/list?companyUuid=${companyUuid || ''}`),
             fetchSafe('catalogs/type-of-documents/list'),
             fetchSafe('catalogs/cities/list'),
             fetchSafe('catalogs/tax-responsibilities/list'),
             fetchSafe(`third-parties/list?type=is_affiliate&companyUuid=${companyUuid || ''}`),
             fetchSafe('auth/roles/list'),
+            fetchSafe(`administration/branches/list?company_uuid=${companyUuid || ''}`),
         ]);
 
         return {
@@ -125,7 +127,26 @@ class ThirdPartiesService extends BaseService {
             taxResponsibilities,
             affiliate,
             roles,
+            branches,
         };
+    }
+
+    /**
+     * Sucursales de una empresa para el selector del formulario.
+     * Con `companyUuid` vacío el backend usa la empresa del contexto.
+     * @param {string} companyUuid - UUID de la empresa.
+     * @returns {Promise<Array>} Sucursales visibles para el usuario.
+     */
+    async getBranches(companyUuid = '') {
+        try {
+            const res = await this._getInstance().get(
+                `administration/branches/list?company_uuid=${companyUuid || ''}`,
+            );
+            return res.data?.data ?? res.data ?? [];
+        } catch (err) {
+            logger.warn('Error cargando sucursales:', err.message);
+            return [];
+        }
     }
 
     /**

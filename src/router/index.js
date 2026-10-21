@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import axios from 'axios'
+import { useConfigStore } from '@store/modules/config.js'
 import LoginView from '@/features/auth/views/LoginView.vue'
 import LicenseView from '@/views/LicenciaView.vue'
 import NotFoundView from '@/views/NotFound.vue'
@@ -43,6 +44,8 @@ import { withholdingsRoutes } from '@/features/withholdings/routes.js'
 import { authGuard } from './guards/auth.js'
 import { twoFAGuard } from './guards/2fa.js'
 import { permissionsGuard } from './guards/permissions.js'
+import { fuelManagementRoutes } from '@/features/fuelManagement/routes.js'
+import { fuelRequestsRoutes } from '@/features/fuelRequests/routes.js'
 
 const routes = [
   {
@@ -98,6 +101,8 @@ const routes = [
   ...vehiclesRoutes,
   ...vehicleClassesRoutes,
   ...withholdingsRoutes,
+  ...fuelManagementRoutes,
+  ...fuelRequestsRoutes,
   {
     path: '/401',
     name: 'unauthorized',
@@ -266,10 +271,21 @@ router.afterEach((to) => {
   } catch {
     // Ignorar
   }
+  // Salvaguarda: ninguna vista queda con la barra de navegación al 85% si se le olvidó apagarla
+  try {
+    useConfigStore().endNavigation()
+  } catch {
+    // Ignorar si el store aún no está disponible
+  }
 })
 
 router.onError((error) => {
   tryReloadOnChunkError(error)
+  try {
+    useConfigStore().endNavigation()
+  } catch {
+    // Ignorar si el store aún no está disponible
+  }
 })
 
 export default router

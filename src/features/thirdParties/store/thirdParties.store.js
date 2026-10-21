@@ -112,6 +112,18 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
         loadFormOptions() { return this.loadCatalogs(); },
 
         /**
+         * Recarga las sucursales de la empresa elegida (p. ej. al cambiar de
+         * empresa como SUPERADMIN). No interrumpe el formulario si falla.
+         * @param {string} companyUuid - UUID de la empresa.
+         * @returns {Promise<Array>} Sucursales cargadas.
+         */
+        async loadBranches(companyUuid = '') {
+            const branches = await thirdPartiesService.getBranches(companyUuid);
+            this.catalogs = { ...this.catalogs, branches };
+            return branches;
+        },
+
+        /**
          * Actualiza localmente un item en la lista.
          * @param {string} uuid - UUID del item.
          * @param {Object} patch - Datos parciales a actualizar.

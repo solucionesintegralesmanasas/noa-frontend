@@ -40,6 +40,33 @@ export async function confirmUnsavedChanges() {
 }
 
 /**
+ * Confirmación genérica con SweetAlert2.
+ * @param {{title: string, text?: string, confirmText?: string, icon?: string}} options
+ * @returns {Promise<boolean>}
+ */
+export async function confirmAction({ title, text = '', confirmText = 'Sí, continuar', icon = 'question' }) {
+    try {
+        const Swal = await getSwal();
+        const result = await Swal.fire({
+            title,
+            text,
+            icon,
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#2c7be5',
+            cancelButtonColor: '#748194',
+            reverseButtons: true,
+            focusCancel: true,
+        });
+
+        return Boolean(result.isConfirmed);
+    } catch {
+        return window.confirm(`${title}\n\n${text}`);
+    }
+}
+
+/**
  * Pregunta confirmación antes de cerrar la sesión activa.
  * @returns {Promise<boolean>} true si el usuario confirma el cierre de sesión
  */

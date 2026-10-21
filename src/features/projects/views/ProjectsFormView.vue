@@ -239,6 +239,7 @@ import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import { getMediaUrl } from '@/utils/media.js';
+import { parsearFechaFlexible } from '@/utils/date.js';
 
 // --- STORES Y ROUTER ---
 const route = useRoute();
@@ -455,8 +456,10 @@ const loadFormData = async () => {
 
         formData.company_uuid = record.company_uuid || '';
         formData.project_name = record.project_name || '';
-        formData.start_date = record.start_date || '';
-        formData.completion_date = record.completion_date || '';
+        // El API serializa las fechas como "Y-m-d H:i:s"; el input nativo exige
+        // "YYYY-MM-DD" y descarta el valor con hora, dejando el campo vacío.
+        formData.start_date = parsearFechaFlexible(record.start_date) || '';
+        formData.completion_date = parsearFechaFlexible(record.completion_date) || '';
         formData.project_value = record.project_value ?? null;
         formData.purchase_order = record.purchase_order || '';
 
