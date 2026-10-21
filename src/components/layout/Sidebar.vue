@@ -215,6 +215,7 @@ const MENU_SECTIONS = [
             },
             { id: 'proyeccion-mantenimiento', label: 'Proyección de Mantenimiento', icon: 'fa-calendar-check', to: '/mantenimiento/proyeccion', permissions: ['maintenance.forecast'], activeWhen: (path) => path.startsWith('/mantenimiento/proyeccion') },
             { id: 'combustible', label: 'Combustible', icon: 'fa-gas-pump', to: '/flota/combustible', permissions: ['fuel_logs.index'] },
+            { id: 'solicitudes-tanqueo', label: 'Solicitudes de tanqueo', icon: 'fa-qrcode', to: '/flota/solicitudes-tanqueo', permissions: ['fuel_requests.index'], visibleWhen: () => canOrAdmin('fuel_requests.index') },
         ],
     },
     {
