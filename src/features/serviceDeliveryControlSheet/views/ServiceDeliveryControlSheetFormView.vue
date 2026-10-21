@@ -162,12 +162,29 @@
                                 </h6>
                             </div>
 
-                            <!-- CREACIÓN (SPEC-009): una hoja por coche del proyecto, masiva -->
+                            <!-- CREACIÓN (SPEC-009): una hoja por coche del proyecto, masiva.
+                                 Sin proyecto: indicación; con él: carga desde el servidor. -->
                             <div class="col-12" v-if="esModoMasivo">
-                                <div v-if="!proyectoCargado"
+                                <div v-if="!formData.project_uuid" class="form-text text-muted small mb-0">
+                                    <i class="fad fa-project-diagram me-1" aria-hidden="true"></i>
+                                    Elige un proyecto: la hoja se crea por proyecto, una por cada coche con
+                                    asignación activa.
+                                </div>
+                                <div v-else-if="cargandoProyecto"
                                     class="alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-0 small">
                                     <i class="fad fa-spinner fa-spin" aria-hidden="true"></i>
                                     <span>Cargando las asignaciones activas del proyecto...</span>
+                                </div>
+                                <div v-else-if="falloProyecto"
+                                    class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-1 small"
+                                    role="alert">
+                                    <i class="fad fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+                                    <span class="flex-grow-1">
+                                        No se pudieron cargar las asignaciones del proyecto. Comprueba tu conexión e
+                                        inténtalo de nuevo.
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0"
+                                        @click="cargarAsignacionesDelProyecto">Reintentar</button>
                                 </div>
                                 <div v-else-if="!filasProyecto.length"
                                     class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-0 small"
@@ -187,7 +204,8 @@
                                                     <th style="width:2.5rem" scope="col">
                                                         <input class="form-check-input" type="checkbox"
                                                             id="f-coches-todos" :checked="todasSeleccionadas"
-                                                            @change="alternarTodos" />
+                                                            @change="alternarTodos"
+                                                            :aria-describedby="validationErrors.vehicle_uuids ? 'f-vehicle_uuids-error' : undefined" />
                                                         <label class="visually-hidden" for="f-coches-todos">Marcar o
                                                             desmarcar todos los coches del proyecto</label>
                                                     </th>
@@ -223,17 +241,7 @@
                                     <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 mb-0 small"
                                         role="status">
                                         <i class="fad fa-circle-check" aria-hidden="true"></i>
-                                        <span v-if="resumenBulk.planillasDiarias > 1">
-                                            Se crearán <b>{{ resumenBulk.hojas }}</b>
-                                            {{ resumenBulk.hojas === 1 ? 'hoja' : 'hojas' }} (una por coche) y
-                                            <b>{{ resumenBulk.planillasDiarias }}</b>
-                                            {{ resumenBulk.planillasDiarias === 1 ? 'planilla diaria' : 'planillas diarias' }}.
-                                        </span>
-                                        <span v-else>
-                                            Se crearán <b>{{ resumenBulk.hojas }}</b>
-                                            {{ resumenBulk.hojas === 1 ? 'hoja' : 'hojas' }} (una por coche). Un solo
-                                            día: cada hoja es su propia planilla diaria.
-                                        </span>
+                                        <span v-html="textoResumenCreacion"></span>
                                     </div>
                                 </template>
                             </div>
@@ -496,6 +504,8 @@ const proyectoCargado = computed(() =>
 // --- TABLA DE CREACIÓN MASIVA (SPEC-009) ---
 const filasProyecto = computed(() => filasDeProyecto(asignacionesProyecto.value));
 const cochesSeleccionados = ref([]);
+const cargandoProyecto = ref(false);
+const falloProyecto = ref(false);
 
 const todasSeleccionadas = computed(() =>
     filasProyecto.value.length > 0
@@ -505,6 +515,22 @@ const todasSeleccionadas = computed(() =>
 const resumenBulk = computed(() =>
     resumenCreacion(cochesSeleccionados.value, diasServicio.value)
 );
+
+/**
+ * Texto compartido del resumen (pastilla de estado y confirmación), para que
+ * ambos digan lo mismo: solo números armados en el propio formulario, nunca
+ * datos del usuario.
+ */
+const textoResumenCreacion = computed(() => {
+    const { hojas, planillasDiarias } = resumenBulk.value;
+    const hojasTexto = `<b>${hojas}</b> ${hojas === 1 ? 'hoja' : 'hojas'} (una por coche)`;
+
+    if (planillasDiarias <= 1) {
+        return `Se crearán ${hojasTexto}. Un solo día: cada hoja es su propia planilla diaria.`;
+    }
+
+    return `Se crearán ${hojasTexto} y <b>${planillasDiarias}</b> ${planillasDiarias === 1 ? 'planilla diaria' : 'planillas diarias'}.`;
+});
 
 const alternarTodos = () => {
     cochesSeleccionados.value = todasSeleccionadas.value
@@ -606,42 +632,68 @@ watch(() => formData.company_uuid, async (newCompany) => {
     }
 });
 
-// Al elegir proyecto: cargar sus asignaciones actuales y sugerir fechas del proyecto.
-watch(() => formData.project_uuid, async (newProject) => {
+/**
+ * Carga el detalle del proyecto y la selección masiva desde sus asignaciones
+ * activas. La tabla SIEMPRE se regenera desde el servidor: si al proyecto se
+ * le agregó o retiró un coche+conductor (desde el detalle del proyecto), el
+ * nuevo estado entra al elegir el proyecto de nuevo o al reintentar tras un
+ * fallo de red.
+ */
+const cargarAsignacionesDelProyecto = async () => {
+    const newProject = formData.project_uuid;
     if (!newProject) {
         store.projectDetail = null;
         cochesSeleccionados.value = [];
+        falloProyecto.value = false;
         return;
     }
 
-    const detail = await store.loadProjectDetail(newProject);
-    const proj = detail || proyectoSeleccionado.value;
-    if (proj) {
-        const pStart = typeof proj.start_date === 'string' ? proj.start_date.slice(0, 10) : '';
-        const pEnd = typeof proj.completion_date === 'string' ? proj.completion_date.slice(0, 10) : '';
-        if (!isEditMode.value) {
-            if (pStart && !formData.start_date) formData.start_date = pStart;
-            if (pEnd && !formData.end_date) formData.end_date = pEnd;
+    cargandoProyecto.value = true;
+    try {
+        const detail = await store.loadProjectDetail(newProject);
+        falloProyecto.value = !detail;
+        if (!detail) {
+            // Sin asignaciones cargadas, la selección anterior no puede seguir:
+            // evitaría un envío con coches del proyecto previo.
+            cochesSeleccionados.value = [];
+            return;
         }
-    }
 
-    if (!detail) return;
-
-    const asignaciones = asignacionesActivas(detail, newProject);
-
-    if (isEditMode.value) {
-        // La hoja ya creada es histórico editable: aunque el proyecto retirara
-        // a su vehículo o conductor, los valores NO se limpian (SPEC-009
-        // decisión 2); el select los oferta aunque no estén activos.
-        if (asignaciones.length === 1) {
-            if (!formData.vehicle_uuid) formData.vehicle_uuid = asignaciones[0].vehicle_uuid;
-            if (!formData.third_party_uuid) formData.third_party_uuid = asignaciones[0].third_party_uuid;
+        const proj = detail || proyectoSeleccionado.value;
+        if (proj) {
+            const pStart = typeof proj.start_date === 'string' ? proj.start_date.slice(0, 10) : '';
+            const pEnd = typeof proj.completion_date === 'string' ? proj.completion_date.slice(0, 10) : '';
+            if (!isEditMode.value) {
+                if (pStart && !formData.start_date) formData.start_date = pStart;
+                if (pEnd && !formData.end_date) formData.end_date = pEnd;
+            }
         }
-        return;
-    }
 
-    // Creación masiva: todos los coches del proyecto van marcados de entrada.
-    cochesSeleccionados.value = filasDeProyecto(asignaciones).map((fila) => fila.vehicle_uuid);
+        // Creación masiva: todos los coches del proyecto van marcados de entrada.
+        // La edición NO limpia: su hoja es histórico editable (SPEC-009 decisión 2).
+        const asignaciones = asignacionesActivas(detail, newProject);
+
+        if (isEditMode.value) {
+            // La hoja ya creada es histórico editable: aunque el proyecto retirara
+            // a su vehículo o conductor, los valores NO se limpian (SPEC-009
+            // decisión 2); el select los oferta aunque no estén activos.
+            if (asignaciones.length === 1) {
+                if (!formData.vehicle_uuid) formData.vehicle_uuid = asignaciones[0].vehicle_uuid;
+                if (!formData.third_party_uuid) formData.third_party_uuid = asignaciones[0].third_party_uuid;
+            }
+            return;
+        }
+
+        // Creación masiva: todos los coches del proyecto van marcados de entrada.
+        cochesSeleccionados.value = filasDeProyecto(asignaciones).map((fila) => fila.vehicle_uuid);
+    } finally {
+        cargandoProyecto.value = false;
+    }
+};
+
+// Al elegir (o limpiar) proyecto: recargar asignaciones y sugerir fechas.
+watch(() => formData.project_uuid, () => {
+    cargarAsignacionesDelProyecto();
 });
 
 // Al cambiar a tipo externo, autocompletar responsable con conductor manual
@@ -810,13 +862,9 @@ const handleSubmit = async () => {
             await store.updateItem(route.params.id, buildPayload());
         } else if (esModoMasivo.value) {
             // SPEC-009: confirmación con el conteo antes de crear N hojas.
-            const { hojas, planillasDiarias } = resumenBulk.value;
-            const textoPlanillas = planillasDiarias > 1
-                ? `y <b>${planillasDiarias}</b> ${planillasDiarias === 1 ? 'planilla diaria' : 'planillas diarias'}`
-                : 'con un solo día (cada hoja es su propia planilla diaria)';
             const confirmacion = await Swal.fire({
                 title: 'Crear hojas por proyecto',
-                html: `Se crearán <b>${hojas}</b> ${hojas === 1 ? 'hoja' : 'hojas'} (una por coche) ${textoPlanillas}.`,
+                html: textoResumenCreacion.value,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Crear hojas',

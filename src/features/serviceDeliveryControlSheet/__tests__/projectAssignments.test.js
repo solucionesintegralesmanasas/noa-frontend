@@ -194,7 +194,9 @@ describe('resumen de creación (SPEC-009)', () => {
     it('sin filas o con días inválidos no explota', () => {
         expect(resumenCreacion([], 5)).toEqual({ hojas: 0, planillasDiarias: 0 });
         expect(resumenCreacion(null)).toEqual({ hojas: 0, planillasDiarias: 0 });
-        expect(resumenCreacion([{}], 0).planillasDiarias).toBeGreaterThanOrEqual(0);
+        // Días no positivos quedan en un solo día de servicio.
+        expect(resumenCreacion([{}], 0)).toEqual({ hojas: 1, planillasDiarias: 1 });
+        expect(resumenCreacion([{}], -3)).toEqual({ hojas: 1, planillasDiarias: 1 });
     });
 });
 
