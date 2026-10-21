@@ -186,16 +186,20 @@
                         </div>
 
                         <div class="col-12 col-sm-6 col-md-3 col-lg-3">
-                            <label class="form-label required" for="branch_uuid">Sucursal</label>
+                            <label class="form-label" :class="{ required: !esSucursal }" for="branch_uuid">Sucursal</label>
                             <PrimeSelect :input-id="'branch_uuid'" v-model="formData.branch_uuid"
                                 :options="branchOptions" option-value="uuid" option-label="name"
                                 placeholder="Seleccione..." showClear filter class="w-100"
+                                :disabled="esSucursal"
                                 :invalid="!!validationErrors['branch_uuid']" />
                             <div v-if="validationErrors.branch_uuid" class="invalid-feedback d-block" id="f-branch_uuid-error" role="alert">
                                 {{ validationErrors.branch_uuid }}
                             </div>
-                            <div v-if="sucursalesCargadas && branchOptions.length === 0" class="form-text text-danger" role="status">
+                            <div v-if="!esSucursal && sucursalesCargadas && branchOptions.length === 0" class="form-text text-danger" role="status">
                                 No hay sedes configuradas para esta empresa.
+                            </div>
+                            <div v-else-if="esSucursal" class="form-text">
+                                Se asigna automáticamente la sede de tu usuario.
                             </div>
                         </div>
 
@@ -465,7 +469,6 @@ import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara }
 import { licenciaDesdeDocumento } from '../utils/licenciaDeConductor.js';
 import { esRolReservado, rolesVisibles } from '../../auth/utils/rolesPrivilegiados.js';
 import { elegirLicencia } from '@/utils/driverLicense.js';
-import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
@@ -569,6 +572,29 @@ const formData = reactive({
 
 const filePreviews = reactive({});
 
+/**
+ * Un usuario SUCURSAL queda limitado a la sede de su tercero vinculado: el
+ * backend la fuerza al guardar, así que el selector se muestra deshabilitado.
+ */
+const esSucursal = computed(() => permissionsStore.hasRole('SUCURSAL')
+    && !permissionsStore.hasRole('SUPERADMIN')
+    && !permissionsStore.hasRole('ADMIN_EMPRESA'));
+
+/**
+ * Sedes activas de la empresa elegida, con la principal primero. Para un
+ * SUCURSAL el catálogo ya viene acotado a su sede.
+ */
+const branchOptions = computed(() => {
+    const empresa = formData.company_uuid;
+    return (store.catalogs.branches || [])
+        .filter((b) => {
+            if (empresa && b.company_uuid && b.company_uuid !== empresa) return false;
+            return b.status === undefined || b.status === null || Number(b.status) === 1;
+        })
+        .sort((a, b) => (Number(b.is_primary) - Number(a.is_primary))
+            || String(a.name || '').localeCompare(String(b.name || '')));
+});
+
 const isOwnerDriver = computed(() => formData.partyTypes && formData.partyTypes.includes('is_affiliate') && formData.partyTypes.includes('is_driver'));
 
 // Licencia de conducción autollenada con el número de documento (coinciden en
@@ -649,24 +675,20 @@ const bottomRowColClass = computed(() => {
 });
 
 // Sucursales de la empresa seleccionada: para SUPERADMIN cambian con la empresa.
-const branchOptions = computed(() => {
-    const branches = store.catalogs.branches ?? [];
-    if (!formData.company_uuid) return branches;
-    return branches.filter(branch => branch.company_uuid === formData.company_uuid);
-});
+// (La filtración activa/principal vive en el computado branchOptions de arriba.)
 
-// Al cambiar de empresa, recargar sus sucursales y limpiar una selección ajena.
-watch(() => formData.company_uuid, async (nuevo, anterior) => {
-    if (!isSuperAdmin.value || !nuevo || nuevo === anterior) return;
+// Al cambiar de empresa (SUPERADMIN) se recargan sus sedes y se limpia la
+// selección anterior, que pertenecía a otra empresa.
+watch(() => formData.company_uuid, async (nueva, anterior) => {
+    if (!isSuperAdmin.value || cargandoRegistro.value || !nueva || nueva === anterior) return;
     try {
-        await store.loadBranches(nuevo);
+        await store.loadBranches(nueva);
+        sucursalesCargadas.value = true;
     } catch (error) {
         logger.warn('[terceros] no se pudieron cargar las sucursales de la empresa', error);
     }
-    sucursalesCargadas.value = true;
-    if (formData.branch_uuid && !store.catalogs.branches.some(branch => branch.uuid === formData.branch_uuid)) {
-        formData.branch_uuid = '';
-    }
+    formData.branch_uuid = '';
+    preseleccionarSucursal();
 });
 
 // ─── RUES Lookup ─────────────────────────────────────────────────────────────
@@ -694,6 +716,29 @@ function mapRuesRegistroThirdParty(registro) {
 
 const isEmpty = (v) => v === null || v === undefined || (typeof v === 'string' ? v.trim() === '' : !v);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Preselecciona la sede principal de la empresa (o la primera activa) cuando
+ * el formulario aún no tiene una. En edición se respeta la sede guardada.
+ */
+const preseleccionarSucursal = () => {
+    if (!isEmpty(formData.branch_uuid)) return;
+    const opciones = branchOptions.value;
+    if (opciones.length === 0) return;
+    const principal = opciones.find((b) => Number(b.is_primary) === 1);
+    formData.branch_uuid = (principal || opciones[0]).uuid || '';
+};
+
+/**
+ * Al cambiar de empresa (SUPERADMIN) se recargan sus sedes y se limpia la
+ * selección anterior, que pertenecía a otra empresa.
+ */
+watch(() => formData.company_uuid, async (nueva, anterior) => {
+    if (!isSuperAdmin.value || cargandoRegistro.value || !nueva || nueva === anterior) return;
+    await store.loadBranches(nueva);
+    formData.branch_uuid = '';
+    preseleccionarSucursal();
+});
 
 const focusFirstError = async (fieldKey) => {
     await nextTick();
@@ -733,7 +778,8 @@ const validateForm = () => {
     if (isEmpty(formData.email)) validationErrors.email = 'Este campo es obligatorio';
     else if (!EMAIL_RE.test(String(formData.email))) validationErrors.email = 'El correo electrónico no tiene un formato válido';
     if (isEmpty(formData.municipality_uuid)) validationErrors.municipality_uuid = 'Este campo es obligatorio';
-    if (isEmpty(formData.branch_uuid)) validationErrors.branch_uuid = 'Este campo es obligatorio';
+    // El SUCURSAL no elige sede: el backend le asigna la suya.
+    if (!esSucursal.value && isEmpty(formData.branch_uuid)) validationErrors.branch_uuid = 'Este campo es obligatorio';
     if (isEmpty(formData.tax_regime)) validationErrors.tax_regime = 'Este campo es obligatorio';
     if (isEmpty(formData.tax_responsibility_uuid)) validationErrors.tax_responsibility_uuid = 'Este campo es obligatorio';
     if (isEmpty(formData.is_active)) validationErrors.is_active = 'Este campo es obligatorio';
@@ -894,7 +940,7 @@ const handleSubmit = async () => {
         }
 
         const errorMsg = error.response?.data?.message || error.response?.data?.error?.message || 'No se pudo procesar la solicitud';
-        Swal.fire('Error', errorMsg, 'error');
+        toast('Error', errorMsg, 'error');
     } finally {
         submitting.value = false;
     }
@@ -923,6 +969,13 @@ onMounted(async () => {
                 Object.assign(formData, item);
                 if (!formData.branch_uuid && item.branch?.uuid) {
                     formData.branch_uuid = item.branch.uuid;
+                }
+
+                // El SUPERADMIN puede editar un tercero de otra empresa: las sedes
+                // del catálogo inicial son las de su empresa activa, no las del
+                // tercero, así que se recargan antes de preseleccionar.
+                if (isSuperAdmin.value && formData.company_uuid) {
+                    await store.loadBranches(formData.company_uuid);
                 }
 
                 // Tipo de tercero: reconstruir los flags activos para el selector.
@@ -968,6 +1021,10 @@ onMounted(async () => {
                 if (item.photo_url || item.logo_url) {
                     filePreviews.photo = item.photo_url || item.logo_url;
                 }
+
+                // Los terceros anteriores al backfill pueden venir sin sede: se
+                // propone la principal para que el formulario pueda guardarse.
+                preseleccionarSucursal();
             }
         } else {
             // Si es nuevo y venimos de una ruta específica, preseleccionar el tipo de tercero
@@ -976,6 +1033,7 @@ onMounted(async () => {
             }
             // ... y el rol de acceso correspondiente (afiliado/conductor/empleado).
             aplicarRolPorDefecto();
+            preseleccionarSucursal();
         }
     } catch (error) {
         toast('Error', 'No se pudieron cargar los datos', 'error');
