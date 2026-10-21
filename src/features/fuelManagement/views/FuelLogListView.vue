@@ -18,6 +18,17 @@
                         type="search" placeholder="Buscar por placa o conductor..."
                         aria-label="Buscar registros de combustible" @input="debouncedSearch" />
                 </div>
+                <button type="button" class="btn btn-falcon-default btn-sm text-nowrap" @click="openStatus()">
+                    <i class="fad fa-gauge-high text-primary me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">Estado de combustible</span>
+                    <span class="d-sm-none">Estado</span>
+                </button>
+                <router-link v-if="puedeSolicitarTanqueo" to="/flota/solicitudes-tanqueo"
+                    class="btn btn-primary btn-sm text-nowrap">
+                    <i class="fad fa-qrcode me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">Solicitar tanqueo</span>
+                    <span class="d-sm-none">Solicitar</span>
+                </router-link>
                 <div v-if="!isViewLoading && !store.loading" class="text-muted ms-sm-auto">
                     <small><i class="fad fa-filter me-1" aria-hidden="true" />{{ store.pagination.totalItems }}
                         resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}</small>
@@ -110,10 +121,12 @@
             </div>
         </div>
     </div>
+
+    <FuelStatusDialog v-model:visible="showStatusModal" @create="goToCreate" />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useFuelManagementStore } from '../store/fuelManagement.store.js';
 import { usePermissionsStore } from '@store';
@@ -121,6 +134,7 @@ import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import FuelStatusDialog from '../components/FuelStatusDialog.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dateUtils from '@/utils/date.js';
@@ -137,6 +151,20 @@ const { confirmDelete } = useTableActions(store, router);
 
 const can = (action) => permissionsStore.can(action);
 const money = (v) => Number(v || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Estado de combustible en modal (flota completa).
+const showStatusModal = ref(false);
+
+const puedeSolicitarTanqueo = computed(() => (
+    can('fuel_requests.index')
+    || permissionsStore.hasRole('administrador')
+    || permissionsStore.hasRole('admin_empresa')
+    || permissionsStore.hasRole('superadmin')
+));
+
+const openStatus = () => {
+    showStatusModal.value = true;
+};
 
 const refreshTable = () => store.fetchItems();
 const goToCreate = () => router.push('/flota/combustible/crear');

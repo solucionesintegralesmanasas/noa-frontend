@@ -30,6 +30,17 @@ class FuelManagementService extends BaseService {
     get(uuid) { return this._request('GET', `/${uuid}`); }
 
     /**
+     * Estado por vehículo: km recorridos desde el último tanqueo, tope
+     * estimado, km restantes y clasificación (OK, PRÓXIMO, EXCEDIDO, SIN DATOS).
+     * @param {Object} params
+     * @returns {Promise<Object>}
+     */
+    async getStatus(params = {}) {
+        const response = await this._request('GET', '/status', { params: { limit: 500, ...params } });
+        return response?.data?.data ?? response?.data ?? response;
+    }
+
+    /**
      * Crea un registro de combustible.
      * @param {Object} data
      * @returns {Promise<Object>}

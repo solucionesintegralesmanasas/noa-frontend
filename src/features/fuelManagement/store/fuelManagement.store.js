@@ -14,6 +14,11 @@ export const useFuelManagementStore = defineStore('fuelManagement', {
         error: null,
         catalogs: { vehicles: [], thirdParties: [] },
         context: null,
+        status: [],
+        statusSummary: { total: 0, excedidos: 0, proximos: 0, sin_datos: 0, sin_tanqueo: 0, ok: 0 },
+        statusProjects: [],
+        statusLoading: false,
+        statusError: false,
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
     }),
@@ -88,6 +93,29 @@ export const useFuelManagementStore = defineStore('fuelManagement', {
             }
         },
         loadFormOptions() { return this.loadCatalogs(); },
+
+        /**
+         * Estado de combustible por vehículo (km recorridos, tope y restantes).
+         * Es informativo: si falla, el listado sigue funcionando.
+         * @returns {Promise<void>}
+         */
+        async fetchStatus() {
+            this.statusLoading = true;
+            this.statusError = false;
+            try {
+                const data = await fuelManagementService.getStatus();
+                this.status = data?.items ?? [];
+                this.statusSummary = data?.summary ?? {
+                    total: 0, excedidos: 0, proximos: 0, sin_datos: 0, sin_tanqueo: 0, ok: 0,
+                };
+                this.statusProjects = data?.projects ?? [];
+            } catch (error) {
+                this.status = [];
+                this.statusError = true;
+            } finally {
+                this.statusLoading = false;
+            }
+        },
 
         /**
          * Precarga el contexto (kilometraje inicial y saldo anterior) del vehículo.
