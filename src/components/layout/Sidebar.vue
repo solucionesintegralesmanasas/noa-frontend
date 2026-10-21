@@ -1,7 +1,7 @@
 <template>
     <nav v-if="showSidebar" class="navbar navbar-light navbar-vertical navbar-expand-xl" aria-label="Navegación principal">
-        <div class="d-flex align-items-center">
-            <router-link class="navbar-brand" to="/dashboard">
+        <div>
+            <router-link class="navbar-brand" to="/dashboard" aria-label="Ir al dashboard">
                 <div class="d-flex align-items-center py-2 gap-2">
                     <img loading="lazy" src="/logo-solo-simbolo.svg" alt="Transportes Sin Barreras" class="sidebar-brand-symbol" width="48" height="36" />
                     <img loading="lazy" src="/logo-solo-letras.svg" alt="Transportes Especiales Sin Barreras" class="sidebar-brand-letters" width="140" height="30" />
@@ -12,536 +12,59 @@
         <div class="collapse navbar-collapse" id="navbarVerticalCollapse">
             <div class="navbar-vertical-content scrollbar">
                 <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
-
-                    <!-- ═══════════════════════════════════════ -->
-                    <!-- DASHBOARD                              -->
-                    <!-- ═══════════════════════════════════════ -->
-                    <li class="nav-item">
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/dashboard', true) }" to="/dashboard">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon" v-once><span class="fas fa-chart-pie"></span></span>
-                                <span class="nav-link-text ps-1">Dashboard</span>
+                    <template v-for="section in visibleSections" :key="section.id">
+                        <!-- Título de sección -->
+                        <li v-if="section.label" class="nav-item">
+                            <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+                                <div class="col-auto navbar-vertical-label">{{ section.label }}</div>
+                                <div class="col ps-0">
+                                    <hr class="mb-0 navbar-vertical-divider" />
+                                </div>
                             </div>
-                        </router-link>
-                    </li>
+                        </li>
 
-                    <!-- NOTIFICACIONES -->
-                    <li class="nav-item">
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/notificaciones') }" to="/notificaciones">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon" v-once><span class="fas fa-bell"></span></span>
-                                <span class="nav-link-text ps-1">Notificaciones</span>
-                            </div>
-                        </router-link>
-                    </li>
+                        <template v-for="item in section.items" :key="item.id">
+                            <!-- Grupo con submenú -->
+                            <li v-if="item.children" class="nav-item">
+                                <button class="nav-link dropdown-indicator w-100 text-start bg-transparent border-0"
+                                    :aria-expanded="isOpen(item.id)" :aria-controls="`sidebar-${item.id}`"
+                                    @click="toggleCollapse(item.id)" type="button">
+                                    <span class="d-flex align-items-center">
+                                        <span class="nav-link-icon" aria-hidden="true"><span class="fas" :class="item.icon"></span></span>
+                                        <span class="nav-link-text ps-1">{{ item.label }}</span>
+                                    </span>
+                                </button>
+                                <ul class="nav collapse" :class="{ show: isOpen(item.id) }" :id="`sidebar-${item.id}`">
+                                    <li v-for="child in visibleChildren(item)" :key="child.id" class="nav-item">
+                                        <router-link class="nav-link" :class="{ active: isItemActive(child) }"
+                                            :to="routeOf(child)"
+                                            :aria-current="isItemActive(child) ? 'page' : undefined">
+                                            <span class="d-flex align-items-center">
+                                                <span class="nav-link-text ps-1">{{ child.label }}</span>
+                                            </span>
+                                        </router-link>
+                                    </li>
+                                </ul>
+                            </li>
 
-                    <!-- ═══════════════════════════════════════ -->
-                    <!-- SECCIÓN 1: EMPRESA                     -->
-                    <!-- ═══════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('companies.index') || can('companies.profile') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index') || can('experiences.index') || can('tax_declarations.index') || can('rup_records.index') || can('financial_statements.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Empresa</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <!-- Perfil de Empresa (era "Inf. de empresa") -->
-                        <button class="nav-link dropdown-indicator w-100 text-start bg-transparent border-0"
-                            :aria-expanded="isOpen('company')" aria-controls="company"
-                            @click="toggleCollapse('company')" type="button"
-                            v-if="can('companies.index') || can('companies.profile') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon" v-once><span class="fas fa-building" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Perfil de Empresa</span>
-                            </div>
-                        </button>
-                        <ul class="nav collapse" :class="{ show: isOpen('company') }" id="company"
-                            v-if="can('companies.index') || can('companies.profile') || can('branches.index') || can('economic_activities.index') || can('bank_details.index') || can('tax_information.index') || can('enabling_resolutions.index') || can('conveyor_capacity.index') || can('employee.index')">
-                            <li class="nav-item" v-if="can('companies.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresa/listas-empresa') }"
-                                    to="/empresa/listas-empresa">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Empresas</span></div>
+                            <!-- Enlace directo -->
+                            <li v-else class="nav-item">
+                                <router-link class="nav-link" :class="{ active: isItemActive(item) }"
+                                    :to="routeOf(item)"
+                                    :aria-current="isItemActive(item) ? 'page' : undefined">
+                                    <span class="d-flex align-items-center">
+                                        <span class="nav-link-icon" aria-hidden="true"><span class="fas" :class="item.icon"></span></span>
+                                        <span class="nav-link-text ps-1">{{ item.label }}</span>
+                                        <span v-if="item.badge === 'notifications' && unreadCount > 0"
+                                            class="badge rounded-pill bg-primary ms-auto"
+                                            :aria-label="`${unreadCount} notificaciones sin leer`">
+                                            {{ unreadBadge }}
+                                        </span>
+                                    </span>
                                 </router-link>
                             </li>
-                            <li class="nav-item" v-else-if="can('companies.profile')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink(`/empresa/perfil/${userStore.company_uuid}`) }"
-                                    :to="`/empresa/perfil/${userStore.company_uuid}`">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Mi empresa</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('branches.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/sucursales/listas-sucursal') }"
-                                    to="/empresas/sucursales/listas-sucursal">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Sedes</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('economic_activities.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/actividades-economicas/listas-actividades-economicas') }"
-                                    to="/empresas/actividades-economicas/listas-actividades-economicas">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Actividades Económicas</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('bank_details.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/datos-bancarios') }"
-                                    to="/empresas/datos-bancarios">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Datos Bancarios</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('tax_information.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/informacion-tributaria') }"
-                                    to="/empresas/informacion-tributaria">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Información Tributaria</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('enabling_resolutions.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/resoluciones-habilitacion') }"
-                                    to="/empresas/resoluciones-habilitacion">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Resoluciones de Habilitación</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('conveyor_capacity.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/capacidad-transportadora') }"
-                                    to="/empresas/capacidad-transportadora">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Capacidad Transportadora</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('employee.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/terceros/empleados') }"
-                                    to="/terceros/empleados">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Empleados</span></div>
-                                </router-link>
-                            </li>
-                        </ul>
-
-                        <!-- Información Técnica -->
-                        <button class="nav-link dropdown-indicator w-100 text-start bg-transparent border-0"
-                            :aria-expanded="isOpen('informacion-tecnica')" aria-controls="informacion-tecnica"
-                            @click="toggleCollapse('informacion-tecnica')" type="button"
-                            v-if="can('experiences.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon" v-once><span class="fas fa-tools" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Información Técnica</span>
-                            </div>
-                        </button>
-                        <ul class="nav collapse" :class="{ show: isOpen('informacion-tecnica') }" id="informacion-tecnica">
-                            <li class="nav-item" v-if="can('experiences.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/experiencias') }"
-                                    to="/empresas/experiencias">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Experiencias</span></div>
-                                </router-link>
-                            </li>
-                        </ul>
-
-                        <!-- Información Financiera -->
-                        <button class="nav-link dropdown-indicator w-100 text-start bg-transparent border-0"
-                            :aria-expanded="isOpen('informacion-financiera')" aria-controls="informacion-financiera"
-                            @click="toggleCollapse('informacion-financiera')" type="button"
-                            v-if="can('rup_records.index') || can('tax_declarations.index') || can('financial_statements.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon" v-once><span class="fas fa-chart-line" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Información Financiera</span>
-                            </div>
-                        </button>
-                        <ul class="nav collapse" :class="{ show: isOpen('informacion-financiera') }" id="informacion-financiera">
-                            <li class="nav-item" v-if="can('rup_records.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/registro-unico-de-proponentes') }"
-                                    to="/empresas/registro-unico-de-proponentes">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">RUP</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('tax_declarations.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/declaraciones-de-renta') }"
-                                    to="/empresas/declaraciones-de-renta">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Declaraciones de Renta</span></div>
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="can('financial_statements.index')">
-                                <router-link class="nav-link"
-                                    :class="{ 'active': isActiveLink('/empresas/estados-financieros') }"
-                                    to="/empresas/estados-financieros">
-                                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Estados Financieros</span></div>
-                                </router-link>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════════ -->
-                    <!-- SECCIÓN 2: PERSONAS Y CONTRATOS               -->
-                    <!-- (era "Terceros" — incluye Contratos Laborales) -->
-                    <!-- ═══════════════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('customer.index') || can('supplier.index') || can('affiliate.index') || can('driver.index') || can('third_parties.index') || can('employmentContracts.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Personas y Contratos</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/terceros/afiliados') }"
-                            to="/terceros/afiliados" v-if="can('affiliate.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-handshake"></span></span>
-                                <span class="nav-link-text ps-1">Afiliados</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/terceros/conductores') }"
-                            to="/terceros/conductores" v-if="can('driver.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-id-card"></span></span>
-                                <span class="nav-link-text ps-1">Conductores</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/terceros/proveedores') }"
-                            to="/terceros/proveedores" v-if="can('supplier.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-boxes"></span></span>
-                                <span class="nav-link-text ps-1">Proveedores</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/terceros/clientes') }"
-                            to="/terceros/clientes" v-if="can('customer.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-user-tie"></span></span>
-                                <span class="nav-link-text ps-1">Clientes</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/terceros', true) }"
-                            to="/terceros" v-if="can('third_parties.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-address-book"></span></span>
-                                <span class="nav-link-text ps-1">Todos (Terceros)</span>
-                            </div>
-                        </router-link>
-
-                        <!-- Contratos Laborales — movido desde la sección de Terceros/RRHH -->
-                        <router-link class="nav-link"
-                            :class="{ 'active': isActiveLink('/recursos-humanos/contratos-laborales/listas') }"
-                            to="/recursos-humanos/contratos-laborales/listas"
-                            v-if="can('employmentContracts.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
-                                <span class="nav-link-text ps-1">Contratos Laborales</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════════════ -->
-                    <!-- SECCIÓN 3: FLOTA Y MANTENIMIENTO                  -->
-                    <!-- (era "Flota" — sin Planillas de Control)           -->
-                    <!-- ═══════════════════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('vehicles.index') || can('vehicle_inspections.index') || can('maintenance.index') || can('maintenance.forecast') || can('reports.vehicles.index') || can('fuel_logs.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Flota y Mantenimiento</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/vehiculos') }"
-                            to="/vehiculos" v-if="can('vehicles.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-truck-moving"></span></span>
-                                <span class="nav-link-text ps-1">Vehículos</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/inspeccion-vehiculos') }"
-                            to="/inspeccion-vehiculos" v-if="can('vehicle_inspections.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-clipboard-check"></span></span>
-                                <span class="nav-link-text ps-1">Inspecciones</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/mantenimiento', true) }"
-                            to="/mantenimiento" v-if="can('maintenance.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-toolbox"></span></span>
-                                <span class="nav-link-text ps-1">Mantenimientos</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/mantenimiento/proyeccion', true) }"
-                            to="/mantenimiento/proyeccion" v-if="can('maintenance.forecast')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-calendar-check"></span></span>
-                                <span class="nav-link-text ps-1">Proyección Mantenimiento</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/flota/combustible', true) }"
-                            to="/flota/combustible" v-if="can('fuel_logs.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-gas-pump"></span></span>
-                                <span class="nav-link-text ps-1">Combustible</span>
-                            </div>
-                        </router-link>
-
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════════════════════ -->
-                    <!-- SECCIÓN 4: OPERACIÓN DE SERVICIOS                         -->
-                    <!-- (nuevo: Proyectos + Planillas de Control + PCP + FUEC)    -->
-                    <!-- ═══════════════════════════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('projects.index') || can('control_sheets.index') || can('service_delivery_control_sheets.index') || can('fuec.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Operación de Servicios</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <!-- Proyectos — movido desde su sección solitaria "Operación" -->
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/proyectos') }"
-                            to="/proyectos" v-if="can('projects.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-briefcase"></span></span>
-                                <span class="nav-link-text ps-1">Proyectos</span>
-                            </div>
-                        </router-link>
-
-                        <!-- Planillas de Control — movido desde "Flota" -->
-                        <router-link class="nav-link"
-                            :class="{ 'active': isActiveLink('/planillas-de-control-de-servicios') }"
-                            to="/planillas-de-control-de-servicios" v-if="can('control_sheets.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-clipboard-list"></span></span>
-                                <span class="nav-link-text ps-1">Planillas de Control</span>
-                            </div>
-                        </router-link>
-
-                        <!-- PCP — nombre completo en lugar de sigla -->
-                        <router-link class="nav-link"
-                            :class="{ 'active': isActiveLink('/planilla-de-control-de-prestacion-servicios') }"
-                            to="/planilla-de-control-de-prestacion-servicios"
-                            v-if="can('service_delivery_control_sheets.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-route"></span></span>
-                                <span class="nav-link-text ps-1">PCP — Prestación de Servicios</span>
-                            </div>
-                        </router-link>
-
-                        <!-- FUEC — movido desde "Operaciones y Finanzas" -->
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/extracto-de-contrato') }"
-                            to="/extracto-de-contrato" v-if="can('fuec.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-passport"></span></span>
-                                <span class="nav-link-text ps-1">FUEC</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- RADICACIÓN TO - expedientes y ruta de trámite (incluye Tarjeta de operación) -->
-                    <li class="nav-item" v-if="can('radicacion_to.index')">
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/radicacion') }"
-                            to="/radicacion">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fad fa-file-signature" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Radicación TO</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════════════ -->
-                    <!-- SECCIÓN 5: FINANZAS                               -->
-                    <!-- (era "Operaciones y Finanzas" — solo Cuotas Adm.) -->
-                    <!-- ═══════════════════════════════════════════════════ -->
-                    <li class="nav-item" v-if="can('affiliate_admin_charges.index') || can('commercial_invoices.index') || can('billing_providers.index') || can('electronic_documents.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Finanzas</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion') }"
-                            to="/facturacion" v-if="can('commercial_invoices.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
-                                <span class="nav-link-text ps-1">Facturación</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion/proveedores') }"
-                            to="/facturacion/proveedores" v-if="can('billing_providers.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-server" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Proveedores de Facturación</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion/documentos-electronicos') }"
-                            to="/facturacion/documentos-electronicos" v-if="can('electronic_documents.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-paper-plane" aria-hidden="true"></span></span>
-                                <span class="nav-link-text ps-1">Documentos Electrónicos</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/pagos-de-administracion') }"
-                            to="/pagos-de-administracion" v-if="can('affiliate_admin_charges.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-file-invoice-dollar"></span></span>
-                                <span class="nav-link-text ps-1">Cuotas de Administración</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════ -->
-                    <!-- SECCIÓN 6: GEOLOCALIZACIÓN             -->
-                    <!-- (sin cambios)                          -->
-                    <!-- ═══════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('locations.view') || can('locations.geofences') || can('locations.history') || can('locations.alerts')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Geolocalización</div>
-                            <div class="col ps-0">
-                                <hr class="mb-0 navbar-vertical-divider" />
-                            </div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/rastreo/mapa-en-vivo') }"
-                            to="/rastreo/mapa-en-vivo" v-if="can('locations.view')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-map-marked-alt"></span></span>
-                                <span class="nav-link-text ps-1">Mapa en Vivo</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/rastreo', true) }"
-                            to="/rastreo" v-if="can('locations.view')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-satellite-dish"></span></span>
-                                <span class="nav-link-text ps-1">Rastreo de Conductores</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/rastreo/geocercas') }"
-                            to="/rastreo/geocercas" v-if="can('locations.geofences')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-draw-polygon"></span></span>
-                                <span class="nav-link-text ps-1">Geocercas</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════ -->
-                    <!-- SECCIÓN 7: SEGURIDAD Y ACCESO              -->
-                    <!-- (era "Seguridad")                          -->
-                    <!-- ═══════════════════════════════════════════ -->
-                    <li class="nav-item"
-                        v-if="can('users.index') || can('roles.index') || can('third_parties.index') || can('companies.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Seguridad y Acceso</div>
-                            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/usuarios') }"
-                            to="/usuarios"
-                            v-if="can('users.index') || can('third_parties.index') || can('companies.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-users"></span></span>
-                                <span class="nav-link-text ps-1">Usuarios</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/roles-permissions') }"
-                            to="/roles-permissions"
-                            v-if="can('roles.index') || can('companies.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-shield-alt"></span></span>
-                                <span class="nav-link-text ps-1">Roles y Permisos</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- ═══════════════════════════════════════════ -->
-                    <!-- SECCIÓN 8: REPORTES                        -->
-                    <!-- ═══════════════════════════════════════════ -->
-                    <li class="nav-item" v-if="can('reports.vehicles.index')">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Reportes</div>
-                            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/reportes/vehiculos', true) }"
-                            to="/reportes/vehiculos" v-if="can('reports.vehicles.index')">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-chart-bar"></span></span>
-                                <span class="nav-link-text ps-1">Reporte Vehículos</span>
-                            </div>
-                        </router-link>
-                    </li>
-
-                    <!-- SECCIÓN 9: CONFIGURACIÓN / CATÁLOGOS -->
-                    <li v-if="permissionsStore.hasRole('superadmin') || permissionsStore.hasRole('administrador') || permissionsStore.hasRole('admin_empresa')" class="nav-item">
-                        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
-                            <div class="col-auto navbar-vertical-label">Configuración</div>
-                            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
-                        </div>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/marcas', true) }"
-                            to="/configuracion/marcas">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-tags"></span></span>
-                                <span class="nav-link-text ps-1">Marcas</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/clases-vehiculos', true) }"
-                            to="/configuracion/clases-vehiculos">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-truck"></span></span>
-                                <span class="nav-link-text ps-1">Clases de Vehículos</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/objetos-contrato', true) }"
-                            to="/configuracion/objetos-contrato">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-file-contract"></span></span>
-                                <span class="nav-link-text ps-1">Objetos de Contrato</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/items-inspeccion', true) }"
-                            to="/configuracion/items-inspeccion">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-clipboard-check"></span></span>
-                                <span class="nav-link-text ps-1">Ítems de Inspección</span>
-                            </div>
-                        </router-link>
-
-                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/configuracion/retenciones', true) }"
-                            to="/configuracion/retenciones">
-                            <div class="d-flex align-items-center">
-                                <span class="nav-link-icon"><span class="fas fa-percent"></span></span>
-                                <span class="nav-link-text ps-1">Retenciones</span>
-                            </div>
-                        </router-link>
-                    </li>
-
+                        </template>
+                    </template>
                 </ul>
                 <div class="settings my-3"></div>
             </div>
@@ -554,12 +77,14 @@ import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore, usePermissionsStore, useUserStore } from '@store';
 import { useSidebar } from '@/hooks/useSidebar.js';
+import { useNotificationsStore } from '@/features/notifications/store/notifications.store.js';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const permissionsStore = usePermissionsStore();
 const userStore = useUserStore();
-const { toggleCollapse, isOpen, isActiveLink } = useSidebar();
+const notificationsStore = useNotificationsStore();
+const { toggleCollapse, isOpen } = useSidebar();
 
 const isConductorRole = computed(() => {
     return permissionsStore.hasRole('CONDUCTOR');
@@ -578,6 +103,231 @@ const showSidebar = computed(() => {
     if (isConductorDashboard.value) return false;
     return true;
 });
+
+const unreadCount = computed(() => notificationsStore.unreadCount || 0);
+const unreadBadge = computed(() => (unreadCount.value > 99 ? '99+' : String(unreadCount.value)));
+
+const can = (action, subject) => permissionsStore.can(action, subject);
+
+const isAdminRole = () =>
+    permissionsStore.hasRole('superadmin') ||
+    permissionsStore.hasRole('administrador') ||
+    permissionsStore.hasRole('admin_empresa');
+
+const canAny = (permissions = []) =>
+    permissions.length === 0 || permissions.some((permission) => can(permission));
+
+// Los catálogos de configuración abren por rol (ver meta.roles de sus rutas)
+// aunque el rol no tenga el permiso granular sembrado.
+const canOrAdmin = (...permissions) => isAdminRole() || canAny(permissions);
+
+/**
+ * Menú declarativo.
+ *
+ * Cada entrada admite:
+ * - permissions: lista de permisos (basta uno) para mostrarla.
+ * - visibleWhen / hiddenWhen: condiciones adicionales (roles o datos del usuario).
+ * - exact / activeWhen: control fino del estado activo cuando hay rutas hermanas.
+ * - children: submenú colapsable (el id debe coincidir con useSidebar.js para autoabrirlo).
+ */
+const MENU_SECTIONS = [
+    {
+        id: 'general',
+        label: null,
+        items: [
+            { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', to: '/dashboard', exact: true },
+            { id: 'notificaciones', label: 'Notificaciones', icon: 'fa-bell', to: '/notificaciones', badge: 'notifications' },
+        ],
+    },
+    {
+        id: 'empresa',
+        label: 'Empresa',
+        items: [
+            {
+                id: 'company',
+                label: 'Perfil de Empresa',
+                icon: 'fa-building',
+                children: [
+                    { id: 'empresas', label: 'Empresas', to: '/empresa/listas-empresa', permissions: ['companies.index'] },
+                    {
+                        id: 'mi-empresa',
+                        label: 'Mi empresa',
+                        to: () => `/empresa/perfil/${userStore.company_uuid}`,
+                        permissions: ['companies.profile'],
+                        hiddenWhen: () => can('companies.index') || !userStore.company_uuid,
+                    },
+                    { id: 'sedes', label: 'Sedes', to: '/empresas/sucursales/listas-sucursal', permissions: ['branches.index'] },
+                    { id: 'actividades-economicas', label: 'Actividades Económicas', to: '/empresas/actividades-economicas/listas-actividades-economicas', permissions: ['economic_activities.index'] },
+                    { id: 'datos-bancarios', label: 'Datos Bancarios', to: '/empresas/datos-bancarios', permissions: ['bank_details.index'] },
+                    { id: 'informacion-tributaria', label: 'Información Tributaria', to: '/empresas/informacion-tributaria', permissions: ['tax_information.index'] },
+                    { id: 'resoluciones-habilitacion', label: 'Resoluciones de Habilitación', to: '/empresas/resoluciones-habilitacion', permissions: ['enabling_resolutions.index'] },
+                    { id: 'capacidad-transportadora', label: 'Capacidad Transportadora', to: '/empresas/capacidad-transportadora', permissions: ['conveyor_capacity.index'] },
+                ],
+            },
+            {
+                id: 'informacion-tecnica',
+                label: 'Información Técnica',
+                icon: 'fa-tools',
+                children: [
+                    { id: 'experiencias', label: 'Experiencias', to: '/empresas/experiencias', permissions: ['experiences.index'] },
+                    { id: 'convenios', label: 'Convenios de Colaboración', to: '/convenios-colaboracion', permissions: ['business_collaboration_agreements.index'] },
+                ],
+            },
+            {
+                id: 'informacion-financiera',
+                label: 'Información Financiera',
+                icon: 'fa-chart-line',
+                children: [
+                    { id: 'rup', label: 'RUP', to: '/empresas/registro-unico-de-proponentes', permissions: ['rup_records.index'] },
+                    { id: 'declaraciones-renta', label: 'Declaraciones de Renta', to: '/empresas/declaraciones-de-renta', permissions: ['tax_declarations.index'] },
+                    { id: 'estados-financieros', label: 'Estados Financieros', to: '/empresas/estados-financieros', permissions: ['financial_statements.index'] },
+                ],
+            },
+        ],
+    },
+    {
+        id: 'personas',
+        label: 'Personas y Contratos',
+        items: [
+            { id: 'afiliados', label: 'Afiliados', icon: 'fa-handshake', to: '/terceros/afiliados', permissions: ['affiliate.index'] },
+            { id: 'conductores', label: 'Conductores', icon: 'fa-id-card', to: '/terceros/conductores', permissions: ['driver.index'] },
+            { id: 'clientes', label: 'Clientes', icon: 'fa-user-tie', to: '/terceros/clientes', permissions: ['customer.index'] },
+            { id: 'proveedores', label: 'Proveedores', icon: 'fa-boxes', to: '/terceros/proveedores', permissions: ['supplier.index'] },
+            { id: 'empleados', label: 'Empleados', icon: 'fa-users', to: '/terceros/empleados', permissions: ['employee.index'] },
+            { id: 'todos-terceros', label: 'Todos los Terceros', icon: 'fa-address-book', to: '/terceros', permissions: ['third_parties.index'], exact: true },
+            { id: 'contratos-laborales', label: 'Contratos Laborales', icon: 'fa-user-clock', to: '/recursos-humanos/contratos-laborales/listas', permissions: ['employmentContracts.index'] },
+        ],
+    },
+    {
+        id: 'flota',
+        label: 'Flota y Mantenimiento',
+        items: [
+            { id: 'vehiculos', label: 'Vehículos', icon: 'fa-truck-moving', to: '/vehiculos', permissions: ['vehicles.index'] },
+            { id: 'documentos-vehiculares', label: 'Documentos Vehiculares', icon: 'fa-file-alt', to: '/vehiculos-documentos', permissions: ['vehicle_documents.index'] },
+            { id: 'inspecciones', label: 'Inspecciones', icon: 'fa-clipboard-check', to: '/inspeccion-vehiculos', permissions: ['vehicle_inspections.index'] },
+            {
+                id: 'mantenimientos',
+                label: 'Mantenimientos',
+                icon: 'fa-toolbox',
+                to: '/mantenimiento',
+                permissions: ['maintenance.index'],
+                activeWhen: (path) => path === '/mantenimiento' || (path.startsWith('/mantenimiento/') && !path.startsWith('/mantenimiento/proyeccion')),
+            },
+            { id: 'proyeccion-mantenimiento', label: 'Proyección de Mantenimiento', icon: 'fa-calendar-check', to: '/mantenimiento/proyeccion', permissions: ['maintenance.forecast'], activeWhen: (path) => path.startsWith('/mantenimiento/proyeccion') },
+            { id: 'combustible', label: 'Combustible', icon: 'fa-gas-pump', to: '/flota/combustible', permissions: ['fuel_logs.index'] },
+        ],
+    },
+    {
+        id: 'operacion',
+        label: 'Operación de Servicios',
+        items: [
+            { id: 'proyectos', label: 'Proyectos', icon: 'fa-briefcase', to: '/proyectos', permissions: ['projects.index'] },
+            { id: 'planillas-control', label: 'Planillas de Control', icon: 'fa-clipboard-list', to: '/planillas-de-control-de-servicios', permissions: ['control_sheets.index'] },
+            { id: 'pcp', label: 'Prestación de Servicios (PCP)', icon: 'fa-route', to: '/planilla-de-control-de-prestacion-servicios', permissions: ['service_delivery_control_sheets.index'] },
+            { id: 'fuec', label: 'FUEC', icon: 'fa-passport', to: '/extracto-de-contrato', permissions: ['fuec.index'] },
+            { id: 'tarjetas-operacion', label: 'Tarjetas de Operación', icon: 'fa-credit-card', to: '/tarjetas-de-operacion', permissions: ['operation_cards.index'] },
+            { id: 'radicacion-to', label: 'Radicación TO', icon: 'fa-file-signature', to: '/radicacion', permissions: ['radicacion_to.index'] },
+        ],
+    },
+    {
+        id: 'finanzas',
+        label: 'Finanzas',
+        items: [
+            {
+                id: 'facturacion',
+                label: 'Facturación',
+                icon: 'fa-file-invoice',
+                to: '/facturacion',
+                permissions: ['commercial_invoices.index'],
+                activeWhen: (path) => {
+                    if (path === '/facturacion') return true;
+                    if (path.startsWith('/facturacion/facturas') || path.startsWith('/facturacion/cotizaciones')) return true;
+                    const rutasHermanas = ['/facturacion/proveedores', '/facturacion/documentos-electronicos', '/facturacion/configuracion', '/facturacion/resoluciones'];
+                    return path.startsWith('/facturacion/') && !rutasHermanas.some((ruta) => path === ruta || path.startsWith(`${ruta}/`));
+                },
+            },
+            { id: 'documentos-electronicos', label: 'Documentos Electrónicos', icon: 'fa-paper-plane', to: '/facturacion/documentos-electronicos', permissions: ['electronic_documents.index'] },
+            { id: 'resoluciones-facturacion', label: 'Resoluciones de Facturación', icon: 'fa-scroll', to: '/facturacion/resoluciones', permissions: ['billing_resolutions.index'] },
+            { id: 'proveedores-facturacion', label: 'Proveedores de Facturación', icon: 'fa-server', to: '/facturacion/proveedores', permissions: ['billing_providers.index'], exact: true },
+            {
+                id: 'configuracion-apidian',
+                label: 'Configuración API DIAN',
+                icon: 'fa-sliders-h',
+                to: '/facturacion/configuracion',
+                permissions: ['billing_providers.update'],
+                activeWhen: (path) => path === '/facturacion/configuracion' || (path.startsWith('/facturacion/proveedores/') && path.endsWith('/configuracion')),
+            },
+            { id: 'cuotas-administracion', label: 'Cuotas de Administración', icon: 'fa-file-invoice-dollar', to: '/pagos-de-administracion', permissions: ['affiliate_admin_charges.index'] },
+        ],
+    },
+    {
+        id: 'geolocalizacion',
+        label: 'Geolocalización',
+        items: [
+            { id: 'mapa-vivo', label: 'Mapa en Vivo', icon: 'fa-map-marked-alt', to: '/rastreo/mapa-en-vivo', permissions: ['locations.view'], activeWhen: (path) => path === '/rastreo/mapa-en-vivo' },
+            { id: 'rastreo-conductores', label: 'Rastreo de Conductores', icon: 'fa-satellite-dish', to: '/rastreo', permissions: ['locations.view'], activeWhen: (path) => path === '/rastreo' || path.startsWith('/rastreo/historial') },
+            { id: 'geocercas', label: 'Geocercas', icon: 'fa-draw-polygon', to: '/rastreo/geocercas', permissions: ['locations.geofences'], activeWhen: (path) => path.startsWith('/rastreo/geocercas') },
+        ],
+    },
+    {
+        id: 'seguridad',
+        label: 'Seguridad y Acceso',
+        items: [
+            { id: 'usuarios', label: 'Usuarios', icon: 'fa-users', to: '/usuarios', permissions: ['users.index'] },
+            { id: 'roles-permisos', label: 'Roles y Permisos', icon: 'fa-shield-alt', to: '/roles-permissions', visibleWhen: () => can('roles.index') || permissionsStore.hasRole('admin_empresa') },
+        ],
+    },
+    {
+        id: 'reportes',
+        label: 'Reportes',
+        items: [
+            { id: 'reporte-vehiculos', label: 'Reporte de Vehículos', icon: 'fa-chart-bar', to: '/reportes/vehiculos', permissions: ['reports.vehicles.index'] },
+        ],
+    },
+    {
+        id: 'configuracion',
+        label: 'Configuración',
+        visibleWhen: isAdminRole,
+        items: [
+            { id: 'marcas', label: 'Marcas', icon: 'fa-tags', to: '/configuracion/marcas', visibleWhen: () => canOrAdmin('brands.index') },
+            { id: 'clases-vehiculos', label: 'Clases de Vehículos', icon: 'fa-truck', to: '/configuracion/clases-vehiculos', visibleWhen: () => canOrAdmin('vehicle_classes.index') },
+            { id: 'objetos-contrato', label: 'Objetos de Contrato', icon: 'fa-file-contract', to: '/configuracion/objetos-contrato', visibleWhen: () => canOrAdmin('objects_contracts.index') },
+            { id: 'items-inspeccion', label: 'Ítems de Inspección', icon: 'fa-clipboard-check', to: '/configuracion/items-inspeccion', visibleWhen: () => canOrAdmin('inspection_items.index') },
+            { id: 'retenciones', label: 'Retenciones', icon: 'fa-percent', to: '/configuracion/retenciones', visibleWhen: () => canOrAdmin('withholdings.index') },
+        ],
+    },
+];
+
+function routeOf(item) {
+    return typeof item.to === 'function' ? item.to() : item.to;
+}
+
+function isItemVisible(item) {
+    if (item.visibleWhen && !item.visibleWhen()) return false;
+    if (item.hiddenWhen && item.hiddenWhen()) return false;
+    if (item.children) return visibleChildren(item).length > 0;
+    return canAny(item.permissions);
+}
+
+function visibleChildren(group) {
+    return (group.children || []).filter(isItemVisible);
+}
+
+function isItemActive(item) {
+    if (typeof item.activeWhen === 'function') return item.activeWhen(route.path);
+    const target = routeOf(item);
+    if (!target) return false;
+    if (item.exact) return route.path === target;
+    return route.path === target || route.path.startsWith(`${target}/`);
+}
+
+const visibleSections = computed(() =>
+    MENU_SECTIONS
+        .filter((section) => !section.visibleWhen || section.visibleWhen())
+        .map((section) => ({ ...section, items: section.items.filter(isItemVisible) }))
+        .filter((section) => section.items.length > 0)
+);
+
 const closeMobileSidebar = () => {
     const collapseEl = document.getElementById('navbarVerticalCollapse');
     if (collapseEl && collapseEl.classList.contains('show')) {
@@ -593,8 +343,6 @@ const closeMobileSidebar = () => {
 watch(() => route.path, () => {
     closeMobileSidebar();
 });
-
-const can = (action, subject) => permissionsStore.can(action, subject);
 </script>
 
 <style scoped>
@@ -604,6 +352,7 @@ const can = (action, subject) => permissionsStore.can(action, subject);
     flex-shrink: 0;
     background: transparent;
 }
+
 .sidebar-brand-letters {
     height: 28px;
     width: auto;
