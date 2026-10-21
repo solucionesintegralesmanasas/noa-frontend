@@ -16,8 +16,9 @@ const getBaseUrl = () => {
         }
         return "https://api.transportessinbarreras.local/api/v1/";
     }
-    // Para modo local: usar /api/v1 para coincidir con las rutas del backend y el proxy de Vite
-    return "/api/v1";
+    // En desarrollo, .env define /api/v1/ (proxy de Vite); en producción,
+    // .env.production define la URL absoluta del backend.
+    return env.API_BASE_URL;
 };
 
 const DEFAULT_CONFIG = {
