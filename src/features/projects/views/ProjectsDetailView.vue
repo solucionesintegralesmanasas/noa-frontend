@@ -505,6 +505,9 @@ const toggleAssignment = async (assignment) => {
             assignments: payloadConAlternancia(project.value.assignments, assignment),
         });
         project.value = await store.fetchProfileById(route.params.id);
+        // La evidencia refleja la asignación vigente (las hojas del coche
+        // retirado ya se crearon en el proyecto y dejan de contar).
+        await cargarEvidencia();
     } catch {
         await toast('Error', 'No se pudo actualizar la asignación', 'error');
     } finally {
@@ -608,6 +611,8 @@ const submitNewAssignment = async () => {
         });
         project.value = await store.fetchProfileById(route.params.id);
         closeAddAssignment();
+        // Reactivar un coche devuelve sus hojas al conteo de evidencia.
+        await cargarEvidencia();
     } catch (err) {
         const detalles = err?.response?.data?.error?.details;
         addAssignmentError.value = Array.isArray(detalles) && detalles[0]?.messages?.[0]
