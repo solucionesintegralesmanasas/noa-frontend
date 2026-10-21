@@ -106,3 +106,81 @@ export function asignacionDeVehiculo(asignaciones = [], uuid) {
     if (!uuid) return null;
     return asignaciones.find((asignacion) => asignacion?.vehicle_uuid === uuid) ?? null;
 }
+
+/**
+ * Filas de la tabla de creación masiva (SPEC-009): una por coche, con su
+ * conductor de la asignación vigente. Una fila sin conductor o sin vehículo
+ * no puede crear hoja y se excluye; si un coche aparece en más de una
+ * asignación activa, gana la primera llegada.
+ *
+ * @param {Array<Object>} asignaciones - Asignaciones activas del proyecto.
+ * @returns {Array<{asignacion_uuid: string|null, vehicle_uuid: string, conductor_uuid: string, placa: string, internal_number: string, conductor_nombre: string, document_number: string}>}
+ */
+export function filasDeProyecto(asignaciones) {
+    const filas = [];
+    const vistos = new Set();
+
+    for (const asignacion of Array.isArray(asignaciones) ? asignaciones : []) {
+        const vehiculoUuid = asignacion?.vehicle_uuid;
+        const conductorUuid = asignacion?.third_party_uuid;
+        // Fila inservible: no hay par conductor ↔ vehículo completo.
+        if (!vehiculoUuid || !conductorUuid || vistos.has(vehiculoUuid)) continue;
+        vistos.add(vehiculoUuid);
+
+        const conductor = asignacion.conductor ?? {};
+        const vehicle = asignacion.vehicle ?? {};
+        filas.push({
+            asignacion_uuid: asignacion.uuid ?? null,
+            vehicle_uuid: vehiculoUuid,
+            conductor_uuid: conductorUuid,
+            placa: vehicle.vehicle_license_plate ?? '',
+            internal_number: vehicle.internal_number ?? '',
+            conductor_nombre: `${conductor.first_name || ''} ${conductor.last_name || ''
+            }`.trim() || conductor.company_name || '',
+            document_number: conductor.document_number ?? '',
+        });
+    }
+
+    return filas;
+}
+
+/**
+ * Resumen vivo del bulk: cuántas hojas y cuántas planillas diarias se crearán
+ * con los coches marcados. El backend crea una planilla diaria por cada día
+ * de cada hoja (con un solo día, la hoja es su propia planilla diaria).
+ *
+ * @param {Array<Object>} filas - Filas marcadas de filasDeProyecto.
+ * @param {number} diasServicio - Días entre fecha de inicio y fin (inclusivos).
+ * @returns {{hojas: number, planillasDiarias: number}}
+ */
+export function resumenCreacion(filas, diasServicio = 1) {
+    const hojas = Array.isArray(filas) ? filas.length : 0;
+    const dias = Number(diasServicio);
+    const diasValidos = Number.isFinite(dias) && dias > 0 ? Math.floor(dias) : 1;
+
+    return { hojas, planillasDiarias: hojas * diasValidos };
+}
+
+/**
+ * Payload del endpoint bulk: solo los campos comunes y la lista de coches.
+ * Conceptualmente NO envía `vehicle_uuid`, `third_party_uuid`,
+ * `official_name_and_surname` ni `fuec_uuid`: el backend los resuelve desde
+ * la asignación vigente del proyecto y los descarta si llegaran.
+ *
+ * @param {Object} formData - Campos comunes del formulario.
+ * @param {string[]} cochesSeleccionados - UUIDs de vehículos marcados.
+ * @returns {Object} Payload para POST /bulk.
+ */
+export function armarPayloadCreacion(formData, cochesSeleccionados) {
+    return {
+        company_uuid: formData?.company_uuid || null,
+        project_uuid: formData?.project_uuid || null,
+        service_date: formData?.service_date || formData?.start_date || null,
+        start_date: formData?.start_date || null,
+        end_date: formData?.end_date || null,
+        daily_route: formData?.daily_route?.trim() || null,
+        type_of_control_sheet: 'DIRECTO_CON_LA_EMPRESA',
+        is_active: formData?.is_active === '0' ? false : true,
+        vehicle_uuids: (Array.isArray(cochesSeleccionados) ? cochesSeleccionados : []).filter(Boolean),
+    };
+}

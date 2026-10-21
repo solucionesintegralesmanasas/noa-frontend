@@ -155,6 +155,30 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
         },
 
         /**
+         * Creación masiva por proyecto (SPEC-009): una hoja por cada coche de
+         * `vehicle_uuids`. El backend resuelve conductor y responsable desde la
+         * asignación vigente; el payload no lleva pares ni FUEC.
+         * @param {Object} data - Payload del bulk.
+         * @returns {Promise<Object>} { created, daily_sheets, sheets }.
+         */
+        createBulk(data) {
+            return this._run(async () => {
+                const response = await serviceDeliveryControlSheetService.createBulk(data);
+                // _request devuelve el cuerpo de la API; el resultado va en `data`.
+                const resultado = response?.data ?? response;
+                const hojas = Number(resultado?.created) || 0;
+                const planillas = Number(resultado?.daily_sheets) || 0;
+                const detalle = planillas > 0
+                    ? ` (${planillas} ${planillas === 1 ? 'planilla diaria' : 'planillas diarias'})`
+                    : ' (una por coche)';
+                await toast('¡Éxito!', `${hojas} ${hojas === 1 ? 'hoja creada' : 'hojas creadas'}${detalle}`, 'success');
+                this.pagination.currentPage = 1;
+                await this.fetchItems();
+                return resultado;
+            }, 'Error al crear las hojas por proyecto');
+        },
+
+        /**
          * Actualiza un registro existente.
          * @param {string} uuid - UUID del registro.
          * @param {Object} data - Datos actualizados.
