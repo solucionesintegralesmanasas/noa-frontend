@@ -198,8 +198,14 @@
                                     </span>
                                 </template>
                             </Column>
-                            <Column header="Acciones" style="width: 8rem;" class="text-center">
+                            <Column header="Acciones" style="width: 10rem;" class="text-center">
                                 <template #body="{ data }">
+                                    <button v-if="data.driver === 'apidian' && can('billing_providers.update')"
+                                        class="btn btn-sm btn-outline-secondary me-1" type="button"
+                                        aria-label="Configurar ApiDian" title="Configuración básica ApiDian"
+                                        @click="goToConfig(data)">
+                                        <i class="fas fa-sliders-h" aria-hidden="true"></i>
+                                    </button>
                                     <button v-if="can('billing_providers.update')" class="btn btn-sm btn-outline-primary me-1"
                                         type="button" aria-label="Editar proveedor" @click="goToEdit(data)">
                                         <i class="fas fa-pen" aria-hidden="true"></i>
@@ -244,6 +250,7 @@ const opcionesDriver = [
 
 const goBack = () => router.push('/facturacion');
 const recargar = () => store.fetchProviders();
+const goToConfig = (data) => router.push(`/facturacion/proveedores/${data.uuid}/configuracion`);
 
 const { formData, errors, isSubmitting, fieldAria, validateAndFocus, submit, reset } = useAccessibleForm(
     {

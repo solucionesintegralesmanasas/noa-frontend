@@ -3,6 +3,7 @@ import { toast } from '@/utils/toast.js';
 import billingService, {
     billingResolutionsService,
     billingProvidersService,
+    billingProviderConfigService,
     electronicDocumentsService,
 } from '../services/billing.service.js';
 
@@ -44,6 +45,9 @@ export const useBillingStore = defineStore('billing', {
         // Proveedores tecnológicos (ApiDian u otro driver).
         providers: [],
         providerEnEdicion: null,
+        // Configuraciones básicas (módulo 01) del proveedor ApiDian.
+        providerConfig: null,
+        configLoading: false,
         // Documentos electrónicos genéricos.
         electronicDocs: [],
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
@@ -243,6 +247,57 @@ export const useBillingStore = defineStore('billing', {
                 if (this.providerEnEdicion === uuid) this.providerEnEdicion = null;
                 await this.fetchProviders();
             }, 'Error al eliminar el proveedor tecnológico');
+        },
+
+        // ── Configuraciones básicas ApiDian (módulo 01) ───────────────────
+
+        async fetchProviderConfig(uuid) {
+            this.configLoading = true;
+            try {
+                const response = await billingProviderConfigService.consultar(uuid);
+                const cuerpo = response?.data ?? response;
+                // ApiDian responde {success, data}; se expone el objeto interno.
+                this.providerConfig = cuerpo?.data ?? cuerpo ?? null;
+                return this.providerConfig;
+            } catch (error) {
+                this.providerConfig = null;
+                throw error;
+            } finally {
+                this.configLoading = false;
+            }
+        },
+
+        /**
+         * Guarda un paso de la configuración básica.
+         * @param {'empresa'|'software'|'software-nomina'|'certificado'|'resolucion'|'ambiente'|'webhook'} paso
+         */
+        async guardarConfiguracion(uuid, paso, datos = {}) {
+            const acciones = {
+                empresa: [billingProviderConfigService.guardarEmpresa, 'Empresa guardada en ApiDian'],
+                software: [billingProviderConfigService.software, 'Software guardado en ApiDian'],
+                'software-nomina': [billingProviderConfigService.softwareNomina, 'Software de nómina guardado en ApiDian'],
+                certificado: [billingProviderConfigService.certificado, 'Certificado cargado en ApiDian'],
+                resolucion: [billingProviderConfigService.resolucion, 'Resolución guardada en ApiDian'],
+                ambiente: [billingProviderConfigService.ambiente, 'Ambiente actualizado en ApiDian'],
+                webhook: [billingProviderConfigService.webhook, 'Webhook guardado en ApiDian'],
+            };
+
+            const [accion, mensaje] = acciones[paso] ?? [];
+            if (!accion) throw new Error(`Paso de configuración desconocido: ${paso}`);
+
+            return this._run(async () => {
+                const response = await accion.call(billingProviderConfigService, uuid, datos);
+                await toast('¡Éxito!', mensaje, 'success');
+                return response?.data?.data ?? response?.data ?? response;
+            }, 'ApiDian rechazó la configuración');
+        },
+
+        async eliminarConfigEmpresa(uuid) {
+            return this._run(async () => {
+                await billingProviderConfigService.eliminarEmpresa(uuid);
+                this.providerConfig = null;
+                await toast('¡Eliminada!', 'La empresa se eliminó de ApiDian', 'success');
+            }, 'No se pudo eliminar la empresa en ApiDian');
         },
 
         // ── Documentos electrónicos genéricos (ApiDian, fase 3) ───────────

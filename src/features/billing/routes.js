@@ -77,6 +77,28 @@ export const billingRoutes = [
         },
     },
     {
+        path: '/facturacion/configuracion',
+        name: 'billing.config',
+        component: () => import('./views/BillingProviderConfigView.vue'),
+        meta: {
+            title: 'Configuración ApiDian',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.update'],
+        },
+    },
+    {
+        path: '/facturacion/proveedores/:uuid/configuracion',
+        name: 'billing.provider.config',
+        component: () => import('./views/BillingProviderConfigView.vue'),
+        meta: {
+            title: 'Configuración ApiDian',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.update'],
+        },
+    },
+    {
         path: '/facturacion/:id',
         name: 'billing.profile',
         component: () => import('./views/BillingDetailView.vue'),
