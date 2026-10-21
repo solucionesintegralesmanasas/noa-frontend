@@ -249,7 +249,7 @@
                     <!-- (era "Flota" — sin Planillas de Control)           -->
                     <!-- ═══════════════════════════════════════════════════ -->
                     <li class="nav-item"
-                        v-if="can('vehicles.index') || can('vehicle_inspections.index') || can('maintenance.index') || can('maintenance.forecast') || can('reports.vehicles.index')">
+                        v-if="can('vehicles.index') || can('vehicle_inspections.index') || can('maintenance.index') || can('maintenance.forecast') || can('reports.vehicles.index') || can('fuel_logs.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Flota y Mantenimiento</div>
                             <div class="col ps-0">
@@ -286,6 +286,14 @@
                             <div class="d-flex align-items-center">
                                 <span class="nav-link-icon"><span class="fas fa-calendar-check"></span></span>
                                 <span class="nav-link-text ps-1">Proyección Mantenimiento</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/flota/combustible', true) }"
+                            to="/flota/combustible" v-if="can('fuel_logs.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-gas-pump"></span></span>
+                                <span class="nav-link-text ps-1">Combustible</span>
                             </div>
                         </router-link>
 
@@ -359,7 +367,7 @@
                     <!-- SECCIÓN 5: FINANZAS                               -->
                     <!-- (era "Operaciones y Finanzas" — solo Cuotas Adm.) -->
                     <!-- ═══════════════════════════════════════════════════ -->
-                    <li class="nav-item" v-if="can('affiliate_admin_charges.index') || can('commercial_invoices.index')">
+                    <li class="nav-item" v-if="can('affiliate_admin_charges.index') || can('commercial_invoices.index') || can('billing_providers.index') || can('electronic_documents.index')">
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
                             <div class="col-auto navbar-vertical-label">Finanzas</div>
                             <div class="col ps-0">
@@ -372,6 +380,22 @@
                             <div class="d-flex align-items-center">
                                 <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
                                 <span class="nav-link-text ps-1">Facturación</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion/proveedores') }"
+                            to="/facturacion/proveedores" v-if="can('billing_providers.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-server" aria-hidden="true"></span></span>
+                                <span class="nav-link-text ps-1">Proveedores de Facturación</span>
+                            </div>
+                        </router-link>
+
+                        <router-link class="nav-link" :class="{ 'active': isActiveLink('/facturacion/documentos-electronicos') }"
+                            to="/facturacion/documentos-electronicos" v-if="can('electronic_documents.index')">
+                            <div class="d-flex align-items-center">
+                                <span class="nav-link-icon"><span class="fas fa-paper-plane" aria-hidden="true"></span></span>
+                                <span class="nav-link-text ps-1">Documentos Electrónicos</span>
                             </div>
                         </router-link>
 

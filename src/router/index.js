@@ -44,6 +44,7 @@ import { withholdingsRoutes } from '@/features/withholdings/routes.js'
 import { authGuard } from './guards/auth.js'
 import { twoFAGuard } from './guards/2fa.js'
 import { permissionsGuard } from './guards/permissions.js'
+import { fuelManagementRoutes } from '@/features/fuelManagement/routes.js'
 
 const routes = [
   {
@@ -99,6 +100,7 @@ const routes = [
   ...vehiclesRoutes,
   ...vehicleClassesRoutes,
   ...withholdingsRoutes,
+  ...fuelManagementRoutes,
   {
     path: '/401',
     name: 'unauthorized',

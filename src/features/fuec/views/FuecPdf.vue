@@ -82,11 +82,21 @@ let rawBlob = null;
 const goBack = () => router.push('/extracto-de-contrato');
 
 const construirNombreArchivo = (detalle) => {
-    const placa = detalle?.vehicle?.vehicle_license_plate || detalle?.vehicle_license_plate || detalle?.placa || '';
-    const origen = detalle?.origin_route || detalle?.origin || '';
-    const destino = detalle?.destination_route || detalle?.destination || '';
+    const placa = (detalle?.vehicle?.vehicle_license_plate || detalle?.vehicle_license_plate || detalle?.placa || '').trim();
+    const origen = (detalle?.origin_route || detalle?.origin || '').trim();
+    const destino = (detalle?.destination_route || detalle?.destination || '').trim();
     const recorrido = [origen, destino].filter(Boolean).join(' - ');
-    const base = `${placa}${recorrido ? ` ${recorrido}` : ''}`.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, ' ');
+
+    // Misma fórmula que el backend (PdfService::nombreArchivo): "FUEC - placa - recorrido".
+    let base = ['FUEC', placa || 'SINPLACA', recorrido]
+        .filter(Boolean)
+        .join(' - ')
+        .replace(/[/\\:*?"<>|]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (base.length > 180) base = base.slice(0, 180);
+    base = base.replace(/[-.\s]+$/, '');
+
     fileName.value = base ? `${base}.pdf` : `FUEC-${route.params.id}.pdf`;
 };
 
@@ -102,12 +112,18 @@ const loadPdf = async () => {
 
     try {
         const uuid = route.params.id;
-        const [blob, detalle] = await Promise.all([
+        const [{ blob, fileName: serverName }, detalle] = await Promise.all([
             store.getRawPdf(uuid),
             store.fetchProfileById(uuid).catch(() => null),
         ]);
 
-        if (detalle) construirNombreArchivo(detalle);
+        // El nombre que manda es el del servidor (Content-Disposition); si no llega,
+        // se replica la fórmula del backend para no quedarse en "documento.pdf".
+        if (serverName) {
+            fileName.value = serverName.endsWith('.pdf') ? serverName : `${serverName}.pdf`;
+        } else if (detalle) {
+            construirNombreArchivo(detalle);
+        }
         
         if (!blob || blob.size === 0) {
             throw new Error('El servidor retornó un documento vacío.');

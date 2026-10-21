@@ -74,9 +74,22 @@ class NotasService extends BillingApiService {
     anular(uuid) { return this._request('POST', `/${uuid}/anular`); }
 }
 
+/**
+ * Documentos electrónicos genéricos ApiDian (fase 3): documento soporte y su
+ * nota, equivalentes POS, nómina 102, eventos RADIAN 030-051, lote y zip.
+ * La bandera `send` la pone el proveedor de la empresa en el backend.
+ */
+class DocumentosElectronicosService extends BillingApiService {
+    constructor() { super('/billing/electronic-documents'); }
+
+    emitir(uuid) { return this._request('POST', `/${uuid}/emitir`, {}); }
+    estado(uuid) { return this._request('GET', `/${uuid}/estado`); }
+}
+
 export const billingService = new CommercialInvoicesService();
 export const billingResolutionsService = new BillingApiService('/billing/billing-resolutions');
 export const billingProvidersService = new BillingApiService('/billing/billing-providers');
+export const electronicDocumentsService = new DocumentosElectronicosService();
 export const creditNotesService = new (class extends NotasService { constructor() { super('/billing/credit-notes'); } })();
 export const debitNotesService = new (class extends NotasService { constructor() { super('/billing/debit-notes'); } })();
 

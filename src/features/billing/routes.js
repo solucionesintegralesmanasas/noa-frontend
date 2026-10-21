@@ -55,6 +55,28 @@ export const billingRoutes = [
         },
     },
     {
+        path: '/facturacion/proveedores',
+        name: 'billing.providers',
+        component: () => import('./views/BillingProvidersView.vue'),
+        meta: {
+            title: 'Proveedores de Facturación',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['billing_providers.index'],
+        },
+    },
+    {
+        path: '/facturacion/documentos-electronicos',
+        name: 'billing.electronic-documents',
+        component: () => import('./views/ElectronicDocumentsView.vue'),
+        meta: {
+            title: 'Documentos Electrónicos',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['electronic_documents.index'],
+        },
+    },
+    {
         path: '/facturacion/:id',
         name: 'billing.profile',
         component: () => import('./views/BillingDetailView.vue'),
