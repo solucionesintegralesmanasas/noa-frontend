@@ -54,3 +54,5 @@ Thumbs.db
 # Build (se genera en CI con npm run build; no versionar)
 dist/
 dist-ssr/
+# Capturas del humo de roles: solo locales (datos reales de la aplicacion)
+docs/metrics/roles-smoke/
