@@ -40,6 +40,20 @@ describe('rolesPrivilegiados', () => {
         expect(rolesVisibles(null, false)).toEqual([]);
     });
 
+    it('rolesVisibles acepta la forma normalizada de la vista (internalName) sin descartar roles', () => {
+        // Rolepermissionsform mapea la API a { internalName, displayName, ... }
+        // antes de filtrar: si el nombre no se resuelve, la lista sale vacía.
+        const normalizados = [
+            { id: 1, internalName: 'SUPERADMIN', displayName: 'Superadministrador' },
+            { id: 2, internalName: 'ADMIN_EMPRESA', displayName: 'Admin. empresa' },
+            { id: 3, internalName: 'EMPLEADO', displayName: 'Empleado' },
+        ];
+
+        expect(rolesVisibles(normalizados, true)).toHaveLength(3);
+        expect(rolesVisibles(normalizados, false).map(r => r.internalName)).toEqual(['EMPLEADO']);
+        expect(esRolReservado({ internalName: 'admin_empresa' })).toBe(true);
+    });
+
     it('usuarioTieneRolReservado detecta el rol sea string u objeto', () => {
         expect(usuarioTieneRolReservado(['EMPLEADO', 'ADMIN_EMPRESA'])).toBe(true);
         expect(usuarioTieneRolReservado(['EMPLEADO'])).toBe(false);

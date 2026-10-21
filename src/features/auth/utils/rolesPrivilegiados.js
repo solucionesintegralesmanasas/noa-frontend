@@ -9,7 +9,9 @@ export const ROLES_SOLO_SUPERADMIN = Object.freeze(['SUPERADMIN', 'SUPER_ADMIN',
 
 function aNombre(rol) {
     if (typeof rol === 'string') return rol;
-    return rol?.name ?? rol?.value ?? rol?.label ?? '';
+    // `internalName` es el nombre que usan las vistas que ya normalizaron el
+    // rol de la API (p. ej. Rolepermissionsform); `name` es la forma cruda.
+    return rol?.name ?? rol?.internalName ?? rol?.value ?? rol?.label ?? '';
 }
 
 /** Normaliza el nombre ('admin-empresa', 'super admin' → 'ADMIN_EMPRESA' / 'SUPER_ADMIN'). */
