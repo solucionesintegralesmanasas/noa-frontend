@@ -422,7 +422,7 @@ const sharingLink = ref(null);
 
 const canShareCoordinatorLink = computed(() => (permissionsStore.roles || []).some(r => r === 'SUPERADMIN' || r === 'ADMIN_EMPRESA' || r?.name === 'SUPERADMIN' || r?.name === 'ADMIN_EMPRESA'));
 
-const permissions = reactive({ edit: false, delete: false, pdf: false });
+const permissions = reactive({ create: false, edit: false, delete: false, pdf: false });
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips } = useTableActions(store, router);
 
@@ -503,6 +503,7 @@ onMounted(async () => {
         await store.loadFormOptions(userStore.company_uuid);
         if (store.catalogs.projects) store.projects = store.catalogs.projects;
         permissions.pdf = permissionsStore.can('service_delivery_control_sheets.history_pdf');
+        permissions.create = permissionsStore.can('service_delivery_control_sheets.create');
         // El listado arranca mostrando todo (abiertas y cerradas); el
         // interruptor "Solo cerradas" filtra bajo demanda.
         soloCerradas.value = store.soloCerradas;
