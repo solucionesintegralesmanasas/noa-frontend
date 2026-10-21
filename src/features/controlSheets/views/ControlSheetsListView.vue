@@ -168,10 +168,10 @@
                                 <template #body="{ data }">
                                     <!-- El botón Imprimir llamaba a handlePrint(), que no existe:
                                          los PDFs ya se abren desde la columna Documentos. -->
-                                    <button v-if="permissions.edit" class="btn btn-falcon-default btn-sm px-2" type="button" title="Editar" @click="goToEdit(data.uuid)">
+                                    <button v-if="can('control_sheets.update')" class="btn btn-falcon-default btn-sm px-2" type="button" title="Editar" @click="goToEdit(data.uuid)">
                                         <i class="fad fa-edit text-warning"></i>
                                     </button>
-                                    <button v-if="permissions.delete" class="btn btn-falcon-default btn-sm px-2" type="button" title="Eliminar" @click="handleDelete(data)">
+                                    <button v-if="can('control_sheets.delete')" class="btn btn-falcon-default btn-sm px-2" type="button" title="Eliminar" @click="handleDelete(data)">
                                         <i class="fad fa-trash text-danger"></i>
                                     </button>
                                 </template>
@@ -255,11 +255,9 @@
                             <span>PDF</span>
                         </a>
                     </template>
-                    <button class="mc-btn-secondary" type="button" @click="handlePrint(item)">
-                        <i class="fad fa-print text-primary" aria-hidden="true"></i>
-                        <span>Imprimir</span>
-                    </button>
-                    <button v-if="permissions.edit" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
+                    <!-- El botón Imprimir llamaba a handlePrint(), que no existe:
+                         los PDFs ya se abren desde la columna Documentos. -->
+                    <button v-if="can('control_sheets.update')" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
                         <i class="fad fa-edit text-warning" aria-hidden="true"></i>
                         <span>Editar</span>
                     </button>
