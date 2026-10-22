@@ -240,6 +240,7 @@
 import { computed, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import { useFuelManagementStore } from '../store/fuelManagement.store.js';
+import { usePermissionsStore } from '@store';
 import dateUtils from '@/utils/date.js';
 
 const props = defineProps({
@@ -249,6 +250,7 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'create']);
 
 const store = useFuelManagementStore();
+const permissionsStore = usePermissionsStore();
 
 const statusSearch = ref('');
 const statusFilter = ref('todos');
@@ -322,7 +324,11 @@ watch(
         statusFilter.value = 'todos';
         projectFilter.value = '';
         statusVisible.value = 12;
-        store.fetchStatus();
+        // El endpoint /status exige `fuel_logs.index` (issue #8): sin el
+        // permiso no se hace la llamada (el 403 en consola sería un error).
+        if (permissionsStore.can('fuel_logs.index')) {
+            store.fetchStatus();
+        }
     }
 );
 

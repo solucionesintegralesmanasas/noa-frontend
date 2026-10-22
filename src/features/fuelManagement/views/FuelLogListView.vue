@@ -18,7 +18,7 @@
                         type="search" placeholder="Buscar por placa o conductor..."
                         aria-label="Buscar registros de combustible" @input="debouncedSearch" />
                 </div>
-                <button type="button" class="btn btn-falcon-default btn-sm text-nowrap" @click="openStatus()">
+                <button v-if="can('fuel_logs.index')" type="button" class="btn btn-falcon-default btn-sm text-nowrap" @click="openStatus()">
                     <i class="fad fa-gauge-high text-primary me-1" aria-hidden="true" />
                     <span class="d-none d-sm-inline">Estado de combustible</span>
                     <span class="d-sm-none">Estado</span>
