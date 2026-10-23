@@ -48,6 +48,24 @@
                         <dd class="col-7 text-dark fw-semibold">{{ item.trade_name || item.company_name ||
                             `${item.first_name || ''} ${item.last_name || ''}` || '—' }}</dd>
 
+                        <!-- Datos de la cédula (solo personas naturales con datos) -->
+                        <template v-if="item.sex || item.marital_status || item.blood_type || item.id_card_issue_date">
+                            <dt class="col-5 text-muted fw-medium">Lugar de Expedición:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ item.id_card_issue_place?.name || '—' }}</dd>
+
+                            <dt class="col-5 text-muted fw-medium">Fecha de Expedición:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ textoFechaExpedicion }}</dd>
+
+                            <dt class="col-5 text-muted fw-medium">Sexo:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ textoSexo }}</dd>
+
+                            <dt class="col-5 text-muted fw-medium">Estado Civil:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ textoEstadoCivil }}</dd>
+
+                            <dt class="col-5 text-muted fw-medium">Grupo Sanguíneo:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ item.blood_type || '—' }}</dd>
+                        </template>
+
                         <dt class="col-5 text-muted fw-medium">Email:</dt>
                         <dd class="col-7 text-dark fw-semibold">{{ item.email || '—' }}</dd>
 
@@ -121,6 +139,20 @@ const store = useThirdPartiesStore();
 
 const item = computed(() => store.selectedItem || {});
 const isViewLoading = ref(true);
+
+/**
+ * Datos de la cédula para la ficha: sexos y estados civiles con su texto.
+ */
+const textoSexo = computed(() => ({ M: 'Masculino', F: 'Femenino', O: 'Otro' })[item.value.sex] || '—');
+const textoEstadoCivil = computed(() => ({
+    SOLTERO: 'Soltero/a', CASADO: 'Casado/a', UNION_LIBRE: 'Unión libre',
+    SEPARADO: 'Separado/a', DIVORCIADO: 'Divorciado/a', VIUDO: 'Viudo/a',
+})[item.value.marital_status] || '—');
+const textoFechaExpedicion = computed(() => {
+    if (!item.value.id_card_issue_date) return '—';
+    const partes = String(item.value.id_card_issue_date).split(' ')[0].split('-');
+    return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : item.value.id_card_issue_date;
+});
 
 const goBack = () => router.push('/terceros');
 

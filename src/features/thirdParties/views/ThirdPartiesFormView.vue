@@ -117,6 +117,57 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Datos de la cédula (solo personas naturales) -->
+                            <div class="row g-2 g-md-3 mt-1">
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                    <label class="form-label required" for="id_card_issue_place_uuid">Lugar de Expedición</label>
+                                    <PrimeSelect input-id="id_card_issue_place_uuid" v-model="formData.id_card_issue_place_uuid"
+                                        :options="store.catalogs.cities" option-value="uuid" option-label="name"
+                                        placeholder="Ciudad de expedición" showClear filter class="w-100"
+                                        :invalid="!!validationErrors['id_card_issue_place_uuid']" />
+                                    <div v-if="validationErrors.id_card_issue_place_uuid" class="invalid-feedback d-block" id="f-id_card_issue_place_uuid-error" role="alert">
+                                        {{ validationErrors.id_card_issue_place_uuid }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                    <label class="form-label required" for="id_card_issue_date">Fecha de Expedición</label>
+                                    <DateInput id="id_card_issue_date" v-model="formData.id_card_issue_date"
+                                        :invalid="!!validationErrors['id_card_issue_date']" />
+                                    <div v-if="validationErrors.id_card_issue_date" class="invalid-feedback d-block" id="f-id_card_issue_date-error" role="alert">
+                                        {{ validationErrors.id_card_issue_date }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                    <label class="form-label required" for="sex">Sexo</label>
+                                    <PrimeSelect input-id="sex" v-model="formData.sex"
+                                        :options="[ { label: 'Masculino', value: 'M' }, { label: 'Femenino', value: 'F' }, { label: 'Otro', value: 'O' } ]"
+                                        option-label="label" option-value="value" placeholder="Seleccione..."
+                                        class="w-100" :invalid="!!validationErrors['sex']" />
+                                    <div v-if="validationErrors.sex" class="invalid-feedback d-block" id="f-sex-error" role="alert">
+                                        {{ validationErrors.sex }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                    <label class="form-label required" for="marital_status">Estado Civil</label>
+                                    <PrimeSelect input-id="marital_status" v-model="formData.marital_status"
+                                        :options="opcionesEstadoCivil" option-label="label" option-value="value"
+                                        placeholder="Seleccione..." class="w-100"
+                                        :invalid="!!validationErrors['marital_status']" />
+                                    <div v-if="validationErrors.marital_status" class="invalid-feedback d-block" id="f-marital_status-error" role="alert">
+                                        {{ validationErrors.marital_status }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                    <label class="form-label required" for="blood_type">Grupo Sanguíneo</label>
+                                    <PrimeSelect input-id="blood_type" v-model="formData.blood_type"
+                                        :options="opcionesGrupoSanguineo" option-label="label" option-value="value"
+                                        placeholder="Seleccione..." class="w-100"
+                                        :invalid="!!validationErrors['blood_type']" />
+                                    <div v-if="validationErrors.blood_type" class="invalid-feedback d-block" id="f-blood_type-error" role="alert">
+                                        {{ validationErrors.blood_type }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-12" v-if="formData.person_type === 'JURIDICA'">
@@ -543,6 +594,11 @@ const formData = reactive({
     is_driver: '0',
     is_others: '0',
     person_type: '',
+    id_card_issue_place_uuid: '',
+    id_card_issue_date: '',
+    sex: '',
+    marital_status: '',
+    blood_type: '',
     document_type_uuid: '',
     document_number: '',
     nit_check_digit: '',
@@ -579,6 +635,23 @@ const filePreviews = reactive({});
 const esSucursal = computed(() => permissionsStore.hasRole('SUCURSAL')
     && !permissionsStore.hasRole('SUPERADMIN')
     && !permissionsStore.hasRole('ADMIN_EMPRESA'));
+
+/**
+ * Listas fijas de los datos de la cédula (solo personas naturales). Viven en
+ * código, no en catálogos: son valores de dominio estables (issue #9).
+ */
+const opcionesEstadoCivil = [
+    { label: 'Soltero/a', value: 'SOLTERO' },
+    { label: 'Casado/a', value: 'CASADO' },
+    { label: 'Unión libre', value: 'UNION_LIBRE' },
+    { label: 'Separado/a', value: 'SEPARADO' },
+    { label: 'Divorciado/a', value: 'DIVORCIADO' },
+    { label: 'Viudo/a', value: 'VIUDO' },
+];
+
+const opcionesGrupoSanguineo = [
+    'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-',
+].map((tipo) => ({ label: tipo, value: tipo }));
 
 /**
  * Sedes activas de la empresa elegida, con la principal primero. Para un
@@ -770,6 +843,14 @@ const validateForm = () => {
     } else {
         if (isEmpty(formData.first_name)) validationErrors.first_name = 'Este campo es obligatorio';
         if (isEmpty(formData.last_name)) validationErrors.last_name = 'Este campo es obligatorio';
+
+        // Datos de la cédula: obligatorios para personas naturales.
+        if (isEmpty(formData.id_card_issue_place_uuid)) validationErrors.id_card_issue_place_uuid = 'Este campo es obligatorio';
+        if (isEmpty(formData.id_card_issue_date)) validationErrors.id_card_issue_date = 'Este campo es obligatorio';
+        else if (new Date(formData.id_card_issue_date) > new Date()) validationErrors.id_card_issue_date = 'La fecha de expedición no puede ser posterior a hoy';
+        if (isEmpty(formData.sex)) validationErrors.sex = 'Este campo es obligatorio';
+        if (isEmpty(formData.marital_status)) validationErrors.marital_status = 'Este campo es obligatorio';
+        if (isEmpty(formData.blood_type)) validationErrors.blood_type = 'Este campo es obligatorio';
 
         // Limpiar campos que no aplican
         formData.company_name = null;
@@ -969,6 +1050,11 @@ onMounted(async () => {
                 Object.assign(formData, item);
                 if (!formData.branch_uuid && item.branch?.uuid) {
                     formData.branch_uuid = item.branch.uuid;
+                }
+                // La fecha de expedición de la cédula llega serializada con hora
+                // ('2005-06-15 00:00:00'): el input date nativo solo acepta ISO corto.
+                if (formData.id_card_issue_date) {
+                    formData.id_card_issue_date = String(formData.id_card_issue_date).slice(0, 10);
                 }
 
                 // El SUPERADMIN puede editar un tercero de otra empresa: las sedes
