@@ -169,16 +169,17 @@
                             class="table table-sm mb-0 professional-table unifont-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="{first} a {last} de {totalRecords}"
-                            :rowsPerPageOptions="[10, 25, 50, 100]">
+                            :rowsPerPageOptions="[10, 25, 50, 100]"
+                            :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort @sort="onSort">
 
-                            <Column field="vehicle" header="Vehículo" style="min-width: 120px">
+                            <Column field="vehicle.vehicle_license_plate" header="Vehículo" sortable style="min-width: 120px">
                                 <template #body="{ data }">
                                     <div class="d-flex align-items-center">
                                         <div class="bg-primary bg-opacity-10 rounded p-1 me-2">
                                             <i class="fad fa-steering-wheel text-primary" style="font-size: 12px;"></i>
                                         </div>
                                         <div>
-                                            <span class="fw-bold text-dark">{{ getVehiclePlate(data.vehicle_uuid) || 'Vehículo' }}</span>
+                                            <span class="fw-bold text-dark">{{ data.vehicle?.vehicle_license_plate || getVehiclePlate(data.vehicle_uuid) || '-' }}</span>
                                             <div class="text-muted small d-flex flex-wrap gap-1">
                                                 <span class="badge bg-light text-primary border shadow-none"
                                                     style="font-weight: 500;">Ref: {{ data.payment_reference || '-' }}</span>
@@ -191,14 +192,14 @@
                                 </template>
                             </Column>
 
-                            <Column field="charge_type" header="Tipo de Cobro" style="width: 15%;">
+                            <Column field="charge_type" header="Tipo de Cobro" sortable style="width: 15%;">
                                 <template #body="{ data }">
                                     <span class="text-muted">{{ formatChargeType(data.charge_type) }}</span>
                                     <div class="text-muted small">{{ data.concept || '-' }}</div>
                                 </template>
                             </Column>
 
-                            <Column field="amount" header="Monto" style="width: 12%;">
+                            <Column field="amount" header="Monto" sortable style="width: 12%;">
                                 <template #body="{ data }">
                                     <div class="d-flex flex-column">
                                         <span class="fw-bold text-success">{{ formatCurrency(data.amount) }}</span>
@@ -206,7 +207,7 @@
                                 </template>
                             </Column>
 
-                            <Column field="period_date" header="Período" style="width: 12%;">
+                            <Column field="period_date" header="Período" sortable style="width: 12%;">
                                 <template #body="{ data }">
                                     <div class="d-flex align-items-center text-muted">
                                         <i class="fad fa-calendar-alt me-1 opacity-50"></i>
@@ -215,7 +216,7 @@
                                 </template>
                             </Column>
 
-                            <Column field="due_date" header="Vencimiento" style="width: 12%;">
+                            <Column field="due_date" header="Vencimiento" sortable style="width: 12%;">
                                 <template #body="{ data }">
                                     <div class="d-flex align-items-center"
                                         :class="isPastDue(data.due_date, data.status) ? 'text-danger fw-semibold' : 'text-muted'">
@@ -225,7 +226,7 @@
                                 </template>
                             </Column>
 
-                            <Column field="status" header="Estado" style="width: 10%;" class="text-center">
+                            <Column field="status" header="Estado" sortable style="width: 10%;" class="text-center">
                                 <template #body="{ data }">
                                     <span class="badge badge-subtle rounded-pill"
                                         :class="getStatusBadgeClass(data.status)"
@@ -393,8 +394,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useAffiliateAdminChargesStore } from '../store/affiliateCharges.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
@@ -407,6 +409,7 @@ import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
+const route = useRoute();
 const store = useAffiliateAdminChargesStore();
 const permissionsStore = usePermissionsStore();
 
@@ -415,6 +418,9 @@ const searchQuery = ref('');
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 const can = (action) => permissionsStore.can(action);
 
@@ -454,7 +460,7 @@ const viewVehicleHistory = async (item) => {
     if (!reference) return;
 
     activeHistoryRef = reference;
-    historyVehicle.value = getVehiclePlate(item.vehicle_uuid) || 'Vehículo';
+    historyVehicle.value = item.vehicle?.vehicle_license_plate || getVehiclePlate(item.vehicle_uuid) || '-';
     const data = await store.fetchPaymentHistory(reference);
     historyItems.value = data;
 
@@ -661,9 +667,39 @@ const initTooltips = () => {
     }
 };
 
+watch(
+    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
+    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
+        router.replace({
+            query: {
+                ...route.query,
+                search: newSearch || undefined,
+                page: newPage > 1 ? newPage : undefined,
+                per_page: newPerPage !== 10 ? newPerPage : undefined,
+                sort: newSort || undefined,
+                order: newSort ? (newOrder || 'asc') : undefined,
+            },
+        });
+    }
+);
+
 onMounted(async () => {
     isViewLoading.value = true;
     try {
+        const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
+        const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
+        const querySearch = route.query.search || '';
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+
+        store.search = querySearch;
+        store.pagination.currentPage = queryPage;
+        store.pagination.itemsPerPage = queryPerPage;
+        store.sortField = querySort;
+        store.sortOrder = querySort ? queryOrder : null;
+        restore(querySort, querySort ? queryOrder : null);
+
+        searchQuery.value = querySearch;
         await Promise.all([store.loadCatalogs(), store.fetchItems()]);
     } catch (error) {
         console.error("Error al cargar cobros:", error);

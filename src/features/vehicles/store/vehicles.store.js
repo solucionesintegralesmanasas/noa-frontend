@@ -195,8 +195,6 @@ export const useVehiclesStore = defineStore('vehicles', {
         },
         clearFilters() {
             this.search = '';
-            this.sortField = null;
-            this.sortOrder = null;
             this.pagination.currentPage = 1;
             return this.fetchItems();
         },

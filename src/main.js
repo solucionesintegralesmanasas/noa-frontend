@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "./assets/brand-tokens.css";
 import "./assets/primevue-bridge.css";
+import "./assets/styles/components/_data-list.css";
 // Importación usando alias definido en vite.config.js -> @utils apunta a src/utils/
 import { registerPlugins } from "@utils/plugins.js";
 

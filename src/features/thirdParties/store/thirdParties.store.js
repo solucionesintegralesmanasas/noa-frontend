@@ -46,6 +46,8 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
         typeFilter: null,
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -85,6 +87,8 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
                     type: this.typeFilter || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: this.sortField ? (this.sortOrder || 'asc') : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -338,6 +342,12 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         setTypeFilter(type) { this.typeFilter = type; this.pagination.currentPage = 1; return this.fetchItems(); },
+        setSort(field, order) {
+            this.sortField = field || null;
+            this.sortOrder = this.sortField ? (order === 'desc' ? 'desc' : 'asc') : null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
         clearFilters() { this.search = ''; this.typeFilter = null; this.pagination.currentPage = 1; return this.fetchItems(); },
     },
 });

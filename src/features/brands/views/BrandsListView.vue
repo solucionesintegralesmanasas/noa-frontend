@@ -92,7 +92,8 @@
                             tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
+                            :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort
+                            emptyMessage="No se encontraron registros" @page="onPageChange" @sort="onSort">
 
                             <!-- Descripción -->
                             <Column field="description" header="Descripción" sortable>
@@ -174,8 +175,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useBrandsStore } from '../store/brands.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
@@ -186,6 +188,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
 const router = useRouter();
+const route = useRoute();
 const store = useBrandsStore();
 const permissionsStore = usePermissionsStore();
 
@@ -196,6 +199,9 @@ const searchQuery = ref('');
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 // ─── Utilidades ──────────────────────────────────────────────────────────────
 const can = (action, subject) => permissionsStore.can(action, subject);
@@ -215,6 +221,7 @@ const clearSearch = async () => {
 
 // ─── Paginación server-side (PrimeVue lazy emite { first, rows }) ─────────────
 const onPageChange = async ({ first, rows }) => {
+    store.pagination.itemsPerPage = rows;
     await store.setPage(Math.floor(first / rows) + 1);
 };
 
@@ -236,9 +243,38 @@ const handleDelete = (brand) => confirmDelete(brand, {
 });
 
 // ─── Ciclo de vida ────────────────────────────────────────────────────────────
+watch(
+    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
+    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
+        router.replace({
+            query: {
+                ...route.query,
+                search: newSearch || undefined,
+                page: newPage > 1 ? newPage : undefined,
+                per_page: newPerPage !== 10 ? newPerPage : undefined,
+                sort: newSort || undefined,
+                order: newSort ? (newOrder || 'asc') : undefined,
+            },
+        });
+    }
+);
+
 onMounted(async () => {
     try {
-        searchQuery.value = store.search;
+        const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
+        const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
+        const querySearch = route.query.search || '';
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+
+        store.search = querySearch;
+        store.pagination.currentPage = queryPage;
+        store.pagination.itemsPerPage = queryPerPage;
+        store.sortField = querySort;
+        store.sortOrder = querySort ? queryOrder : null;
+        restore(querySort, querySort ? queryOrder : null);
+
+        searchQuery.value = querySearch;
         await store.fetchItems();
     } finally {
         setTimeout(() => {

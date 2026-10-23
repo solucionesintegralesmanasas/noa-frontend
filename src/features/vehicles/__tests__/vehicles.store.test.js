@@ -88,7 +88,7 @@ describe('useVehiclesStore: orden server-side', () => {
         }));
     });
 
-    it('limpiar filtros también limpia el orden', async () => {
+    it('limpiar filtros conserva el orden activo', async () => {
         const store = useVehiclesStore();
         store.search = 'ABC';
         store.sortField = 'is_active';
@@ -97,12 +97,12 @@ describe('useVehiclesStore: orden server-side', () => {
         await store.clearFilters();
 
         expect(store.search).toBe('');
-        expect(store.sortField).toBeNull();
-        expect(store.sortOrder).toBeNull();
+        expect(store.sortField).toBe('is_active');
+        expect(store.sortOrder).toBe('asc');
         expect(service.list).toHaveBeenLastCalledWith(expect.objectContaining({
             search: undefined,
-            sort_by: undefined,
-            sort_order: undefined,
+            sort_by: 'is_active',
+            sort_order: 'asc',
         }));
     });
 });

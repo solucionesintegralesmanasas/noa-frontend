@@ -89,6 +89,7 @@ vi.mock('@store', () => ({
 }));
 
 const montarVista = () => mount(ThirdPartiesFormView, {
+    attachTo: document.body,
     global: {
         stubs: {
             BasePageHeader: true,
@@ -129,12 +130,12 @@ const llenarPersonaNatural = async (vista) => {
         await setValue('branch_uuid', 'sede-1');
         await setValue('f-partyTypes', 'is_customer');
     }
-    await setValue('id_card_issue_place_uuid', 'ciudad-1');
-    await setValue('sex', 'F');
-    await setValue('marital_status', 'SOLTERO');
-    await setValue('blood_type', 'O+');
+    await setValue('f-id_card_issue_place_uuid', 'ciudad-1');
+    await setValue('f-sex', 'F');
+    await setValue('f-marital_status', 'SOLTERO');
+    await setValue('f-blood_type', 'O+');
 
-    const fecha = vista.find('#id_card_issue_date');
+    const fecha = vista.find('#f-id_card_issue_date');
     await fecha.setValue('2005-06-15');
 };
 
@@ -156,7 +157,9 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
             'marital_status',
             'blood_type',
         ]) {
-            expect(vista.find(`label[for="${campo}"]`).exists()).toBe(true);
+            expect(vista.find(`label[for="f-${campo}"]`).exists()).toBe(true);
+            const input = vista.find(`#f-${campo}`);
+            expect(input.exists()).toBe(true);
         }
 
         // El error asociado usa el patrón f-<campo>-error con role="alert".
@@ -178,10 +181,10 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         await flushPromises();
         await selectorTipoPersona(vista).setValue('JURIDICA');
 
-        expect(vista.find('label[for="id_card_issue_place_uuid"]').exists()).toBe(false);
-        expect(vista.find('label[for="sex"]').exists()).toBe(false);
-        expect(vista.find('label[for="marital_status"]').exists()).toBe(false);
-        expect(vista.find('label[for="blood_type"]').exists()).toBe(false);
+        expect(vista.find('label[for="f-id_card_issue_place_uuid"]').exists()).toBe(false);
+        expect(vista.find('label[for="f-sex"]').exists()).toBe(false);
+        expect(vista.find('label[for="f-marital_status"]').exists()).toBe(false);
+        expect(vista.find('label[for="f-blood_type"]').exists()).toBe(false);
     });
 
     it('el payload de creación lleva los cinco datos de persona', async () => {
@@ -201,30 +204,40 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         expect(payload.blood_type).toBe('O+');
     });
 
-    it('una fecha de expedición futura se rechaza en la validación local', async () => {
+    it('una fecha de expedición futura se rechaza en la validación local y pone foco en el error', async () => {
         const vista = montarVista();
         await flushPromises();
-        await selectorTipoPersona(vista).setValue('NATURAL');
-        await vista.find('#document_type_uuid').setValue('doc-cc');
-        await vista.find('#document_number').setValue('1090555000');
-        await vista.find('#first_name').setValue('ANA');
-        await vista.find('#last_name').setValue('RESTREPO');
-        await vista.find('#email').setValue('ana2.test@tercero.local');
+        await llenarPersonaNatural(vista);
 
-        const selects = vista.findAll('select');
-        const porId = (id) => selects.find((s) => s.attributes('id') === id);
-        await porId('id_card_issue_place_uuid').setValue('ciudad-1');
-        await porId('sex').setValue('F');
-        await porId('marital_status').setValue('SOLTERO');
-        await porId('blood_type').setValue('O+');
-
-        const futura = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-        await vista.find('#id_card_issue_date').setValue(futura);
+                const futura = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+        await vista.find('#f-id_card_issue_date').setValue(futura);
 
         await vista.find('form').trigger('submit');
         await flushPromises();
 
         expect(createItem).not.toHaveBeenCalled();
         expect(errorDe(vista, 'id_card_issue_date').text()).toContain('no puede ser posterior a hoy');
+        expect(document.activeElement?.id).toBe('f-id_card_issue_date');
+    });
+
+    it('conmutar a persona jurídica limpia los datos de cédula en el payload', async () => {
+        const vista = montarVista();
+        await flushPromises();
+        await llenarPersonaNatural(vista);
+
+        // Cambiar a persona jurídica y completar razón social
+        await selectorTipoPersona(vista).setValue('JURIDICA');
+        await vista.find('#company_name').setValue('TRANSPORTE Y LOGISTICA SAS');
+
+        await vista.find('form').trigger('submit');
+        await flushPromises();
+
+        expect(createItem).toHaveBeenCalledTimes(1);
+        const payload = createItem.mock.calls[0][0];
+        expect(payload.id_card_issue_place_uuid).toBeNull();
+        expect(payload.id_card_issue_date).toBeNull();
+        expect(payload.sex).toBeNull();
+        expect(payload.marital_status).toBeNull();
+        expect(payload.blood_type).toBeNull();
     });
 });
