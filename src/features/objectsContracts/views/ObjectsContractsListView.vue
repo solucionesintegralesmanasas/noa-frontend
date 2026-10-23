@@ -49,7 +49,8 @@
                             tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
+                            emptyMessage="No se encontraron registros" @page="onPageChange"
+                            :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
                             <Column field="name" header="Nombre" sortable>
                                 <template #body="{ data }">
                                     <div class="d-flex align-items-center gap-2">
@@ -123,16 +124,18 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useObjectsContractsStore } from '../store/objectsContracts.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
+const route = useRoute();
 const router = useRouter();
 const store = useObjectsContractsStore();
 const permissionsStore = usePermissionsStore();
@@ -142,6 +145,7 @@ const searchQuery = ref('');
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 const can = (action, subject) => permissionsStore.can(action, subject);
 const getInitials = (text) => {
@@ -178,6 +182,12 @@ const handleDelete = (item) => confirmDelete(item, {
 
 onMounted(async () => {
     try {
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? -1 : 1;
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {

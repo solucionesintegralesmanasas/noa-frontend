@@ -49,21 +49,29 @@
                             `${item.first_name || ''} ${item.last_name || ''}` || '—' }}</dd>
 
                         <!-- Datos de la cédula (solo personas naturales con datos) -->
-                        <template v-if="item.sex || item.marital_status || item.blood_type || item.id_card_issue_date">
+                        <template v-if="item.id_card_issue_place?.name">
                             <dt class="col-5 text-muted fw-medium">Lugar de Expedición:</dt>
-                            <dd class="col-7 text-dark fw-semibold">{{ item.id_card_issue_place?.name || '—' }}</dd>
+                            <dd class="col-7 text-dark fw-semibold">{{ item.id_card_issue_place.name }}</dd>
+                        </template>
 
+                        <template v-if="item.id_card_issue_date && textoFechaExpedicion">
                             <dt class="col-5 text-muted fw-medium">Fecha de Expedición:</dt>
                             <dd class="col-7 text-dark fw-semibold">{{ textoFechaExpedicion }}</dd>
+                        </template>
 
+                        <template v-if="item.sex && textoSexo">
                             <dt class="col-5 text-muted fw-medium">Sexo:</dt>
                             <dd class="col-7 text-dark fw-semibold">{{ textoSexo }}</dd>
+                        </template>
 
+                        <template v-if="item.marital_status && textoEstadoCivil">
                             <dt class="col-5 text-muted fw-medium">Estado Civil:</dt>
                             <dd class="col-7 text-dark fw-semibold">{{ textoEstadoCivil }}</dd>
+                        </template>
 
+                        <template v-if="item.blood_type">
                             <dt class="col-5 text-muted fw-medium">Grupo Sanguíneo:</dt>
-                            <dd class="col-7 text-dark fw-semibold">{{ item.blood_type || '—' }}</dd>
+                            <dd class="col-7 text-dark fw-semibold">{{ item.blood_type }}</dd>
                         </template>
 
                         <dt class="col-5 text-muted fw-medium">Email:</dt>
@@ -125,7 +133,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useThirdPartiesStore } from '../store/thirdParties.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import Swal from 'sweetalert2';
+import { toast } from '@/utils/toast.js';
+import { logger } from '@/utils/logger.js';
+import { dateUtils } from '@/utils/date.js';
+import { MAPA_SEXO, MAPA_ESTADO_CIVIL } from '../utils/personData.js';
 
 
 /** Computed para BasePageHeader (evita expresiones complejas en el template) */
@@ -143,15 +154,11 @@ const isViewLoading = ref(true);
 /**
  * Datos de la cédula para la ficha: sexos y estados civiles con su texto.
  */
-const textoSexo = computed(() => ({ M: 'Masculino', F: 'Femenino', O: 'Otro' })[item.value.sex] || '—');
-const textoEstadoCivil = computed(() => ({
-    SOLTERO: 'Soltero/a', CASADO: 'Casado/a', UNION_LIBRE: 'Unión libre',
-    SEPARADO: 'Separado/a', DIVORCIADO: 'Divorciado/a', VIUDO: 'Viudo/a',
-})[item.value.marital_status] || '—');
+const textoSexo = computed(() => MAPA_SEXO[item.value.sex] || '');
+const textoEstadoCivil = computed(() => MAPA_ESTADO_CIVIL[item.value.marital_status] || '');
 const textoFechaExpedicion = computed(() => {
-    if (!item.value.id_card_issue_date) return '—';
-    const partes = String(item.value.id_card_issue_date).split(' ')[0].split('-');
-    return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : item.value.id_card_issue_date;
+    if (!item.value.id_card_issue_date) return '';
+    return dateUtils.format(item.value.id_card_issue_date, 'DD-MM-YYYY');
 });
 
 const goBack = () => router.push('/terceros');
@@ -161,11 +168,11 @@ onMounted(async () => {
     try {
         await store.fetchProfileById(route.params.id);
         if (!store.selectedItem) {
-            await Swal.fire('No encontrado', 'El registro solicitado no existe.', 'warning');
+            toast('El registro solicitado no existe.', 'warning');
             goBack();
         }
     } catch (error) {
-        console.error(error);
+        logger.error('[terceros] error cargando perfil', error);
         goBack();
     } finally {
         setTimeout(() => { isViewLoading.value = false; }, 300);

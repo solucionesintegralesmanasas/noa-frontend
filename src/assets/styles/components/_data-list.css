@@ -1,0 +1,590 @@
+/*
+ * Listados genéricos (rediseño Stitch "Listados - generico").
+ * Estilos globales de la tabla `.professional-table` (PrimeVue DataTable), el paginador,
+ * el estado en píldora (`.noa-status`) y las acciones de fila (`RowActions.vue`).
+ * Reemplazan las copias `:deep(...)` que cada vista traía en su <style scoped>.
+ */
+:root {
+    --noa-list-border: #e5e9f0;
+    --noa-list-head-bg: #f8fafc;
+    --noa-list-head-text: #64748b;
+    --noa-list-row-hover: #f8fafc;
+    --noa-list-text: #1e293b;
+    --noa-list-muted: #64748b;
+    --noa-list-radius: 0.5rem;
+    --noa-row-action-size: 34px;
+}
+
+/* ---------- Tarjeta del listado: toolbar + tabla + paginador ---------- */
+.noa-list-card {
+    overflow: hidden;
+    border-radius: 0.75rem;
+}
+
+.noa-list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--noa-list-border);
+}
+
+.noa-search {
+    position: relative;
+    flex: 1 1 18rem;
+    max-width: 28rem;
+}
+
+.noa-search__input {
+    width: 100%;
+    height: 38px;
+    padding: 0 2.25rem 0 2.5rem;
+    font-size: 0.875rem;
+    color: var(--noa-list-text);
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    transition: border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+
+.noa-search__input::placeholder {
+    color: #94a3b8;
+}
+
+.noa-search__input:focus {
+    outline: none;
+    border-color: var(--noa-primary, #2c7be5);
+    box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.15);
+}
+
+.noa-search__icon {
+    position: absolute;
+    top: 50%;
+    left: 0.9rem;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.noa-search__clear {
+    position: absolute;
+    top: 50%;
+    right: 0.4rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--noa-list-muted);
+    cursor: pointer;
+}
+
+.noa-search__clear:hover {
+    background: #eef2f7;
+}
+
+.noa-results {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.noa-results i {
+    font-size: 0.625rem;
+    color: var(--noa-list-muted);
+}
+
+/* ---------- Tabla ---------- */
+.professional-table .p-datatable-thead > tr > th {
+    padding: 0.9rem 1rem !important;
+    font-size: 0.6875rem !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--noa-list-head-text);
+    background: var(--noa-list-head-bg) !important;
+    border-bottom: 1px solid var(--noa-list-border) !important;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.professional-table .p-datatable-thead > tr > th .p-datatable-column-header-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Las columnas centradas centran también el contenido del encabezado */
+.professional-table .p-datatable-thead > tr > th.text-center .p-datatable-column-header-content {
+    justify-content: center;
+}
+
+.professional-table .p-datatable-thead > tr > th.noa-col-actions .p-datatable-column-header-content {
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.professional-table .p-datatable-thead > tr > th.p-datatable-column-sorted {
+    color: var(--noa-primary, #2c7be5);
+}
+
+.professional-table .p-datatable-sortable-column:hover {
+    color: var(--noa-list-text);
+}
+
+.professional-table .p-datatable-sort-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.professional-table .p-datatable-tbody > tr > td {
+    padding: 0.9rem 1rem !important;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--noa-list-border);
+    font-size: 0.8125rem !important;
+    color: var(--noa-list-text);
+    transition: background-color 150ms ease-in-out;
+}
+
+.professional-table .p-datatable-tbody > tr:hover {
+    background: var(--noa-list-row-hover) !important;
+}
+
+.professional-table .p-datatable-tbody > tr:last-child > td {
+    border-bottom: none;
+}
+
+/*
+ * Layout de columnas consistente (opt-in con la clase `noa-table-fixed` en el DataTable).
+ * Con `table-layout: fixed` las columnas SIN ancho explícito se reparten el espacio sobrante
+ * por igual, así que la distancia entre columnas no depende de la longitud del contenido.
+ * Convención: fijar con `style="width: Xrem"` solo las columnas compactas (documento, fecha,
+ * estado, acciones) y dejar las de texto libre (nombre, email, sucursal...) sin ancho. Si hay
+ * muchas columnas (p. ej. vehículos) subir el `tableStyle="min-width"` del DataTable: la tabla
+ * hace scroll horizontal en lugar de comprimir las columnas.
+ */
+.professional-table.noa-table-fixed .p-datatable-table {
+    table-layout: fixed;
+}
+
+.professional-table.noa-table-fixed .p-datatable-tbody > tr > td {
+    overflow-wrap: anywhere;
+}
+
+/* Primera y última columna alinean con el padding de la toolbar y el paginador */
+.professional-table .p-datatable-thead > tr > th:first-child,
+.professional-table .p-datatable-tbody > tr > td:first-child {
+    padding-left: 1.25rem !important;
+}
+
+.professional-table .p-datatable-thead > tr > th:last-child,
+.professional-table .p-datatable-tbody > tr > td:last-child {
+    padding-right: 1.25rem !important;
+}
+
+/* Dato principal de la fila (documento/placa) */
+.noa-cell-strong {
+    font-weight: 600;
+    color: var(--noa-list-text);
+}
+
+/* Texto secundario bajo el dato principal de una celda */
+.noa-cell-sub {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--noa-list-muted);
+}
+
+/* ---------- Columna de acciones ---------- */
+.professional-table .p-datatable-tbody > tr > td.noa-col-actions,
+.professional-table .p-datatable-thead > tr > th.noa-col-actions {
+    width: 8rem;
+    min-width: 8rem;
+    text-align: right;
+}
+
+.noa-row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.125rem;
+}
+
+.noa-row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--noa-row-action-size);
+    height: var(--noa-row-action-size);
+    padding: 0;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+}
+
+/* Hueco reservado cuando la fila no tiene menú, para mantener los iconos alineados */
+.noa-row-action--placeholder {
+    pointer-events: none;
+}
+
+.noa-row-action:hover:not(:disabled),
+.noa-row-action[aria-expanded='true'] {
+    background: #eef2f7;
+    color: var(--noa-list-text);
+}
+
+.noa-row-action:focus-visible {
+    outline: 2px solid var(--noa-primary, #2c7be5);
+    outline-offset: 1px;
+}
+
+.noa-row-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* El color de la acción aparece al pasar el cursor/foco: la fila queda calmada */
+/* Tonos de reposo con contraste suficiente (AA) sobre fondo blanco */
+.noa-row-action--primary { color: #2c7be5; }
+.noa-row-action--warning { color: #b45309; }
+.noa-row-action--success { color: #15803d; }
+.noa-row-action--danger { color: #dc2626; }
+
+.noa-row-action--primary:hover:not(:disabled) { color: #2c7be5; background: #eaf2fd; }
+.noa-row-action--warning:hover:not(:disabled) { color: #b45309; background: #fef3c7; }
+.noa-row-action--success:hover:not(:disabled) { color: #15803d; background: #dcfce7; }
+.noa-row-action--danger:hover:not(:disabled) { color: #dc2626; background: #fee2e2; }
+
+/* ---------- Menú "⋮" (se monta en <body>) ---------- */
+.noa-row-menu.p-menu {
+    min-width: 14rem;
+    padding: 0.25rem 0;
+    border: 1px solid var(--noa-list-border);
+    border-radius: var(--noa-list-radius);
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+}
+
+.noa-row-menu .p-menu-list {
+    gap: 0;
+}
+
+.noa-row-menu .p-menu-separator {
+    margin: 0.25rem 0;
+    border-top: 1px solid var(--noa-list-border);
+}
+
+.noa-row-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--noa-list-text);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.noa-row-menu__item:hover,
+.noa-row-menu__item:focus,
+.noa-row-menu__item:focus-visible,
+.noa-row-menu__item:hover * {
+    text-decoration: none;
+}
+
+.noa-row-menu__item.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.noa-row-menu__icon {
+    width: 1.125rem;
+    text-align: center;
+    font-size: 0.9375rem;
+    color: #475569;
+}
+
+.noa-row-menu__item--primary .noa-row-menu__icon { color: #2c7be5; }
+.noa-row-menu__item--warning .noa-row-menu__icon { color: #d97706; }
+.noa-row-menu__item--success .noa-row-menu__icon { color: #16a34a; }
+.noa-row-menu__item--danger,
+.noa-row-menu__item--danger .noa-row-menu__icon { color: #dc2626; }
+
+.noa-row-menu__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.noa-row-menu__hint {
+    font-size: 0.6875rem;
+    color: var(--noa-list-muted);
+}
+
+/* ---------- Estado en píldora con punto ---------- */
+.noa-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.noa-status::before {
+    content: '';
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.noa-status--success { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+.noa-status--warning { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+.noa-status--danger { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+.noa-status--muted { color: #475569; background: #f1f5f9; border-color: #e2e8f0; }
+
+/* ---------- Badges sutiles globales (compatibilidad en listados y modales) ---------- */
+.badge-subtle {
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.35em 0.6em;
+    transition: all 150ms ease-in-out;
+    white-space: nowrap;
+}
+
+.badge-subtle-success {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+}
+
+.badge-subtle-secondary {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+.badge-subtle-primary {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1d4ed8;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.badge-subtle-info {
+    background: rgba(13, 202, 240, 0.1);
+    color: #0dcaf0;
+    border: 1px solid rgba(13, 202, 240, 0.2);
+}
+
+.badge-subtle-warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.badge-subtle-danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+/* ---------- Paginador propio (ListPagination.vue) ---------- */
+.noa-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid var(--noa-list-border);
+    background: #fff;
+    font-size: 0.8125rem;
+    color: #475569;
+}
+
+.noa-pager__info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 0;
+}
+
+.noa-pager__info strong {
+    font-weight: 600;
+    color: var(--noa-list-text);
+}
+
+.noa-pager__rows {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0 0.875rem;
+    padding-left: 0.875rem;
+    border-left: 1px solid #cbd5e1;
+    color: var(--noa-list-muted);
+}
+
+.noa-pager__select {
+    height: 2rem;
+    padding: 0 1.75rem 0 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--noa-list-text);
+    background-color: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+.noa-pager__select:focus-visible,
+.noa-pager__btn:focus-visible {
+    outline: 2px solid var(--noa-primary, #2c7be5);
+    outline-offset: 1px;
+}
+
+.noa-pager__pages {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.noa-pager__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.25rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+}
+
+.noa-pager__btn:hover:not(:disabled):not(.is-active) {
+    background: #eef2f7;
+}
+
+.noa-pager__btn:disabled {
+    color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.noa-pager__btn.is-active {
+    background: var(--noa-primary, #2c7be5);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(44, 123, 229, 0.35);
+}
+
+.noa-pager__gap {
+    padding: 0 0.125rem;
+    color: #94a3b8;
+}
+
+/* ---------- Paginador integrado de PrimeVue (vistas aún no migradas a ListPagination) ---------- */
+/* Izquierda: info + "Filas: [10]". Derecha: botones de página (el primero empuja con margin-auto). */
+.p-datatable .p-paginator {
+    justify-content: flex-start;
+    gap: 0.25rem;
+    padding: 0.875rem 1.25rem !important;
+    background: #fff !important;
+    border-top: 1px solid var(--noa-list-border) !important;
+    border-radius: 0 0 0.75rem 0.75rem !important;
+    font-size: 0.75rem;
+    color: #475569;
+}
+
+.p-datatable .p-paginator .p-paginator-content-start {
+    margin-right: 0;
+}
+
+
+.p-datatable .p-paginator .p-paginator-rpp-dropdown,
+.p-datatable .p-paginator .p-select {
+    height: 32px !important;
+    min-height: 32px !important;
+    font-size: 0.8125rem !important;
+    border-radius: 0.375rem;
+}
+
+.p-datatable .p-paginator .p-select-label {
+    min-height: 30px !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+.p-datatable .p-paginator .p-select-dropdown {
+    width: 2rem;
+}
+
+.p-datatable .p-paginator .p-paginator-first {
+    margin-left: auto;
+}
+
+.p-datatable .p-paginator .p-paginator-first,
+.p-datatable .p-paginator .p-paginator-prev,
+.p-datatable .p-paginator .p-paginator-next,
+.p-datatable .p-paginator .p-paginator-last {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem !important;
+    color: #475569;
+}
+
+.p-datatable .p-paginator .p-paginator-page {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    margin: 0 0.125rem;
+    border-radius: 0.375rem !important;
+    font-size: 0.8125rem;
+    color: #334155;
+    transition: background-color 150ms ease-in-out;
+}
+
+.p-datatable .p-paginator .p-paginator-page.p-paginator-page-selected,
+.p-datatable .p-paginator .p-paginator-page.p-highlight {
+    background: var(--noa-primary, #2c7be5) !important;
+    border-color: var(--noa-primary, #2c7be5) !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+    .p-datatable .p-paginator {
+        flex-wrap: wrap;
+    }
+
+    .p-datatable .p-paginator .p-paginator-first {
+        margin-left: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .noa-row-action,
+    .professional-table .p-datatable-tbody > tr > td {
+        transition: none;
+    }
+}

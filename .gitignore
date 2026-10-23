@@ -47,6 +47,7 @@ DerivedData/
 
 # Logs y sistema
 *.log
+.scratch/
 npm-debug.log*
 .DS_Store
 Thumbs.db

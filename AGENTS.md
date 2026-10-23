@@ -217,6 +217,7 @@ Abstracciones de lógica reutilizable para mantener los componentes `.vue` dedic
 - **`useTableActions.js`**: Manejo de eventos comunes en tablas como confirmación de eliminación con SweetAlert2.
 - **`useRealtimeChannel.js`**: Canal realtime unificado (SSE con polling de recuperación): ciclo `setTimeout`, `AbortController`, pausa con la pestaña oculta y backoff. Las vistas no deben crear temporizadores ni conexiones SSE propias.
 - **`usePlatform.js`**: Detección de plataforma (web / Android / iOS).
+- **`useServerSort.js`**: Hook para ordenamiento server-side en `DataTable` lazy. Traduce `@sort` (1/-1/0) a `sort_by`/`sort_order`, mantiene reactividad con `:sortField` y `:sortOrder`, y sincroniza bidireccionalmente los parámetros `?sort=` y `?order=` en la URL del navegador.
 - Otros: `useDocumentWizard.js`, `useGeolocation.js`, `useNitLookup.js`, `useNoAutocomplete.js`.
 
 ## Utilidades del Sistema (`src/utils/`)
@@ -247,6 +248,36 @@ Estructura de la persistencia de datos y estado global con Pinia:
   - `encryption.js`: Abstracción de cifrado para datos del store.
   - `logger.js`: Logger del ciclo de vida de acciones en Pinia.
   - `persistence.js`: Sincronización encriptada reactiva con `secureStorage`.
+
+## Rediseño Stitch en Listados Genéricos (2026-10-23)
+
+Estandarización visual y funcional de las vistas de listado basada en la maqueta Stitch (*Listados - genérico*). Reemplaza la doble tarjeta desalineada y la barra de acciones sobrecargada por componentes y estilos centralizados.
+
+- **Componentes base:**
+  - `src/components/RowActions.vue`: Agrupación consistente de acciones de fila. Máximo 2 acciones en línea (`inline: true`, ej. Ver y Editar); el resto pasa a un menú flotante (`⋮`) accesible mediante PrimeVue `Menu`, con las acciones destructivas (`tone: 'danger'`) al final separadas. Reserva un espaciador visual si una fila no tiene acciones en menú para mantener la vertical alineada.
+  - `src/components/ListPagination.vue`: Paginador propio que reemplaza al paginador embebido de PrimeVue (`:paginator="false"` en `DataTable`). Muestra a la izquierda `Mostrando X a Y de Z registros | Filas: [N ▾]` y a la derecha los botones de páginas `« ‹ 1 2 3 … N › »` con elipsis inteligente y tamaño cuadrado de 28px. Emite `{ page, rows, first }` compatible con `@page`.
+  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida importada en `main.js`. Define el contenedor `.noa-list-card` (toolbar de búsqueda + tabla + paginador en una sola tarjeta), el buscador `.noa-search`, la píldora de conteo `.noa-results`, la píldora de estado con indicador circular `.noa-status` (`.noa-status--success`, `.noa-status--warning`, `.noa-status--muted`), y la clase `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos para eliminar disparidades entre columnas.
+
+- **Estado de migración de vistas:**
+  - **Migradas y verificadas (Bloque 1 + Terceros):**
+    - `ThirdPartiesListView.vue` (Terceros)
+    - `VehiclesListView.vue` (Vehículos)
+    - `VehicleDocumentsListView.vue` (Documentos vehiculares: SOAT, RTM y Pólizas RCC/RCE)
+    - `OperationCardsListView.vue` (Tarjetas de Operación)
+    - `RadicacionListView.vue` (Radicación TO)
+    - `VehicleInspectionListView.vue` (Inspecciones vehiculares — conserva métricas y vista móvil Capacitor)
+    - `MaintenanceListView.vue` (Mantenimiento vehicular)
+  - **Pendientes de migrar (Bloques 2, 3 y 4):**
+    - *Bloque 2 (Operación y Contratos):* `FuecListView`, `ProjectsListView`, `ControlSheetsListView`, `ServiceDeliveryControlSheetListView`, `FuelLogListView`, `FuelRequestListView`, `BusinessCollaborationAgreementsListView`, `GeofenceListView`.
+    - *Bloque 3 (Facturación, Contabilidad y RRHH):* `BillingListView`, `AffiliateAdminChargesListView`, `EmploymentContractsListView`, `FinancialStatementsListView`, `TaxDeclarationsListView`, `TaxInformationListView`, `WithholdingsListView`, `BankDetailsListView`.
+    - *Bloque 4 (Administración y Catálogos):* `UsersListView`, `CompaniesListView`, `BranchesListView`, `BrandsListView`, `VehicleClassesListView`, `InspectionItemsListView`, `EconomicActivitiesListView`, `EnablingResolutionsListView`, `ConveyorCapacityListView`, `ExperiencesListView`, `ObjectsContractsListView`, `RupRecordsListView`, `NotificationsListView`.
+
+## Ordenamiento de listados server-side (2026-10-23)
+
+- **Comportamiento en `DataTable`:** En modo `lazy`, las columnas con `sortable` requieren `:sortField="store.sortField"`, `:sortOrder="store.sortOrder"` y `@sort="handleSort"`.
+- **Hook `useServerSort.js`:** Expone `onSort: handleSort`, traduce las direcciones de PrimeVue (`1` -> asc, `-1` -> desc, `0` -> null) y sincroniza los parámetros en la URL con `router.replace({ query: { ...route.query, sort, order } })`.
+- **Ciclo de vida en vistas:** En `onMounted`, se leen `route.query.sort` y `route.query.order` antes de llamar a `store.fetchItems()`, evitando doble petición al montar.
+- **Regla en Stores:** Las acciones `fetchItems()` envían `sort_by` y `sort_order`. La acción `clearFilters()` limpia únicamente la búsqueda y resetea a página 1, **sin alterar** `sortField` ni `sortOrder`.
 
 ## Credenciales de inicio de sesión
 

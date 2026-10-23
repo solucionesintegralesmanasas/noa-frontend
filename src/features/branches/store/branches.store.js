@@ -13,6 +13,8 @@ export const useBranchesStore = defineStore('branches', {
         catalogs: {},
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -38,6 +40,8 @@ export const useBranchesStore = defineStore('branches', {
                     page: this.pagination.currentPage,
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -117,6 +121,12 @@ export const useBranchesStore = defineStore('branches', {
         },
 
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
     },

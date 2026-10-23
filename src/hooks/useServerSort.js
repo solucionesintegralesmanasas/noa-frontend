@@ -59,10 +59,5 @@ export function useServerSort({ field = null, order = null, onChange = null } = 
         aplicar(campo, normalizarDireccion(direccion));
     };
 
-    const reset = () => {
-        sortField.value = null;
-        sortOrder.value = null;
-    };
-
-    return { sortField, sortOrder, sortOrdenPrimeVue, onSort, restore, reset };
+    return { sortField, sortOrder, sortOrdenPrimeVue, onSort, restore };
 }

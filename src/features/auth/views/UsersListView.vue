@@ -64,7 +64,8 @@
                     responsiveLayout="scroll" tableStyle="min-width: 48rem" class="table table-sm mb-0 professional-table"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
-                    emptyMessage="No se encontraron usuarios" @page="onPage">
+                    emptyMessage="No se encontraron usuarios" @page="onPage"
+                    :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
                     <Column field="email" header="Correo" sortable>
                         <template #body="{ data }">
                             <div class="d-flex align-items-center gap-2">
@@ -143,7 +144,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useUsersStore } from '../store/users.store.js';
 import { usePermissionsStore } from '@store';
 import { rolesVisibles, usuarioTieneRolReservado } from '../utils/rolesPrivilegiados.js';
@@ -153,9 +155,11 @@ import Column from 'primevue/column';
 import Swal from 'sweetalert2';
 import { toast } from '@/utils/toast.js';
 
+const route = useRoute();
 const router = useRouter();
 const store = useUsersStore();
 const permissionsStore = usePermissionsStore();
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 // Los roles reservados (SUPERADMIN, ADMIN_EMPRESA) solo se muestran a un SUPERADMIN.
 const esSuperadmin = computed(() => permissionsStore.hasRole('SUPERADMIN'));
 const puedeGestionarUsuario = (user) => esSuperadmin.value || !usuarioTieneRolReservado(user?.roles);
@@ -249,6 +253,12 @@ const saveRoles = async () => {
 };
 
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        store.sortField = sortParam;
+        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    }
     isViewLoading.value = true;
     try {
         await Promise.all([store.fetchItems(), store.fetchRolesCatalog()]);

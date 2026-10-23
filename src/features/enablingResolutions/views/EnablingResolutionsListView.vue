@@ -90,7 +90,8 @@
                             tableStyle="min-width: 60rem" class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron resoluciones de habilitación" @page="onPageChange">
+                            emptyMessage="No se encontraron resoluciones de habilitación" @page="onPageChange"
+                            :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
                             <!-- Columna: Empresa -->
                             <Column field="company.business_name" header="Empresa" sortable style="min-width: 180px;">
                                 <template #body="{ data }">
@@ -191,17 +192,19 @@
  */
 
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useEnablingResolutionsStore } from '../store/enablingResolutions.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
 /** @type {import('vue-router').Router} Instancia del router de Vue */
+const route = useRoute();
 const router = useRouter();
 
 /** @type {import('pinia').Store} Store del módulo de Resoluciones de Habilitación */
@@ -231,6 +234,7 @@ const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery
  * @property {Function} destroyTooltips - Destruye tooltips de Bootstrap.
  */
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 /**
  * Verifica si el usuario tiene permiso para una acción específica.
@@ -306,6 +310,12 @@ const formatDate = (dateStr) => {
  */
 onMounted(async () => {
     try {
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? -1 : 1;
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {
