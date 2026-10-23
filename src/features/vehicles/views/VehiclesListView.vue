@@ -85,11 +85,12 @@
                             :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) *
                                 store.pagination.itemsPerPage
                                 " :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]"
+                            :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort
                             responsiveLayout="scroll" tableStyle="min-width: 50rem"
                             class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
+                            emptyMessage="No se encontraron registros" @page="onPageChange" @sort="onSort">
                             <Column field="vehicle_license_plate" header="Placa / Afiliado" sortable>
                                 <template #body="{ data }">
                                     <div class="d-flex flex-column">
@@ -202,6 +203,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useVehiclesStore } from '../store/vehicles.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
@@ -219,6 +221,9 @@ const searchQuery = ref('');
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 const can = (action) => permissionsStore.can(action);
 
@@ -408,14 +413,16 @@ const handleChangeBranch = async (vehicle) => {
 };
 
 watch(
-    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage],
-    ([newSearch, newPage, newPerPage]) => {
+    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
+    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
         router.replace({
             query: {
                 ...route.query,
                 search: newSearch || undefined,
                 page: newPage > 1 ? newPage : undefined,
                 per_page: newPerPage !== 10 ? newPerPage : undefined,
+                sort: newSort || undefined,
+                order: newSort ? (newOrder || 'asc') : undefined,
             },
         });
     }
@@ -426,10 +433,15 @@ onMounted(async () => {
         const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
         const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
         const querySearch = route.query.search || '';
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
 
         store.search = querySearch;
         store.pagination.currentPage = queryPage;
         store.pagination.itemsPerPage = queryPerPage;
+        store.sortField = querySort;
+        store.sortOrder = querySort ? queryOrder : null;
+        restore(querySort, querySort ? queryOrder : null);
 
         searchQuery.value = querySearch;
         await store.fetchItems();

@@ -17,6 +17,9 @@ export const useVehiclesStore = defineStore('vehicles', {
         catalogs: {},
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
+        // Orden server-side (contrato `sort_by`/`sort_order`); null = orden natural del backend.
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -53,6 +56,8 @@ export const useVehiclesStore = defineStore('vehicles', {
                     page: this.pagination.currentPage,
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: this.sortField ? (this.sortOrder || 'asc') : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -175,6 +180,25 @@ export const useVehiclesStore = defineStore('vehicles', {
 
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
-        clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
+        /**
+         * Cambia el orden del listado y vuelve a la primera página.
+         * @param {string|null} field Campo visible de la columna.
+         * @param {'asc'|'desc'|null} order Dirección; null quita el orden.
+         */
+        setSort(field, order) {
+            this.sortField = field || null;
+            this.sortOrder = this.sortField
+                ? (order === 'desc' ? 'desc' : 'asc')
+                : null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
+        clearFilters() {
+            this.search = '';
+            this.sortField = null;
+            this.sortOrder = null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
     },
 });
