@@ -5,19 +5,22 @@
         :loading="isViewLoading || store.loading" :compact="true"
         :breadcrumbs="[{ label: 'Flota' }, { label: 'Solicitudes de tanqueo' }]" @refresh="refresh" />
 
-    <!-- FILTROS -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body py-2">
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2">
-                <div class="input-group input-group-sm" style="max-width: 380px;">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="fad fa-search text-muted" aria-hidden="true" />
-                    </span>
-                    <input v-model="search" type="search" class="form-control form-control-sm border-start-0 shadow-none"
-                        placeholder="Código, placa o conductor" aria-label="Buscar solicitudes de tanqueo"
-                        @input="debouncedSearch" />
-                </div>
-                <select v-model="statusFilter" class="form-select form-select-sm" style="max-width: 200px;"
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-fuel-requests-busqueda" v-model="search" type="search" class="noa-search__input"
+                    placeholder="Código, placa o conductor..." aria-label="Buscar solicitudes de tanqueo"
+                    @input="debouncedSearch" />
+                <button v-if="search" class="noa-search__clear" type="button" title="Limpiar búsqueda"
+                    aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <select id="filtro-estado-solicitud" v-model="statusFilter" class="form-select form-select-sm" style="max-width: 180px;"
                     aria-label="Filtrar por estado" @change="refresh">
                     <option value="">Todos los estados</option>
                     <option value="PENDIENTE">Pendientes</option>
@@ -27,83 +30,100 @@
                     <option value="VENCIDA">Vencidas</option>
                     <option value="ANULADA">Anuladas</option>
                 </select>
-                <button v-if="can('fuel_requests.create')" type="button" class="btn btn-primary btn-sm ms-lg-auto"
+
+                <button v-if="can('fuel_requests.create')" type="button" class="btn btn-primary btn-sm text-nowrap"
                     @click="abrirCrear">
                     <i class="fad fa-plus me-1" aria-hidden="true" />Solicitar tanqueo
                 </button>
             </div>
-        </div>
-    </div>
 
-    <!-- LISTADO -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.filters?.search"> para "{{ store.filters.search }}"</template>
+            </span>
+        </div>
+
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['15%', '12%', '18%', '11%', '12%', '12%', '10%', '10%']" :key="w"
+                                style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td v-for="i in 7" :key="i">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon"
+                                        style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
                     :totalRecords="store.pagination.totalItems"
                     :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                    :loading="store.loading" :rowsPerPageOptions="[15, 25, 50]"
-                    tableStyle="min-width: 70rem" class="table table-sm mb-0 professional-table"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} solicitudes"
-                    emptyMessage="No hay solicitudes de tanqueo" @page="onPageChange">
-                    <Column header="Código" style="min-width: 160px;">
+                    :loading="store.loading"
+                    :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort"
+                    tableStyle="min-width: 65rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No hay solicitudes de tanqueo">
+                    <Column field="code" header="Código" sortable style="width: 15%;">
                         <template #body="{ data }">
-                            <span class="fw-semibold text-dark">{{ data.code }}</span>
+                            <span class="noa-cell-strong">{{ data.code }}</span>
                         </template>
                     </Column>
-                    <Column header="Vehículo" style="min-width: 130px;">
+                    <Column header="Vehículo" style="width: 12%;">
                         <template #body="{ data }">
-                            <span class="fw-bold">{{ data.vehicle?.vehicle_license_plate || '—' }}</span>
+                            <span class="noa-cell-strong">{{ data.vehicle?.vehicle_license_plate || '—' }}</span>
                         </template>
                     </Column>
-                    <Column header="Conductor" style="min-width: 160px;">
+                    <Column header="Conductor" style="width: 18%;">
                         <template #body="{ data }">
-                            {{ nombreConductor(data) }}
+                            <span class="text-truncate d-block" :title="nombreConductor(data)">{{ nombreConductor(data) }}</span>
                         </template>
                     </Column>
-                    <Column header="Solicitada" style="min-width: 120px;">
+                    <Column field="requested_at" header="Solicitada" sortable style="width: 11%;">
                         <template #body="{ data }">{{ fecha(data.requested_at) }}</template>
                     </Column>
-                    <Column header="Estado" style="min-width: 130px;">
+                    <Column field="status" header="Estado" sortable style="width: 12%;">
                         <template #body="{ data }">
-                            <span class="badge badge-subtle" :class="`badge-subtle-${meta(data.status).color}`">
-                                <i class="fad me-1" :class="meta(data.status).icon" aria-hidden="true" />
+                            <span class="noa-status" :class="statusClass(data.status)">
                                 {{ meta(data.status).label }}
                             </span>
                         </template>
                     </Column>
-                    <Column header="Aprobó" style="min-width: 150px;">
+                    <Column header="Aprobó" style="width: 12%;">
                         <template #body="{ data }">{{ data.approved_by_name || '—' }}</template>
                     </Column>
-                    <Column header="Vigencia" style="min-width: 150px;">
+                    <Column field="expires_at" header="Vigencia" sortable style="width: 10%;">
                         <template #body="{ data }">{{ data.expires_at ? fechaHora(data.expires_at) : '—' }}</template>
                     </Column>
-                    <Column header="Acciones" style="min-width: 240px;">
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 10%;">
                         <template #body="{ data }">
-                            <div class="d-flex flex-wrap gap-1">
-                                <button v-if="data.status === 'PENDIENTE' && can('fuel_requests.approve')"
-                                    type="button" class="btn btn-success btn-sm" @click="aprobar(data)">
-                                    <i class="fad fa-check me-1" aria-hidden="true" />Aprobar
-                                </button>
-                                <button v-if="data.status === 'PENDIENTE' && can('fuel_requests.reject')"
-                                    type="button" class="btn btn-outline-danger btn-sm" @click="rechazar(data)">
-                                    <i class="fad fa-times me-1" aria-hidden="true" />Rechazar
-                                </button>
-                                <button v-if="['APROBADA', 'USADA', 'VENCIDA'].includes(data.status)"
-                                    type="button" class="btn btn-falcon-default btn-sm" @click="verQr(data)">
-                                    <i class="fad fa-qrcode me-1" aria-hidden="true" />Ver QR
-                                </button>
-                                <button v-if="['PENDIENTE', 'APROBADA'].includes(data.status) && can('fuel_requests.cancel')"
-                                    type="button" class="btn btn-outline-secondary btn-sm" @click="anular(data)">
-                                    Anular
-                                </button>
-                            </div>
+                            <RowActions :actions="accionesDe(data)" :row-label="data.code || data.vehicle?.vehicle_license_plate || 'solicitud'" />
                         </template>
                     </Column>
                     <template #loading><NoaTableSpinner message="Cargando solicitudes..." /></template>
                 </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 
@@ -183,22 +203,30 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useFuelRequestsStore } from '../store/fuelRequests.store.js';
 import { useFuelManagementStore } from '../../fuelManagement/store/fuelManagement.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { confirmAction } from '@/utils/confirm.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
 import dateUtils from '@/utils/date.js';
 
+const router = useRouter();
+const route = useRoute();
 const store = useFuelRequestsStore();
 const fuelStore = useFuelManagementStore();
 const permissionsStore = usePermissionsStore();
+
+const { handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 const isViewLoading = ref(true);
 const search = ref('');
@@ -231,6 +259,13 @@ const META = {
 };
 const meta = (status) => META[status] ?? META.ANULADA;
 
+const statusClass = (status) => {
+    if (status === 'APROBADA') return 'noa-status--success';
+    if (status === 'PENDIENTE') return 'noa-status--warning';
+    if (status === 'USADA') return 'noa-status--muted';
+    return 'noa-status--danger';
+};
+
 const nombreConductor = (item) => {
     const d = item.driver;
     if (!d) return item.snapshot?.conductor || '—';
@@ -243,6 +278,13 @@ const fechaHora = (v) => {
     return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('es-CO');
 };
 
+const clearSearch = () => {
+    search.value = '';
+    store.filters.search = '';
+    store.pagination.currentPage = 1;
+    store.fetchItems();
+};
+
 const refresh = () => {
     store.filters.search = search.value;
     store.filters.status = statusFilter.value;
@@ -250,7 +292,11 @@ const refresh = () => {
     store.fetchItems();
 };
 
-const onPageChange = ({ first, rows }) => store.setPage(Math.floor(first / rows) + 1);
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
+};
 
 const abrirCrear = async () => {
     vehicleUuid.value = '';
@@ -292,8 +338,19 @@ const verQr = async (item) => {
     }
 };
 
+const accionesDe = (data) => [
+    { key: 'aprobar', label: 'Aprobar', icon: 'far fa-check', tone: 'success', inline: true, visible: data.status === 'PENDIENTE' && can('fuel_requests.approve'), onClick: () => aprobar(data) },
+    { key: 'rechazar', label: 'Rechazar', icon: 'far fa-times', tone: 'danger', inline: true, visible: data.status === 'PENDIENTE' && can('fuel_requests.reject'), onClick: () => rechazar(data) },
+    { key: 'qr', label: 'Ver QR', icon: 'far fa-qrcode', tone: 'primary', inline: true, visible: ['APROBADA', 'USADA', 'VENCIDA'].includes(data.status), onClick: () => verQr(data) },
+    { key: 'anular', label: 'Anular', icon: 'far fa-ban', tone: 'danger', visible: ['PENDIENTE', 'APROBADA'].includes(data.status) && can('fuel_requests.cancel'), onClick: () => anular(data) },
+];
+
 onMounted(async () => {
     try {
+        if (route.query.sort) {
+            store.sortField = String(route.query.sort);
+            store.sortOrder = route.query.order === 'desc' ? -1 : 1;
+        }
         await store.fetchItems();
     } finally {
         isViewLoading.value = false;
@@ -302,21 +359,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
 }
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.825rem !important;
-    color: #212529;
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>

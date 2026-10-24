@@ -5,19 +5,20 @@
         :loading="isViewLoading || store.loading" :compact="true"
         :breadcrumbs="[{ label: 'Flota' }, { label: 'Combustible' }]" @refresh="refreshTable" @create="goToCreate" />
 
-    <!-- BARRA DE BÚSQUEDA -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body position-relative py-2">
-            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-                <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="fad fa-search text-muted" aria-hidden="true" />
-                    </span>
-                    <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                        type="search" placeholder="Buscar por placa o conductor..."
-                        aria-label="Buscar registros de combustible" @input="debouncedSearch" />
-                </div>
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-fuel-log-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa o conductor..."
+                    aria-label="Buscar registros de combustible" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
+                    aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
                 <button v-if="can('fuel_logs.index')" type="button" class="btn btn-falcon-default btn-sm text-nowrap" @click="openStatus()">
                     <i class="fad fa-gauge-high text-primary me-1" aria-hidden="true" />
                     <span class="d-none d-sm-inline">Estado de combustible</span>
@@ -29,89 +30,109 @@
                     <span class="d-none d-sm-inline">Solicitar tanqueo</span>
                     <span class="d-sm-none">Solicitar</span>
                 </router-link>
-                <div v-if="!isViewLoading && !store.loading" class="text-muted ms-sm-auto">
-                    <small><i class="fad fa-filter me-1" aria-hidden="true" />{{ store.pagination.totalItems }}
-                        resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}</small>
-                </div>
+            </div>
+
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
+
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['13%', '10%', '10%', '11%', '9%', '10%', '11%', '11%', '12%', '11%']" :key="w"
+                                style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td v-for="i in 9" :key="i">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon"
+                                        style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <!-- TABLA -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
                     :totalRecords="store.pagination.totalItems"
                     :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                    :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]" responsiveLayout="scroll"
-                    tableStyle="min-width: 60rem" class="table table-sm mb-0 professional-table"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                    emptyMessage="No se encontraron registros de combustible" @page="onPageChange">
-                    <Column header="Vehículo" style="min-width: 130px;">
+                    :loading="store.loading"
+                    :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort"
+                    responsiveLayout="scroll"
+                    tableStyle="min-width: 65rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron registros de combustible">
+                    <Column header="Vehículo" style="width: 13%;">
                         <template #body="{ data }">
-                            <span class="text-dark fw-bold">{{ data.vehicle?.vehicle_license_plate || '-' }}</span>
-                            <span v-if="data.vehicle?.internal_number" class="text-muted small ms-1">
+                            <span class="noa-cell-strong">{{ data.vehicle?.vehicle_license_plate || '-' }}</span>
+                            <span v-if="data.vehicle?.internal_number" class="noa-cell-sub">
                                 ({{ data.vehicle.internal_number }})
                             </span>
                         </template>
                     </Column>
-                    <Column header="Cilindraje" style="min-width: 100px;">
+                    <Column header="Cilindraje" style="width: 10%;">
                         <template #body="{ data }">
                             <span>{{ data.engine_displacement || '—' }}</span>
                         </template>
                     </Column>
-                    <Column field="date" header="Fecha" style="min-width: 110px;">
+                    <Column field="date" header="Fecha" sortable style="width: 10%;">
                         <template #body="{ data }">{{ dateUtils.format(data.date) }}</template>
                     </Column>
-                    <Column header="Tanqueo" style="min-width: 120px;">
+                    <Column field="total_spent" header="Tanqueo" sortable style="width: 11%;">
                         <template #body="{ data }">
                             <span :class="{ 'text-muted': !data.total_spent }">
                                 $ {{ money(data.total_spent) }}
                             </span>
                         </template>
                     </Column>
-                    <Column header="Galones" style="min-width: 100px;">
+                    <Column field="gallons_pumped" header="Galones" sortable style="width: 9%;">
                         <template #body="{ data }">{{ data.gallons_pumped }}</template>
                     </Column>
-                    <Column header="Km/gal" style="min-width: 110px;">
+                    <Column header="Km/gal" style="width: 10%;">
                         <template #body="{ data }">
                             <span v-if="data.average_performance != null">{{ data.average_performance }} km/gal</span>
                             <span v-else-if="data.km_per_gallon">{{ data.km_per_gallon }} km/gal</span>
                             <span v-else class="text-muted">—</span>
                         </template>
                     </Column>
-                    <Column header="Rendimiento" style="min-width: 120px;">
+                    <Column header="Rendimiento" style="width: 11%;">
                         <template #body="{ data }">
                             <span v-if="data.rendimiento != null">{{ data.rendimiento }}</span>
                             <span v-else class="text-muted">—</span>
                         </template>
                     </Column>
-                    <Column header="Alcance est." style="min-width: 120px;">
+                    <Column header="Alcance est." style="width: 11%;">
                         <template #body="{ data }">
                             <span v-if="data.estimated_range_km != null">{{ data.estimated_range_km }} km</span>
                             <span v-else class="text-muted">—</span>
                         </template>
                     </Column>
-                    <Column header="Costo kilometraje" style="min-width: 130px;">
+                    <Column header="Costo km" style="width: 12%;">
                         <template #body="{ data }">
                             <span v-if="data.cost_per_km != null && Number(data.cost_per_km) > 0">$ {{ money(data.cost_per_km) }}</span>
                             <span v-else class="text-muted">—</span>
                         </template>
                     </Column>
-                    <Column header="Acciones" class="text-center" style="min-width: 100px;">
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 11%;">
                         <template #body="{ data }">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button v-if="can('fuel_logs.update')" class="btn btn-falcon-default" type="button"
-                                    title="Editar" :aria-label="`Editar registro del ${data.date}`" @click="goToEdit(data.uuid)">
-                                    <i class="fad fa-edit text-warning" aria-hidden="true" />
-                                </button>
-                                <button v-if="can('fuel_logs.delete')" class="btn btn-falcon-default" type="button"
-                                    title="Eliminar" :aria-label="`Eliminar registro del ${data.date}`" @click="handleDelete(data)">
-                                    <i class="fad fa-trash text-danger" aria-hidden="true" />
-                                </button>
-                            </div>
+                            <RowActions :actions="accionesDe(data)" :row-label="data.vehicle?.vehicle_license_plate || data.date || 'combustible'" />
                         </template>
                     </Column>
                     <template #loading>
@@ -119,6 +140,8 @@
                     </template>
                 </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 
@@ -127,21 +150,27 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useFuelManagementStore } from '../store/fuelManagement.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import FuelStatusDialog from '../components/FuelStatusDialog.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dateUtils from '@/utils/date.js';
 
 const router = useRouter();
+const route = useRoute();
 const store = useFuelManagementStore();
 const permissionsStore = usePermissionsStore();
+
+const { handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -152,7 +181,6 @@ const { confirmDelete } = useTableActions(store, router);
 const can = (action) => permissionsStore.can(action);
 const money = (v) => Number(v || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// Estado de combustible en modal (flota completa).
 const showStatusModal = ref(false);
 
 const puedeSolicitarTanqueo = computed(() => (
@@ -166,18 +194,37 @@ const openStatus = () => {
     showStatusModal.value = true;
 };
 
+const clearSearch = async () => {
+    searchQuery.value = '';
+    await store.clearFilters();
+};
+
 const refreshTable = () => store.fetchItems();
 const goToCreate = () => router.push('/flota/combustible/crear');
 const goToEdit = (uuid) => router.push(`/flota/combustible/editar/${uuid}`);
-const onPageChange = ({ first, rows }) => store.setPage(Math.floor(first / rows) + 1);
+
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
+};
 
 const handleDelete = (item) => confirmDelete(item, {
     title: '¿Eliminar registro de combustible?',
     nameField: 'date',
 });
 
+const accionesDe = (data) => [
+    { key: 'editar', label: 'Editar', icon: 'far fa-pen', tone: 'warning', inline: true, visible: can('fuel_logs.update'), onClick: () => goToEdit(data.uuid) },
+    { key: 'eliminar', label: 'Eliminar', icon: 'far fa-trash-alt', tone: 'danger', visible: can('fuel_logs.delete'), onClick: () => handleDelete(data) },
+];
+
 onMounted(async () => {
     try {
+        if (route.query.sort) {
+            store.sortField = String(route.query.sort);
+            store.sortOrder = route.query.order === 'desc' ? -1 : 1;
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {
@@ -187,21 +234,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
 }
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.825rem !important;
-    color: #212529;
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>

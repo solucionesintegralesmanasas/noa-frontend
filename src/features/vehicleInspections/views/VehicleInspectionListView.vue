@@ -60,7 +60,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, conductor, inspector..."
+                <input id="f-vehicle-inspections-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, conductor, inspector..."
                     aria-label="Buscar inspección" @input="debouncedSearch" />
                 <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
                     aria-label="Limpiar búsqueda" @click="clearSearch">
@@ -496,11 +496,12 @@
 <script setup>
 import { toast } from '@/utils/toast.js';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useVehicleInspectionsStore } from '../store/vehicleInspections.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import VehicleInspectionsService from '../services/vehicleInspections.service.js';
 import { useAuthStore } from '@/store/modules/auth.js';
 import apiClient from '@/services/api/client.js';
@@ -518,8 +519,15 @@ import MobileSectionHeader from '@/components/mobile/MobileSectionHeader.vue';
 import MobileEmptyState from '@/components/mobile/MobileEmptyState.vue';
 
 const router = useRouter();
+const route = useRoute();
 const store = useVehicleInspectionsStore();
 const permissionsStore = usePermissionsStore();
+
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+    route,
+    router,
+});
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -810,6 +818,13 @@ const downloadPdf = async (uuid) => {
 
 onMounted(async () => {
     try {
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+        if (querySort) {
+            store.sortField = querySort;
+            store.sortOrder = queryOrder;
+            restore(querySort, queryOrder);
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {

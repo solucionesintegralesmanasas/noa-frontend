@@ -104,9 +104,12 @@
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} alertas"
                         emptyMessage="No se encontraron alertas registradas" 
                         @page="onPageChange"
+                        :sortField="store.sortField"
+                        :sortOrder="store.sortOrder"
+                        @sort="handleSort"
                     >
                         <!-- Columna Prioridad -->
-                        <Column field="priority" header="Prioridad" style="width: 140px;">
+                        <Column field="priority" header="Prioridad" sortable style="width: 140px;">
                             <template #body="{ data }">
                                 <span v-if="data.priority === 'PRIORITARIA'" class="badge badge-subtle badge-subtle-danger">
                                     <i class="fad fa-triangle-exclamation me-1" aria-hidden="true" /> Prioritaria
@@ -118,7 +121,7 @@
                         </Column>
 
                         <!-- Columna Tipo -->
-                        <Column field="type" header="Tipo de Alerta" style="width: 200px;">
+                        <Column field="type" header="Tipo de Alerta" sortable style="width: 200px;">
                             <template #body="{ data }">
                                 <div class="d-flex align-items-center">
                                     <i :class="getTypeIcon(data.type) + ' me-2 fs-7'" />
@@ -138,7 +141,7 @@
                         </Column>
 
                         <!-- Columna Días Restantes -->
-                        <Column field="days_left" header="Plazo" style="width: 180px;">
+                        <Column field="days_left" header="Plazo" sortable style="width: 180px;">
                             <template #body="{ data }">
                                 <template v-if="data.type === 'VEHICLE_MAINTENANCE_ALERT'">
                                     <span v-if="data.days_left < 0" class="badge badge-subtle badge-subtle-danger">
@@ -177,14 +180,14 @@
                         </Column>
 
                         <!-- Columna Fecha Expiración -->
-                        <Column field="expiry_date" header="Fecha Límite" style="width: 150px;">
+                        <Column field="expiry_date" header="Fecha Límite" sortable style="width: 150px;">
                             <template #body="{ data }">
                                 <span class="text-700 fw-medium">{{ formatDate(data.expiry_date) }}</span>
                             </template>
                         </Column>
 
                         <!-- Columna Estado -->
-                        <Column field="status" header="Estado" style="width: 120px;" class="text-center">
+                        <Column field="status" header="Estado" sortable style="width: 120px;" class="text-center">
                             <template #body="{ data }">
                                 <span class="badge rounded-pill badge-subtle" :class="data.status === 'LEIDA' ? 'badge-subtle-secondary' : 'badge-subtle-primary'">
                                     <i :class="data.status === 'LEIDA' ? 'fad fa-envelope-open me-1' : 'fad fa-envelope me-1'" />
@@ -241,6 +244,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useNotificationsStore } from '../store/notifications.store.js';
 import { usePermissionsStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -250,6 +255,8 @@ import Column from 'primevue/column';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import Swal from 'sweetalert2';
 
+const route = useRoute();
+const router = useRouter();
 const store = useNotificationsStore();
 const permissionsStore = usePermissionsStore();
 const isViewLoading = ref(true);
@@ -258,6 +265,14 @@ const filterStatus = ref('');
 const filterType = ref('');
 const filterPriority = ref('');
 const currentPage = ref(1);
+
+const { onSort: handleSort } = useServerSort((field, order) => {
+    const filters = {};
+    if (filterStatus.value) filters.status = filterStatus.value;
+    if (filterType.value) filters.type = filterType.value;
+    if (filterPriority.value) filters.priority = filterPriority.value;
+    store.setSort(field, order, filters);
+}, { route, router });
 
 const priorityOptions = [
     { label: 'Todas las prioridades', value: '' },
@@ -418,6 +433,12 @@ const accionesVisibles = (data) => (data?.extra_data?.actions ?? [])
     .filter((a) => a && a.path && (!a.permission || permissionsStore.can(a.permission)));
 
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        store.sortField = sortParam;
+        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    }
     try {
         await loadData();
     } finally {

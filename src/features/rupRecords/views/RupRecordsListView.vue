@@ -87,7 +87,8 @@
                             class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
+                            emptyMessage="No se encontraron registros" @page="onPageChange"
+                            :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
                             <Column field="registration_number" header="Nro. Inscripción" sortable>
                                 <template #body="{ data }">
                                     <span class="text-dark fw-medium">{{ data.registration_number || '-' }}</span>
@@ -151,7 +152,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useRupRecordsStore } from '../store/rupRecords.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
@@ -161,9 +163,11 @@ import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
+const route = useRoute();
 const router = useRouter();
 const store = useRupRecordsStore();
 const permissionsStore = usePermissionsStore();
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -189,6 +193,12 @@ const handleDelete = (item) => confirmDelete(item, {
 });
 
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        store.sortField = sortParam;
+        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    }
     try {
         searchQuery.value = store.search;
         await store.fetchItems();

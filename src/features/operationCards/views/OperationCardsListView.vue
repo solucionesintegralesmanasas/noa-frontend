@@ -10,7 +10,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, número de tarjeta..."
+                <input id="f-operation-cards-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, número de tarjeta..."
                     aria-label="Buscar tarjeta de operación" @input="debouncedSearch" />
                 <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
                     aria-label="Limpiar búsqueda" @click="clearSearch">
@@ -120,11 +120,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useOperationCardsStore } from '../store/operationCards.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import RowActions from '@/components/RowActions.vue';
@@ -133,8 +134,15 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
 const router = useRouter();
+const route = useRoute();
 const store = useOperationCardsStore();
 const permissionsStore = usePermissionsStore();
+
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+    route,
+    router,
+});
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -165,6 +173,13 @@ const accionesDe = (data) => [
 
 onMounted(async () => {
     try {
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+        if (querySort) {
+            store.sortField = querySort;
+            store.sortOrder = queryOrder;
+            restore(querySort, queryOrder);
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {

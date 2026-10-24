@@ -9,7 +9,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, marca, afiliado..."
+                <input id="f-vehicles-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por placa, marca, afiliado..."
                     aria-label="Buscar vehículo" @input="debouncedSearch" />
                 <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar"
                     aria-label="Limpiar búsqueda" @click="clearSearch">

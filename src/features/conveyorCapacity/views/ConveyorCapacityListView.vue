@@ -234,7 +234,7 @@ const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery
  * @property {Function} destroyTooltips - Destruye tooltips de Bootstrap.
  */
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
-const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
+const { handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 /**
  * Verifica si el usuario tiene permiso para una acción específica.
@@ -301,11 +301,9 @@ const formatNumber = (value) => {
  */
 onMounted(async () => {
     try {
-        const sortParam = route.query.sort;
-        const orderParam = route.query.order;
-        if (typeof sortParam === 'string' && sortParam) {
-            store.sortField = sortParam;
-            store.sortOrder = orderParam === 'desc' ? -1 : 1;
+        if (route.query.sort) {
+            store.sortField = String(route.query.sort);
+            store.sortOrder = route.query.order === 'desc' ? -1 : 1;
         }
         searchQuery.value = store.search;
         await store.fetchItems();

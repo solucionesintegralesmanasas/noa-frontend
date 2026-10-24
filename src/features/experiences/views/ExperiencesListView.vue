@@ -87,7 +87,8 @@
                             tableStyle="min-width: 60rem" class="table table-sm mb-0 professional-table"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron experiencias registradas" @page="onPageChange">
+                            emptyMessage="No se encontraron experiencias registradas" @page="onPageChange"
+                            :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
                             <!-- Columna: Empresa -->
                             <Column field="company.business_name" header="Empresa" sortable style="min-width: 180px;">
                                 <template #body="{ data }">
@@ -179,7 +180,8 @@
  */
 
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useExperiencesStore } from '../store/experiences.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
@@ -190,10 +192,12 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
 /** @type {import('vue-router').Router} Instancia del router de Vue */
+const route = useRoute();
 const router = useRouter();
 
 /** @type {import('pinia').Store} Store del módulo de Experiencias */
 const store = useExperiencesStore();
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
 /** @type {import('pinia').Store} Store de permisos del usuario */
 const permissionsStore = usePermissionsStore();
@@ -312,6 +316,12 @@ const formatCurrency = (value, currencyCode = 'COP') => {
  * Hook del ciclo de vida: carga el listado al montar el componente.
  */
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        store.sortField = sortParam;
+        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    }
     try {
         searchQuery.value = store.search;
         await store.fetchItems();

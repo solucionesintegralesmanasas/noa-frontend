@@ -11,7 +11,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input v-model="busqueda" class="noa-search__input" type="search" placeholder="Buscar por código o asunto..."
+                <input id="f-radicacion-busqueda" v-model="busqueda" class="noa-search__input" type="search" placeholder="Buscar por código o asunto..."
                     aria-label="Buscar expediente de radicación" @input="debouncedSearch" />
                 <button v-if="busqueda" class="noa-search__clear" type="button" title="Limpiar búsqueda"
                     aria-label="Limpiar búsqueda" @click="limpiarBusqueda">

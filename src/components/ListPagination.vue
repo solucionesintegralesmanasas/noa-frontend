@@ -7,9 +7,9 @@
             </span>
             <span v-else>Sin registros</span>
 
-            <label class="noa-pager__rows">
+            <label class="noa-pager__rows" :for="selectId">
                 <span>Filas:</span>
-                <select class="noa-pager__select" :value="perPage" aria-label="Filas por página"
+                <select :id="selectId" class="noa-pager__select" :value="perPage" aria-label="Filas por página"
                     @change="cambiarFilas(Number($event.target.value))">
                     <option v-for="opcion in rowsOptions" :key="opcion" :value="opcion">{{ opcion }}</option>
                 </select>
@@ -48,6 +48,8 @@
 </template>
 
 <script setup>
+// Estilos de listados: viajan con el componente (chunk del listado), no con main.js (SPEC-008).
+import '@/assets/styles/components/_data-list.css';
 /**
  * Paginador de los listados (rediseño Stitch). Reemplaza el paginador integrado de PrimeVue
  * (`:paginator="false"` en el DataTable) para controlar el diseño: a la izquierda
@@ -56,7 +58,8 @@
  * Emite `change` con `{ first, rows, page }`, compatible con el handler `@page` de PrimeVue
  * (que usa `first` y `rows`).
  */
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
+const selectId = `f-filas-${useId()}`;
 
 const props = defineProps({
     page: { type: Number, required: true },

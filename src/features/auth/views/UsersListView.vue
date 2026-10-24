@@ -9,46 +9,44 @@
         @refresh="store.fetchItems()"
     />
 
-    <!-- Barra búsqueda -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body py-2">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
-                <div class="d-flex align-items-center gap-2 flex-grow-1">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0"><i class="fad fa-search text-muted" /></span>
-                        <input v-model="searchQuery" class="form-control border-start-0" type="search" placeholder="Buscar por nombre o email..." aria-label="Buscar usuario" @input="onSearchInput" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button" @click="clearSearch"><i class="fad fa-times" /></button>
-                    </div>
-                </div>
-                <small class="text-muted text-nowrap">
-                    <i class="fad fa-filter me-1" />{{ store.pagination.totalItems }} usuario{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                </small>
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-users-busqueda" v-model="searchQuery" class="noa-search__input" type="search"
+                    placeholder="Buscar por nombre o email..." aria-label="Buscar usuario" @input="onSearchInput" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
             </div>
-        </div>
-    </div>
 
-    <!-- Tabla -->
-    <div class="card border-0 shadow-sm users-table-card">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} usuario{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
+
+        <!-- SKELETON -->
         <div v-if="isViewLoading" class="card-body p-0">
             <div class="table-responsive scrollbar">
                 <table class="table table-sm mb-0">
                     <thead>
                         <tr>
-                            <th v-for="width in ['45%', '65%', '60%', '55%']" :key="width" style="padding:12px 8px">
-                                <div class="skeleton-text" :style="`height:16px;width:${width}`" />
+                            <th v-for="w in ['40%', '35%', '12%', '13%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
-                            <td><div class="skeleton-text" style="height:18px;width:82%" /></td>
-                            <td><div class="skeleton-text" style="height:24px;width:72%" /></td>
-                            <td><div class="skeleton-badge mx-auto" style="height:24px;width:72px" /></td>
+                            <td><div class="skeleton-text" style="height:18px;width:75%" /></td>
+                            <td><div class="skeleton-text" style="height:18px;width:60%" /></td>
+                            <td><div class="skeleton-badge mx-auto" style="height:20px;width:60px" /></td>
                             <td>
-                                <div class="d-flex justify-content-center gap-1">
+                                <div class="d-flex justify-content-end gap-1">
                                     <div v-for="i in 2" :key="i" class="skeleton-icon" style="height:28px;width:28px" />
                                 </div>
                             </td>
@@ -57,54 +55,66 @@
                 </table>
             </div>
         </div>
+
+        <!-- DATATABLE (Paginación Server-Side) -->
         <div v-else class="card-body p-0">
             <div class="table-responsive scrollbar">
-                <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage" :totalRecords="store.pagination.totalItems"
-                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage" :loading="store.loading" :rowsPerPageOptions="[10,25,50]"
-                    responsiveLayout="scroll" tableStyle="min-width: 48rem" class="table table-sm mb-0 professional-table"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
-                    emptyMessage="No se encontraron usuarios" @page="onPage"
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    :totalRecords="store.pagination.totalItems"
+                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                    :loading="store.loading" responsiveLayout="scroll" tableStyle="min-width: 48rem"
+                    class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron usuarios"
                     :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
-                    <Column field="email" header="Correo" sortable>
+                    <Column field="email" header="Correo" sortable style="width: 40%;">
                         <template #body="{ data }">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="fad fa-envelope text-primary" style="font-size:13px" />
-                                <span class="text-dark text-break" :title="data.email" style="font-size:.85rem">{{ data.email || '-' }}</span>
+                                <i class="fad fa-envelope text-primary" style="font-size:13px" aria-hidden="true" />
+                                <span class="text-dark text-break fw-medium" :title="data.email" style="font-size:.85rem">{{ data.email || '—' }}</span>
                             </div>
                         </template>
                     </Column>
-                    <Column header="Rol" style="min-width:260px">
+                    <Column header="Rol" style="width: 35%;">
                         <template #body="{ data }">
-                            <div v-if="!data.roles || data.roles.length === 0" class="text-muted small"><i class="fad fa-ban me-1" />Sin rol asignado</div>
+                            <div v-if="!data.roles || data.roles.length === 0" class="text-muted small">
+                                <i class="fad fa-ban me-1" aria-hidden="true" />Sin rol asignado
+                            </div>
                             <div v-else class="d-flex flex-wrap gap-1">
                                 <span v-for="role in data.roles" :key="role" class="badge rounded-pill d-inline-flex align-items-center gap-1 role-badge" :class="roleBadgeClass(role)" style="font-size:.72rem;padding: .4em .65em;">
-                                    <i :class="roleIcon(role)" style="font-size:.7rem" />
+                                    <i :class="roleIcon(role)" style="font-size:.7rem" aria-hidden="true" />
                                     {{ role }}
-                                    <button v-if="puedeGestionarUsuario(data)" type="button" class="btn-close btn-close-white ms-1" style="font-size:.55rem;width:.7em;height:.7em;opacity:.8" title="Quitar rol" @click="confirmRemoveRole(data, role)" />
+                                    <button v-if="puedeGestionarUsuario(data)" type="button" class="btn-close btn-close-white ms-1" style="font-size:.55rem;width:.7em;height:.7em;opacity:.8" title="Quitar rol" :aria-label="`Quitar rol ${role}`" @click="confirmRemoveRole(data, role)" />
                                 </span>
                             </div>
                         </template>
                     </Column>
-                    <Column field="status" header="Estado" sortable style="width:130px" class="text-center">
+                    <Column field="status" header="Estado" sortable class="text-center" header-class="text-center" style="width: 12%;">
                         <template #body="{ data }">
-                            <span class="badge rounded-pill badge-subtle" :class="data.status ? 'badge-subtle-success' : 'badge-subtle-warning'"
-                                :title="data.status ? 'Usuario activo' : 'Usuario inactivo'" style="font-size:.8rem;padding:.4em .75em">
-                                <i :class="data.status ? 'fad fa-check-circle me-1' : 'fad fa-circle me-1'" style="font-size:10px" />
+                            <span class="noa-status" :class="data.status ? 'noa-status--success' : 'noa-status--muted'">
                                 {{ data.status ? 'Activo' : 'Inactivo' }}
                             </span>
                         </template>
                     </Column>
-                    <Column header="Acciones" style="width:120px" class="text-center">
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 13%;">
                         <template #body="{ data }">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button v-if="puedeGestionarUsuario(data)" class="btn btn-falcon-default" type="button" title="Editar roles" :aria-label="`Editar roles de ${data.email}`" @click="openRolesModal(data)"><i class="fad fa-user-shield text-primary" style="font-size:14px" /></button>
-                                <button class="btn btn-falcon-default" type="button" title="Ver perfil" :aria-label="`Ver perfil de ${data.email}`" @click="goProfile(data)"><i class="fad fa-eye text-secondary" style="font-size:14px" /></button>
-                            </div>
+                            <RowActions :actions="accionesDe(data)" :row-label="data.name || data.email || 'usuario'" />
                         </template>
                     </Column>
+                    <!-- Empty state -->
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-users fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No se encontraron usuarios</h6>
+                            <p class="text-muted small mb-0">No hay usuarios registrados con los criterios actuales</p>
+                        </div>
+                    </template>
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando usuarios..." />
+                    </template>
                 </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" :rows-options="[10, 15, 25, 50]" @change="onPageChange" />
         </div>
     </div>
 
@@ -113,15 +123,15 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header" style="background: linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
-                    <h6 class="modal-title text-white fw-bold"><i class="fad fa-user-shield me-2" />Editar roles de {{ editingUser?.name }}</h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" />
+                    <h6 class="modal-title text-white fw-bold"><i class="fad fa-user-shield me-2" aria-hidden="true" />Editar roles de {{ editingUser?.name || editingUser?.email || 'usuario' }}</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar modal" />
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small mb-2">Selecciona los roles que debe conservar el usuario. Al guardar se sincronizan exactamente los seleccionados (los no marcados se quitan).</p>
                     <div v-if="store.rolesCatalog.length === 0" class="alert alert-warning py-2 small">No se pudo cargar el catálogo de roles.</div>
                     <div class="d-flex flex-column gap-2" style="max-height: 320px; overflow-y: auto;">
-                        <label v-for="r in availableRoles" :key="r.name" class="d-flex align-items-center gap-2 p-2 border rounded" :class="editRoles.includes(r.name) ? 'bg-primary bg-opacity-10 border-primary' : 'bg-light'">
-                            <input type="checkbox" class="form-check-input m-0" :value="r.name" v-model="editRoles" />
+                        <label v-for="r in availableRoles" :key="r.name" :for="`f-role-${r.name}`" class="d-flex align-items-center gap-2 p-2 border rounded" :class="editRoles.includes(r.name) ? 'bg-primary bg-opacity-10 border-primary' : 'bg-light'">
+                            <input :id="`f-role-${r.name}`" type="checkbox" class="form-check-input m-0" :value="r.name" v-model="editRoles" />
                             <span class="fw-medium" style="font-size:.85rem">{{ r.name }}</span>
                             <small class="text-muted ms-auto" style="font-size:.75rem">{{ r.description || '' }}</small>
                         </label>
@@ -134,7 +144,7 @@
                 <div class="modal-footer bg-light border-top-0">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary btn-sm" :disabled="saving" @click="saveRoles">
-                        <i v-if="saving" class="fas fa-spinner fa-spin me-1" />{{ saving ? 'Guardando...' : 'Guardar roles' }}
+                        <i v-if="saving" class="fas fa-spinner fa-spin me-1" aria-hidden="true" />{{ saving ? 'Guardando...' : 'Guardar roles' }}
                     </button>
                 </div>
             </div>
@@ -150,16 +160,20 @@ import { useUsersStore } from '../store/users.store.js';
 import { usePermissionsStore } from '@store';
 import { rolesVisibles, usuarioTieneRolReservado } from '../utils/rolesPrivilegiados.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
+import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Swal from 'sweetalert2';
+import { confirmAction } from '@/utils/confirm.js';
 import { toast } from '@/utils/toast.js';
 
 const route = useRoute();
 const router = useRouter();
 const store = useUsersStore();
 const permissionsStore = usePermissionsStore();
-const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
+const { handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
+
 // Los roles reservados (SUPERADMIN, ADMIN_EMPRESA) solo se muestran a un SUPERADMIN.
 const esSuperadmin = computed(() => permissionsStore.hasRole('SUPERADMIN'));
 const puedeGestionarUsuario = (user) => esSuperadmin.value || !usuarioTieneRolReservado(user?.roles);
@@ -195,10 +209,11 @@ const onSearchInput = () => {
     searchTimer = setTimeout(() => store.setSearch(searchQuery.value), 350);
 };
 const clearSearch = () => { searchQuery.value = ''; store.clearSearch(); };
-const onPage = (event) => {
-    const { first, rows } = event;
-    if (rows !== store.pagination.itemsPerPage) store.pagination.itemsPerPage = rows;
-    store.setPage(Math.floor(first / rows) + 1);
+
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
 const goProfile = (user) => {
@@ -208,16 +223,13 @@ const goProfile = (user) => {
 };
 
 const confirmRemoveRole = async (user, role) => {
-    const result = await Swal.fire({
+    const ok = await confirmAction({
         title: `¿Quitar rol "${role}"?`,
-        text: `Se quitará el rol "${role}" al usuario "${user.name}" (${user.email}). Esta acción es reversible asignándolo de nuevo.`,
+        text: `Se quitará el rol "${role}" al usuario "${user.name || user.email}". Esta acción es reversible asignándolo de nuevo.`,
+        confirmText: 'Sí, quitar',
         icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, quitar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc3545',
     });
-    if (!result.isConfirmed) return;
+    if (!ok) return;
     try {
         await store.removeRole(user.uuid, role);
     } catch (e) {
@@ -252,12 +264,31 @@ const saveRoles = async () => {
     }
 };
 
+const accionesDe = (data) => [
+    {
+        key: 'ver',
+        label: 'Ver perfil',
+        icon: 'far fa-eye',
+        tone: 'primary',
+        inline: true,
+        visible: true,
+        onClick: () => goProfile(data),
+    },
+    {
+        key: 'roles',
+        label: 'Editar roles',
+        icon: 'far fa-user-shield',
+        tone: 'warning',
+        inline: true,
+        visible: puedeGestionarUsuario(data),
+        onClick: () => openRolesModal(data),
+    },
+];
+
 onMounted(async () => {
-    const sortParam = route.query.sort;
-    const orderParam = route.query.order;
-    if (typeof sortParam === 'string' && sortParam) {
-        store.sortField = sortParam;
-        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    if (route.query.sort) {
+        store.sortField = String(route.query.sort);
+        store.sortOrder = route.query.order === 'desc' ? -1 : 1;
     }
     isViewLoading.value = true;
     try {
@@ -269,14 +300,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.users-table-card { border-radius: .75rem !important; }
 .badge .btn-close { filter: brightness(0) invert(1); }
 .role-badge { transition: transform .15s ease, box-shadow .15s ease; }
 .role-badge:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, .1); }
-.badge-subtle { font-weight: 500; white-space: nowrap; transition: all .15s ease; }
-.badge-subtle-success { background: rgba(25, 135, 84, .1); color: #198754; border: 1px solid rgba(25, 135, 84, .2); }
-.badge-subtle-warning { background: rgba(255, 193, 7, .1); color: #856404; border: 1px solid rgba(255, 193, 7, .2); }
-.badge-subtle:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, .1); }
 .skeleton-text, .skeleton-badge, .skeleton-icon { background: #e9ecef; border-radius: 4px; animation: pulse 1.2s infinite; }
 .skeleton-badge { border-radius: 999px; }
 .skeleton-icon { border-radius: .25rem; }
@@ -284,33 +310,6 @@ onMounted(async () => {
 .scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
 .scrollbar::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 3px; }
 .scrollbar::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 3px; }
-
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: .625rem .75rem !important;
-    font-size: .75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: .625rem .75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: .825rem !important;
-    color: #212529;
-    transition: background-color .15s ease;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) { background: #f8f9fa !important; }
-:deep(.professional-table .p-datatable-tbody > tr:last-child > td) { border-bottom: none; }
-:deep(.professional-table .btn-group .btn) { padding: .3rem .5rem; transition: all .15s ease; }
-:deep(.professional-table .btn-group .btn:hover) { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, .12); z-index: 1; }
-:deep(.professional-table .btn-group .btn + .btn) { margin-left: -1px; }
-:deep(.professional-table .p-paginator) { padding: .5rem 1rem !important; background: #f8f9fa !important; border-top: 1px solid #e9ecef !important; border-radius: 0 0 .75rem .75rem !important; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 </style>

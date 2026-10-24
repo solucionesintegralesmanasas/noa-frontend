@@ -4,178 +4,119 @@
         :loading="isViewLoading || store.loading" :compact="true" :canCreate="can('brands.create')"
         :breadcrumbs="[{ label: 'Configuración' }, { label: 'Marcas' }]" @refresh="refreshTable" @create="goToCreate" />
 
-    <!-- BARRA DE BÚSQUEDA -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-2">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-brands-busqueda" v-model="searchQuery" class="noa-search__input"
+                    type="search" placeholder="Buscar por descripción..."
+                    aria-label="Buscar marca" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
 
-                <!-- Izquierda: título + input -->
-                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" aria-hidden="true" />
-                        </span>
-                        <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search" placeholder="Buscar por descripción..."
-                            aria-label="Buscar marca" @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
-                            title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
-                            <i class="fad fa-times" aria-hidden="true" />
-                        </button>
-                    </div>
-                </div>
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
 
-                <!-- Derecha: contador -->
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" aria-hidden="true" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
-                </div>
-
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['85%', '15%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="skeleton-icon" style="height:32px;width:32px;" />
+                                    <div class="skeleton-text" style="height:18px;width:60%;" />
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon"
+                                        style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <!-- TABLA -->
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <div class="bg-holder d-none d-lg-block bg-card"
-                    style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    :totalRecords="store.pagination.totalItems"
+                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                    :loading="store.loading" responsiveLayout="scroll"
+                    tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron registros"
+                    :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort @sort="onSort">
 
-                <!-- SKELETON -->
-                <div v-if="isViewLoading" class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th v-for="w in ['60%', '40%']" :key="w"
-                                        style="padding:12px 8px">
-                                        <div class="skeleton-text" :style="`height:16px;width:${w}`" />
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="skeleton-icon" style="height:32px;width:32px;" />
-                                            <div class="flex-grow-1">
-                                                <div class="skeleton-text mb-1" style="height:18px;width:60%;" />
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <div v-for="j in 3" :key="j" class="skeleton-icon"
-                                                style="height:28px;width:28px;" />
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- DATATABLE (Paginación Server-Side) -->
-                <div v-else class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
-                            :totalRecords="store.pagination.totalItems"
-                            :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                            :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]" responsiveLayout="scroll"
-                            tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort
-                            emptyMessage="No se encontraron registros" @page="onPageChange" @sort="onSort">
-
-                            <!-- Descripción -->
-                            <Column field="description" header="Descripción" sortable>
-                                <template #body="{ data }">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div
-                                            class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
-                                            {{ getInitials(data.description) }}
-                                        </div>
-                                        <div>
-                                            <span class="text-dark d-block fw-medium" style="font-size:0.875rem;">
-                                                {{ data.description || '—' }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <!-- Acciones -->
-                            <Column header="Acciones" class="text-center" style="min-width:140px; width: 140px;" v-if="can('brands.index') || can('brands.update') || can('brands.delete')">
-                                <template #body="{ data }">
-                                    <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de marca">
-                                        <button v-if="can('brands.index')" class="btn btn-falcon-default" type="button"
-                                            title="Ver detalle" :aria-label="`Ver ${data.description}`" @click="goToEdit(data.uuid)">
-                                            <i class="fad fa-eye text-primary" style="font-size:14px;" aria-hidden="true" />
-                                        </button>
-                                        <button v-if="can('brands.update')" class="btn btn-falcon-default" type="button"
-                                            title="Editar" :aria-label="`Editar ${data.description}`" @click="goToEdit(data.uuid)">
-                                            <i class="fad fa-edit text-warning" style="font-size:14px;" aria-hidden="true" />
-                                        </button>
-                                        <button v-if="can('brands.delete')" class="btn btn-falcon-default"
-                                            type="button" title="Eliminar" :aria-label="`Eliminar ${data.description}`" @click="handleDelete(data)">
-                                            <i class="fad fa-trash text-danger" style="font-size:14px;" aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <!-- Empty state -->
-                            <template #empty>
-                                <div class="text-center py-5">
-                                    <i class="fad fa-tags fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
-                                    <h6 class="text-muted mb-1 fw-medium">No hay marcas registradas</h6>
-                                    <p class="text-muted small mb-3">Comienza agregando tu primera marca</p>
-                                    <button v-if="can('brands.create')" class="btn btn-primary btn-sm"
-                                        @click="goToCreate">
-                                        <i class="fad fa-plus me-1" aria-hidden="true" />Agregar primera marca
-                                    </button>
-                                </div>
-                            </template>
-
-                            <!-- Loading state -->
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando marcas..." />
-                            </template>
-
-                            <!-- Footer -->
-                            <template #footer>
+                    <!-- Descripción -->
+                    <Column field="description" header="Descripción" sortable style="width: 85%;">
+                        <template #body="{ data }">
+                            <div class="d-flex align-items-center gap-2">
                                 <div
-                                    class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3 bg-light rounded-bottom">
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-list me-1" aria-hidden="true" />
-                                        Mostrando <strong>{{ store.items.length }}</strong> de
-                                        <strong>{{ store.pagination.totalItems }}</strong> registros
-                                    </small>
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-pages me-1" aria-hidden="true" />
-                                        Página <strong>{{ store.pagination.currentPage }}</strong> de
-                                        <strong>{{ store.pagination.totalPages }}</strong>
-                                    </small>
+                                    class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0">
+                                    {{ getInitials(data.description) }}
                                 </div>
-                            </template>
-                        </DataTable>
-                    </div>
-                </div>
+                                <span class="noa-cell-strong d-block">
+                                    {{ data.description || '—' }}
+                                </span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 15%;"
+                        v-if="can('brands.index') || can('brands.update') || can('brands.delete')">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.description || 'marca'" />
+                        </template>
+                    </Column>
+
+                    <!-- Empty state -->
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-tags fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No hay marcas registradas</h6>
+                            <p class="text-muted small mb-3">Comienza agregando tu primera marca</p>
+                            <button v-if="can('brands.create')" class="btn btn-primary btn-sm" type="button"
+                                @click="goToCreate">
+                                <i class="fad fa-plus me-1" aria-hidden="true" />Agregar primera marca
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Loading state -->
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando marcas..." />
+                    </template>
+                </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import { useBrandsStore } from '../store/brands.store.js';
@@ -184,6 +125,8 @@ import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
@@ -201,6 +144,8 @@ const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
 const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
     onChange: ({ field, order }) => store.setSort(field, order),
+    route,
+    router,
 });
 
 // ─── Utilidades ──────────────────────────────────────────────────────────────
@@ -219,10 +164,11 @@ const clearSearch = async () => {
     await store.clearFilters();
 };
 
-// ─── Paginación server-side (PrimeVue lazy emite { first, rows }) ─────────────
-const onPageChange = async ({ first, rows }) => {
+// ─── Paginación server-side ───────────────────────────────────────────────────
+const onPageChange = async ({ page, first, rows }) => {
     store.pagination.itemsPerPage = rows;
-    await store.setPage(Math.floor(first / rows) + 1);
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
 // ─── Navegación ──────────────────────────────────────────────────────────────
@@ -230,51 +176,49 @@ const goToCreate = () => router.push('/configuracion/marcas/crear');
 const goToEdit = (uuid) => uuid && router.push(`/configuracion/marcas/editar/${uuid}`);
 const refreshTable = () => store.fetchItems();
 
-// ─── Eliminar (delegado al hook con opciones propias del módulo) ──────────────
+// ─── Eliminar ─────────────────────────────────────────────────────────────────
 const handleDelete = (brand) => confirmDelete(brand, {
     title: '¿Eliminar marca?',
     nameField: 'description',
     html: `
         <p class="mb-2">¿Estás seguro de eliminar la marca <strong>"${brand.description}"</strong>?</p>
         <div class="alert alert-warning small mb-0 mt-2">
-            <i class="fad fa-exclamation-triangle me-1"></i>
+            <i class="fad fa-exclamation-triangle me-1" aria-hidden="true"></i>
             Esta acción no se puede deshacer y podría afectar los vehículos vinculados.
         </div>`,
 });
 
-// ─── Ciclo de vida ────────────────────────────────────────────────────────────
-watch(
-    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
-    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
-        router.replace({
-            query: {
-                ...route.query,
-                search: newSearch || undefined,
-                page: newPage > 1 ? newPage : undefined,
-                per_page: newPerPage !== 10 ? newPerPage : undefined,
-                sort: newSort || undefined,
-                order: newSort ? (newOrder || 'asc') : undefined,
-            },
-        });
-    }
-);
+const accionesDe = (data) => [
+    {
+        key: 'editar',
+        label: can('brands.update') ? 'Editar' : 'Ver detalle',
+        icon: can('brands.update') ? 'far fa-pen' : 'far fa-eye',
+        tone: can('brands.update') ? 'warning' : 'primary',
+        inline: true,
+        visible: can('brands.update') || can('brands.index'),
+        onClick: () => goToEdit(data.uuid),
+    },
+    {
+        key: 'eliminar',
+        label: 'Eliminar',
+        icon: 'far fa-trash-alt',
+        tone: 'danger',
+        visible: can('brands.delete'),
+        onClick: () => handleDelete(data),
+    },
+];
 
+// ─── Ciclo de vida ────────────────────────────────────────────────────────────
 onMounted(async () => {
     try {
-        const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
-        const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
-        const querySearch = route.query.search || '';
-        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
-        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
-
-        store.search = querySearch;
-        store.pagination.currentPage = queryPage;
-        store.pagination.itemsPerPage = queryPerPage;
-        store.sortField = querySort;
-        store.sortOrder = querySort ? queryOrder : null;
-        restore(querySort, querySort ? queryOrder : null);
-
-        searchQuery.value = querySearch;
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? -1 : 1;
+            restore(sortParam, orderParam === 'desc' ? 'desc' : 'asc');
+        }
+        searchQuery.value = store.search;
         await store.fetchItems();
     } finally {
         setTimeout(() => {
@@ -288,149 +232,18 @@ onUnmounted(() => destroyTooltips());
 </script>
 
 <style scoped>
-:root {
-    --table-header-bg: #f8f9fa;
-    --table-hover-bg: #f8f9fa;
-    --table-border: #e9ecef;
-    --transition-fast: 150ms ease-in-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(16px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.4s ease-out forwards;
-}
-
-.card {
-    border-radius: 0.75rem !important;
-    transition: box-shadow var(--transition-fast);
-}
-
-.card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
-}
-
-/* Avatar */
 .avatar-placeholder {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-    font-weight: 600;
-    flex-shrink: 0;
-    user-select: none;
-    transition: transform var(--transition-fast);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) .avatar-placeholder {
-    transform: scale(1.05);
-}
-
-/* Tabla */
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid var(--table-border) !important;
-    background: var(--table-header-bg);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--table-border);
-    font-size: 0.825rem !important;
-    color: #212529;
-    transition: background-color var(--transition-fast);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) {
-    background: var(--table-hover-bg) !important;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:last-child > td) {
-    border-bottom: none;
-}
-
-/* Botones */
-:deep(.btn-group .btn) {
-    padding: 0.3rem 0.5rem;
-    transition: all var(--transition-fast);
-}
-
-:deep(.btn-group .btn:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
-    z-index: 1;
-}
-
-:deep(.btn-group .btn + .btn) {
-    margin-left: -1px;
-}
-
-/* Skeleton */
-@keyframes skeleton-loading {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
-}
-
-/* Paginador */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: var(--table-header-bg) !important;
-    border-top: 1px solid var(--table-border) !important;
-    border-radius: 0 0 0.75rem 0.75rem !important;
-}
-
-:deep(.p-paginator .p-paginator-page) {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.25rem !important;
-    margin: 0 0.125rem;
+    width: 32px;
+    height: 32px;
     font-size: 0.8rem;
-    transition: all var(--transition-fast);
+    font-weight: 600;
 }
+.skeleton-text, .skeleton-badge, .skeleton-icon { background: #e9ecef; border-radius: 4px; animation: pulse 1.2s infinite; }
+.skeleton-badge { border-radius: 999px; }
+.skeleton-icon { border-radius: .25rem; }
+.scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 3px; }
+.scrollbar::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 3px; }
 
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #fff !important;
-}
-
-:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover) {
-    background: #e9ecef !important;
-}
-
-/* Input búsqueda */
-.input-group:focus-within {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .15);
-    border-radius: 0.25rem;
-}
-
-.input-group .form-control:focus {
-    box-shadow: none;
-}
-
-/* Accesibilidad */
-:focus-visible {
-    outline: 2px solid #0d6efd !important;
-    outline-offset: 2px !important;
-}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 </style>

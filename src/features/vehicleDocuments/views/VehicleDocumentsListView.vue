@@ -11,7 +11,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar..."
+                <input id="f-vehicle-documents-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar..."
                     aria-label="Buscar documento de vehículo" @input="debouncedSearch" />
                 <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
                     aria-label="Limpiar búsqueda" @click="clearSearch">
@@ -222,6 +222,7 @@ import { useTable } from '@/hooks/useTable.js';
 import { normalizarEstadoDocumento, claseEstadoDocumento } from '@/utils/documentStatus.js';
 import { elegirPolizaViva } from '@/hooks/useDocumentWizard.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import RowActions from '@/components/RowActions.vue';
@@ -253,6 +254,11 @@ const displayRows = computed(() => store.items);
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+    route,
+    router,
+});
 
 const can = (action) => permissionsStore.can(action);
 
@@ -355,6 +361,13 @@ const accionesDocDe = (data) => [
 
 onMounted(async () => {
     try {
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+        if (querySort) {
+            store.sortField = querySort;
+            store.sortOrder = queryOrder;
+            restore(querySort, queryOrder);
+        }
         searchQuery.value = store.search;
         store.vehicleUuidFilter = route.query.vehicle_uuid || null;
         const type = route.params.documentType;

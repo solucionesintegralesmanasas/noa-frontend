@@ -31,6 +31,8 @@
 </template>
 
 <script setup>
+// Estilos de listados: viajan con el componente (chunk del listado), no con main.js (SPEC-008).
+import '@/assets/styles/components/_data-list.css';
 /**
  * Acciones de una fila de listado.
  *
@@ -63,8 +65,8 @@ const visibles = computed(() => props.actions.filter((a) => a && a.visible !== f
 
 const reparto = computed(() => {
     const todas = visibles.value;
+    const marcadas = todas.filter((a) => a.inline);
     const noDestructivas = todas.filter((a) => a.tone !== 'danger');
-    const marcadas = noDestructivas.filter((a) => a.inline);
     const enLinea = (marcadas.length ? marcadas : noDestructivas).slice(0, props.maxLinea);
     return { enLinea, enMenu: todas.filter((a) => !enLinea.includes(a)) };
 });
