@@ -6,6 +6,7 @@
 import { createPinia } from 'pinia';
 import { logger } from '@utils/logger.js';
 import { createLoggerPlugin } from '@store/plugins/logger.js';
+import { runStoreAction } from '@store/helpers/runStoreAction.js';
 import {
     authPersistencePlugin,
     permissionsPersistencePlugin,
@@ -25,12 +26,16 @@ const PLUGIN_REGISTRY = {
     'user': [userProfilePersistencePlugin],
 };
 
-// 1. Inyección de plugins base
+// 1. Inyección de plugins base y control de concurrencia / cancelación en _run
 pinia.use(({ store }) => {
     const plugins = PLUGIN_REGISTRY[store.$id] || [];
     plugins.forEach(plugin => {
         if (typeof plugin === 'function') plugin({ store });
     });
+
+    if (typeof store._run === 'function') {
+        store._run = (action, errorMsg) => runStoreAction(store, action, errorMsg);
+    }
 });
 
 // 2. Plugins de desarrollo (Solo en modo DEV)

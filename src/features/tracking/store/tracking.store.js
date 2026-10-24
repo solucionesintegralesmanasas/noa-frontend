@@ -15,6 +15,8 @@ export const useTrackingStore = defineStore('tracking', {
         currentSession: null,
         loading: false,
         error: null,
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -81,10 +83,18 @@ export const useTrackingStore = defineStore('tracking', {
             return response.data?.data || response.data;
         },
 
-        async fetchGeofences(signal) {
+        async fetchGeofences(params = {}, signal) {
             this.loading = true;
             try {
-                const response = await trackingService.getGeofences({ per_page: 100 }, { signal });
+                const isSignal = params instanceof AbortSignal || params?.aborted !== undefined;
+                const actualSignal = signal || (isSignal ? params : undefined);
+                const actualParams = isSignal ? {} : params;
+                const response = await trackingService.getGeofences({
+                    per_page: 100,
+                    sort_by: this.sortField || undefined,
+                    sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
+                    ...actualParams,
+                }, { signal: actualSignal });
                 this.geofences = response.data?.data || response.data || [];
             } catch (err) {
                 // Cancelación por AbortController (pestaña oculta o desmontaje): silencio.
@@ -93,6 +103,12 @@ export const useTrackingStore = defineStore('tracking', {
             } finally {
                 this.loading = false;
             }
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order;
+            return this.fetchGeofences();
         },
 
         async createGeofence(data) {

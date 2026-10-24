@@ -17,18 +17,30 @@ export function useTable(initialParams = {}, fetchCallback = null) {
     const loading = ref(false);
 
     let _debounceTimer = null;
+    const defaultDelay = typeof initialParams.debounceDelay === 'number' && Number.isFinite(initialParams.debounceDelay)
+        ? initialParams.debounceDelay
+        : 400;
 
-    /** Búsqueda con retraso para no sobrecargar la API */
-    const debouncedSearch = (delay = 350) => {
+    /**
+     * Búsqueda con retraso para no sobrecargar la API.
+     * Ignora argumentos no numéricos (como InputEvent al usar @input="debouncedSearch").
+     */
+    const debouncedSearch = (customDelay) => {
+        const effectiveDelay = typeof customDelay === 'number' && Number.isFinite(customDelay) && customDelay >= 0
+            ? customDelay
+            : defaultDelay;
         clearTimeout(_debounceTimer);
         _debounceTimer = setTimeout(() => {
+            _debounceTimer = null;
             page.value = 1;
             if (fetchCallback) fetchCallback();
-        }, delay);
+        }, effectiveDelay);
     };
 
     /** Limpia filtros y recarga */
     const clearFilters = () => {
+        clearTimeout(_debounceTimer);
+        _debounceTimer = null;
         Object.keys(filters).forEach(key => {
             filters[key] = key === 'globalFilter' ? '' : null;
         });
@@ -41,6 +53,8 @@ export function useTable(initialParams = {}, fetchCallback = null) {
      * PrimeVue emite { first, rows } → convertimos a número de página (1-indexed).
      */
     const onPage = (event) => {
+        clearTimeout(_debounceTimer);
+        _debounceTimer = null;
         page.value  = event.page !== undefined
             ? event.page + 1
             : Math.floor(event.first / event.rows) + 1;

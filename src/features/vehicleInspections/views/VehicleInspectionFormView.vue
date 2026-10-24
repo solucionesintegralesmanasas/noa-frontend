@@ -25,7 +25,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required" for="vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
-                                    :options="filteredVehicles" option-value="uuid" option-label="vehicle_license_plate"
+                                    :options="filteredVehicles" option-value="uuid" option-label="display_plate"
                                     placeholder="Seleccione..." showClear filter class="w-100"
                                     :invalid="!!validationErrors['vehicle_uuid']" />
                                 <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">

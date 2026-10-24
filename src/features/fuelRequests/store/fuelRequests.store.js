@@ -11,6 +11,8 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
         error: null,
         pagination: { currentPage: 1, itemsPerPage: 15, totalItems: 0, totalPages: 0 },
         filters: { status: '', search: '' },
+        sortField: null,
+        sortOrder: null,
     }),
 
     actions: {
@@ -23,6 +25,8 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
                     per_page: this.pagination.itemsPerPage,
                     status: this.filters.status || undefined,
                     search: this.filters.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -92,6 +96,13 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
 
         setPage(page) {
             this.pagination.currentPage = page;
+            return this.fetchItems();
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order;
+            this.pagination.currentPage = 1;
             return this.fetchItems();
         },
     },

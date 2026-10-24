@@ -256,10 +256,12 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
 - **Componentes base:**
   - `src/components/RowActions.vue`: Agrupación consistente de acciones de fila. Máximo 2 acciones en línea (`inline: true`, ej. Ver y Editar); el resto pasa a un menú flotante (`⋮`) accesible mediante PrimeVue `Menu`, con las acciones destructivas (`tone: 'danger'`) al final separadas. Reserva un espaciador visual si una fila no tiene acciones en menú para mantener la vertical alineada.
   - `src/components/ListPagination.vue`: Paginador propio que reemplaza al paginador embebido de PrimeVue (`:paginator="false"` en `DataTable`). Muestra a la izquierda `Mostrando X a Y de Z registros | Filas: [N ▾]` y a la derecha los botones de páginas `« ‹ 1 2 3 … N › »` con elipsis inteligente y tamaño cuadrado de 28px. Emite `{ page, rows, first }` compatible con `@page`.
-  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida importada en `main.js`. Define el contenedor `.noa-list-card` (toolbar de búsqueda + tabla + paginador en una sola tarjeta), el buscador `.noa-search`, la píldora de conteo `.noa-results`, la píldora de estado con indicador circular `.noa-status` (`.noa-status--success`, `.noa-status--warning`, `.noa-status--muted`), y la clase `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos para eliminar disparidades entre columnas.
+  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida. **No se importa en `main.js`** (SPEC-008, historia 16: no debe entrar al arranque): la importan `ListPagination.vue` y `RowActions.vue`, así que viaja con el chunk de cada listado. Define el contenedor `.noa-list-card` (toolbar de búsqueda + tabla + paginador en una sola tarjeta), el buscador `.noa-search`, la píldora de conteo `.noa-results`, la píldora de estado con indicador circular `.noa-status` (`.noa-status--success`, `.noa-status--warning`, `.noa-status--muted`), y la clase `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos para eliminar disparidades entre columnas.
+- **Pendientes del rediseño y de las piezas compartidas:** el plan por pasos y módulos vive en `noa-backend/docs/specs/SPEC-008-listados-reutilizables-y-medidos.md` (sección "Avance y pendientes por pasos"). **Antes de migrar un listado o crear una pieza nueva de listado, léela y sigue su orden.**
+- **Todo buscador de listado lleva `id="f-<modulo>-busqueda"`** (accesibilidad); un buscador nuevo sin `id` incumple el estándar.
 
 - **Estado de migración de vistas:**
-  - **Migradas y verificadas (Bloque 1 + Terceros):**
+  - **Migradas y verificadas (Bloques 1, 2, 3 + Terceros, Combustible, Convenios y Geocercas):**
     - `ThirdPartiesListView.vue` (Terceros)
     - `VehiclesListView.vue` (Vehículos)
     - `VehicleDocumentsListView.vue` (Documentos vehiculares: SOAT, RTM y Pólizas RCC/RCE)
@@ -267,26 +269,49 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
     - `RadicacionListView.vue` (Radicación TO)
     - `VehicleInspectionListView.vue` (Inspecciones vehiculares — conserva métricas y vista móvil Capacitor)
     - `MaintenanceListView.vue` (Mantenimiento vehicular)
-  - **Pendientes de migrar (Bloques 2, 3 y 4):**
-    - *Bloque 2 (Operación y Contratos):* `FuecListView`, `ProjectsListView`, `ControlSheetsListView`, `ServiceDeliveryControlSheetListView`, `FuelLogListView`, `FuelRequestListView`, `BusinessCollaborationAgreementsListView`, `GeofenceListView`.
-    - *Bloque 3 (Facturación, Contabilidad y RRHH):* `BillingListView`, `AffiliateAdminChargesListView`, `EmploymentContractsListView`, `FinancialStatementsListView`, `TaxDeclarationsListView`, `TaxInformationListView`, `WithholdingsListView`, `BankDetailsListView`.
-    - *Bloque 4 (Administración y Catálogos):* `UsersListView`, `CompaniesListView`, `BranchesListView`, `BrandsListView`, `VehicleClassesListView`, `InspectionItemsListView`, `EconomicActivitiesListView`, `EnablingResolutionsListView`, `ConveyorCapacityListView`, `ExperiencesListView`, `ObjectsContractsListView`, `RupRecordsListView`, `NotificationsListView`.
+    - `FuecListView.vue` (FUEC — conserva vista móvil Capacitor)
+    - `ProjectsListView.vue` (Proyectos)
+    - `ControlSheetsListView.vue` (Planillas de control — conserva vista móvil Capacitor)
+    - `ServiceDeliveryControlSheetListView.vue` (Hojas de control de servicio PCP — conserva vista móvil Capacitor)
+    - `FuelLogListView.vue` (Control de combustible y kilometraje)
+    - `FuelRequestListView.vue` (Solicitudes de tanqueo)
+    - `BusinessCollaborationAgreementsListView.vue` (Convenios de colaboración)
+    - `GeofenceListView.vue` (Geocercas)
+    - `BillingListView.vue` (Facturación)
+    - `AffiliateAdminChargesListView.vue` (Cobros y cuotas de administración — conserva métricas de resumen y modal de historial)
+    - `EmploymentContractsListView.vue` (Contratos laborales)
+    - `FinancialStatementsListView.vue` (Estados financieros)
+    - `TaxDeclarationsListView.vue` (Declaraciones de renta)
+    - `TaxInformationListView.vue` (Información tributaria)
+    - `WithholdingsListView.vue` (Retenciones)
+    - `BankDetailsListView.vue` (Datos bancarios)
+    - `ExperiencesListView.vue`, `RupRecordsListView.vue`, `NotificationsListView.vue`, `InspectionItemsListView.vue`, `EconomicActivitiesListView.vue`, `EnablingResolutionsListView.vue`, `ConveyorCapacityListView.vue`, `ObjectsContractsListView.vue`: **solo tienen el ordenamiento server-side**; el rediseño (`ListPagination`, `RowActions`, `.noa-list-card`) está pendiente, ver SPEC-008 Paso 1.
+    - `UsersListView.vue` (Gestión de usuarios y asignación de roles)
+    - `CompaniesListView.vue` (Empresas)
+    - `BranchesListView.vue` (Sucursales)
+    - `BrandsListView.vue` (Marcas de vehículos)
+    - `VehicleClassesListView.vue` (Clases de vehículos)
 
 ## Ordenamiento de listados server-side (2026-10-23)
 
-- **Comportamiento en `DataTable`:** En modo `lazy`, las columnas con `sortable` requieren `:sortField="store.sortField"`, `:sortOrder="store.sortOrder"` y `@sort="handleSort"`.
-- **Hook `useServerSort.js`:** Expone `onSort: handleSort`, traduce las direcciones de PrimeVue (`1` -> asc, `-1` -> desc, `0` -> null) y sincroniza los parámetros en la URL con `router.replace({ query: { ...route.query, sort, order } })`.
-- **Ciclo de vida en vistas:** En `onMounted`, se leen `route.query.sort` y `route.query.order` antes de llamar a `store.fetchItems()`, evitando doble petición al montar.
-- **Regla en Stores:** Las acciones `fetchItems()` envían `sort_by` y `sort_order`. La acción `clearFilters()` limpia únicamente la búsqueda y resetea a página 1, **sin alterar** `sortField` ni `sortOrder`.
+- **Comportamiento en `DataTable`:** En modo `lazy`, las columnas con `sortable` requieren `:sortField="sortField"` (o `store.sortField`), `:sortOrder="sortOrdenPrimeVue"` (o `store.sortOrder`) y `@sort="onSort"` (o `@sort="handleSort"`).
+- **Hook `useServerSort.js`:** Admite tanto el objeto de opciones `{ field, order, onChange }` como la función directa `useServerSort((field, order) => ..., options)`. Expone `{ sortField, sortOrder, sortOrdenPrimeVue, onSort, handleSort: onSort, restore, reset }`, traduce las direcciones de PrimeVue (`1` -> asc, `-1` -> desc, `0` -> null) y sincroniza los parámetros en la URL con `router.replace({ query: { ...route.query, sort, order } })`.
+- **Ciclo de vida en vistas:** antes de `store.fetchItems()` se recupera `route.query.sort`/`order` **sin doble petición**. Hay dos patrones válidos: (a) la vista enlaza `:sortField`/`:sortOrder` al **store** y en `onMounted` asigna `store.sortField`/`store.sortOrder` (p. ej. `UsersListView`); (b) la vista enlaza los refs del composable y llama `restore(sortParam, orderParam)`. No mezclar ambos en una misma vista: si el DataTable lee del composable, `restore()` es obligatorio.
+- **Pendientes de ordenamiento y búsqueda:** helper común de `sort_order` para los stores y otras mejoras en SPEC-008 (Pasos 4 y 5).
+- **Búsqueda (2026-10-24):** `useTable.debouncedSearch` ignora el `InputEvent` que Vue le pasa con `@input="debouncedSearch"` y espera 400 ms (antes caía a 0 ms y lanzaba una petición por tecla). `BaseService` cancela el `getAll` previo del mismo recurso (`AbortController`) y `runStoreAction` ignora las cancelaciones y mantiene `loading` hasta que termina la última petición en vuelo. Los catálogos de terceros y vehículos para selectores pasan por `src/utils/catalogFormatters.js` (`formatThirdPartyList`, `formatVehicleList`): el selector de placa usa `option-label="display_plate"` y `PrimeSelect` amplía solo el filtro (documento, apellido, razón social, móvil) cuando las opciones traen esos campos.
+- **Regla en Stores:** Las acciones `fetchItems()` envían `sort_by` y `sort_order` normalizando tanto valores numéricos (`1`/`-1`) como textuales (`asc`/`desc`). La acción `clearFilters()` limpia únicamente la búsqueda y resetea a página 1, **sin alterar** `sortField` ni `sortOrder`.
+- **Cobertura total implementada:** Todos los listados paginados de la aplicación (Bloques 1, 2, 3 y 4 completos) cuentan con ordenamiento server-side sincronizado en URL tanto en Backend (`$sortableFields`, `applySorting`, validación de dirección) como en Frontend (Pinia + PrimeVue DataTable + `useServerSort`).
 
 ## Credenciales de inicio de sesión
 
 Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo o usa el `UsuariosSeeder` / `DemoCompanySeeder` del backend en un entorno local.
 
-## Commits
+## Convención de Commits
 
-- Una sola línea, en español, formato `tipo(scope): descripción directa`.
-- Sin cuerpo ni bullets, salvo que el cambio lo exija para entenderse.
+- Mensajes directos en español, en una sola línea, formato `tipo(scope): descripción corta`.
+- Sin cuerpo ni bullets, salvo que el cambio lo exija para entenderse. Cuando lo exija: un cuerpo breve (una o dos frases, o tres puntos como máximo), nunca el listado de archivos o de cambios punto por punto.
+- **Cuándo commitear:** solo después de revisar el código, mediante una skill de revisión (`/code-review`) o una revisión propia contra los estándares de este archivo, o cuando el usuario lo solicite explícitamente. No commitear código sin revisar; si la revisión encuentra hallazgos, se corrigen antes de commitear y las métricas de rendimiento/a11y se miden antes y después.
+- **Sin commits de relleno:** los ajustes de `AGENTS.md` que documentan un cambio van en el mismo commit de ese cambio (nada de commits `docs` separados para este archivo ni correcciones sucesivas de la misma prosa), y la instalación o actualización de skills va en un único commit.
 - Tipos: feat, fix, refactor, perf, style, docs, test, build, ci, chore.
 
 ## Agent skills

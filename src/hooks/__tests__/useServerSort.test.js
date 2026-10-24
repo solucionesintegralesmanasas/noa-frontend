@@ -57,12 +57,15 @@ describe('useServerSort', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('restaurar una dirección inválida deja el orden sin efecto', () => {
-        const { sortField, sortOrder, restore } = useServerSort();
+    it('admite pasar una función como primer argumento y expone handleSort como alias', () => {
+        const callback = vi.fn();
+        const { sortField, sortOrder, handleSort } = useServerSort(callback);
 
-        restore('line', 'lateral');
+        handleSort({ sortField: 'created_at', sortOrder: -1 });
 
-        expect(sortField.value).toBeNull();
-        expect(sortOrder.value).toBeNull();
+        expect(sortField.value).toBe('created_at');
+        expect(sortOrder.value).toBe('desc');
+        expect(callback).toHaveBeenCalledWith('created_at', 'desc');
     });
 });
+

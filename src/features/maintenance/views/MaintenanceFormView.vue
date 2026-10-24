@@ -32,7 +32,7 @@
                                 <label class="form-label required" for="vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
                                     :options="store.catalogs.vehicles" option-value="uuid"
-                                    option-label="vehicle_license_plate" placeholder="Seleccione..." showClear filter
+                                    option-label="display_plate" placeholder="Seleccione..." showClear filter
                                     class="w-100" :invalid="!!validationErrors['vehicle_uuid']" />
                                 <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">{{
                                     validationErrors.vehicle_uuid }}</div>
@@ -270,7 +270,7 @@
                                                     <PrimeSelect v-model="part.provider_uuid"
                                                         :input-id="`f-parts-${index}-provider_uuid`"
                                                         :options="store.catalogs.thirdParties" option-value="uuid"
-                                                        :option-label="(opt) => opt.first_name || opt.trade_name"
+                                                        option-label="company_name"
                                                         placeholder="Ninguno" showClear filter class="w-100" />
                                                 </td>
                                                 <td>

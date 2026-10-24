@@ -196,9 +196,7 @@ onMounted(async () => {
         const validRoles = roles
             .filter(role => typeof role === 'string')
             .map(role => role.toUpperCase());
-        const isAfiliado = validRoles.some(role => 
-            ['AFILIADO', 'EMPLEADO', 'CONDUCTOR'].includes(role)
-        );
+        const isAfiliado = validRoles.includes('AFILIADO');
         const thirdPartyUuid = userStore.third_party_uuid;
 
         let params = {};

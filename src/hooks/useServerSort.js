@@ -19,7 +19,36 @@ import { computed, ref } from 'vue';
  * @param {(orden: {field: string|null, order: 'asc'|'desc'|null}) => void} opciones.onChange
  *        Se invoca solo cuando el usuario cambia el orden (no al restaurar desde la URL).
  */
-export function useServerSort({ field = null, order = null, onChange = null } = {}) {
+export function useServerSort(optionsOrChange = {}, maybeOptions = {}) {
+    let field = null;
+    let order = null;
+    let onChange = null;
+    let route = null;
+    let router = null;
+
+    if (typeof optionsOrChange === 'function') {
+        const fn = optionsOrChange;
+        onChange = ({ field: f, order: o }) => {
+            if (fn.length === 1) {
+                fn({ field: f, order: o });
+            } else {
+                fn(f, o);
+            }
+        };
+        if (maybeOptions && typeof maybeOptions === 'object') {
+            field = maybeOptions.field ?? null;
+            order = maybeOptions.order ?? null;
+            route = maybeOptions.route ?? null;
+            router = maybeOptions.router ?? null;
+        }
+    } else if (optionsOrChange && typeof optionsOrChange === 'object') {
+        field = optionsOrChange.field ?? null;
+        order = optionsOrChange.order ?? null;
+        onChange = optionsOrChange.onChange ?? null;
+        route = optionsOrChange.route ?? maybeOptions?.route ?? null;
+        router = optionsOrChange.router ?? maybeOptions?.router ?? null;
+    }
+
     const sortField = ref(field);
     const sortOrder = ref(order === 'desc' ? 'desc' : order === 'asc' ? 'asc' : null);
 
@@ -46,6 +75,17 @@ export function useServerSort({ field = null, order = null, onChange = null } = 
     const onSort = (event) => {
         const direccion = normalizarDireccion(event?.sortOrder);
         aplicar(event?.sortField ?? null, direccion);
+        if (router && route) {
+            const nextQuery = { ...route.query };
+            if (sortField.value && sortOrder.value) {
+                nextQuery.sort = sortField.value;
+                nextQuery.order = sortOrder.value;
+            } else {
+                delete nextQuery.sort;
+                delete nextQuery.order;
+            }
+            router.replace({ query: nextQuery }).catch(() => {});
+        }
         if (typeof onChange === 'function') {
             onChange({ field: sortField.value, order: sortOrder.value });
         }
@@ -59,5 +99,10 @@ export function useServerSort({ field = null, order = null, onChange = null } = 
         aplicar(campo, normalizarDireccion(direccion));
     };
 
-    return { sortField, sortOrder, sortOrdenPrimeVue, onSort, restore };
+    const reset = () => {
+        sortField.value = null;
+        sortOrder.value = null;
+    };
+
+    return { sortField, sortOrder, sortOrdenPrimeVue, onSort, handleSort: onSort, restore, reset };
 }

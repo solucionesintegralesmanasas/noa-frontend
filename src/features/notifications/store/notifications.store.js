@@ -42,6 +42,8 @@ export const useNotificationsStore = defineStore('notifications', {
         // Conteo real de pendientes por prioridad (alimenta los clumps).
         unreadCounts: { total: 0, PRIORITARIA: 0, NORMAL: 0 },
         expiryAlertInterval: null,
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -70,6 +72,8 @@ export const useNotificationsStore = defineStore('notifications', {
                 const response = await client.get('/notifications', {
                     params: {
                         page,
+                        sort_by: this.sortField || undefined,
+                        sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
                         ...filters
                     }
                 });
@@ -101,6 +105,12 @@ export const useNotificationsStore = defineStore('notifications', {
             }
         },
 
+        setSort(field, order, filters = {}) {
+            this.sortField = field;
+            this.sortOrder = order;
+            return this.fetchNotifications(1, filters);
+        },
+
         async syncNotifications() {
             this.loading = true;
             try {
@@ -127,6 +137,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 this.loading = false;
             }
         },
+
 
         async requestSync() {
             try {

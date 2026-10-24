@@ -31,6 +31,62 @@ const props = defineProps({
 // Filtro efectivo: el explícito manda; si no, listas de más de 7 opciones.
 const filtroActivo = computed(() => props.filter ?? ((props.options?.length ?? 0) > 7));
 
+const CAMPOS_CATALOGO_CONOCIDOS = [
+    'search_text',
+    'display_label',
+    'display_name',
+    'full_name',
+    'company_name',
+    'trade_name',
+    'first_name',
+    'last_name',
+    'document_number',
+    'vehicle_license_plate',
+    'internal_number',
+    'display_plate',
+];
+
+// Si el consumidor no fijó filterFields y las opciones son registros de terceros o vehículos,
+// ampliamos automáticamente los campos de búsqueda para permitir buscar por documento,
+// apellido, nombre compuesto, razón social, placa o número interno.
+const camposFiltroEfectivos = computed(() => {
+    if (props.filterFields !== undefined) return props.filterFields;
+    if (props.optionGroupLabel || !Array.isArray(props.options) || props.options.length === 0) {
+        return undefined;
+    }
+    const muestra = props.options.find((o) => o && typeof o === 'object');
+    if (!muestra) return undefined;
+
+    const tieneCamposRicos = [
+        'search_text',
+        'document_number',
+        'first_name',
+        'last_name',
+        'trade_name',
+        'internal_number',
+    ].some((k) => muestra[k] !== undefined && muestra[k] !== null && muestra[k] !== '');
+
+    if (!tieneCamposRicos) return undefined;
+
+    const campos = [];
+    if (props.optionLabel) campos.push(props.optionLabel);
+    for (const campo of CAMPOS_CATALOGO_CONOCIDOS) {
+        if (campo !== props.optionLabel) campos.push(campo);
+    }
+    campos.push((o) => [
+        o?.first_name,
+        o?.last_name,
+        o?.last_name,
+        o?.first_name,
+        o?.company_name,
+        o?.trade_name,
+        o?.document_number,
+        o?.vehicle_license_plate,
+        o?.internal_number,
+    ].filter(Boolean).join(' '));
+    return campos;
+});
+
 // Se reenvía todo salvo el filtro, que se reemite desde el wrapper para que el
 // padre lo reciba una sola vez.
 const attrsLimpios = computed(() => {
@@ -81,7 +137,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', alTecla, true));
         :optionValue="props.optionValue"
         :optionGroupLabel="props.optionGroupLabel"
         :optionGroupChildren="props.optionGroupChildren"
-        :filterFields="props.filterFields"
+        :filterFields="camposFiltroEfectivos"
         :filter="filtroActivo"
         :focusOnHover="false"
         :autoFilterFocus="true"

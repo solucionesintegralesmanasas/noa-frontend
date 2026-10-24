@@ -423,6 +423,15 @@
                                 </div>
                             </div>
 
+                            <!-- Propietario: Tercero Registrado (opcional) -->
+                            <div class="col-12 col-md-12 col-lg-12">
+                                <label class="form-label" for="f-owner-third_party_uuid">Tercero Registrado (Autocompletar)</label>
+                                <PrimeSelect :input-id="'f-owner-third_party_uuid'" v-model="formData.owner.third_party_uuid"
+                                    :options="store.catalogs.thirdParties ?? []" option-value="uuid" option-label="company_name"
+                                    placeholder="Buscar por nombre, apellido, razón social o documento..." showClear filter class="w-100"
+                                    @change="onOwnerThirdPartyChange" />
+                            </div>
+
                             <!-- Propietario: Tipo de Documento -->
                             <div class="col-12 col-md-4 col-lg-3">
                                 <label class="form-label"
@@ -648,6 +657,20 @@ const validateForm = () => {
 };
 
 const goBack = () => router.push('/vehiculos');
+
+const onOwnerThirdPartyChange = () => {
+    const selectedUuid = formData.owner.third_party_uuid;
+    if (!selectedUuid) return;
+    const tp = (store.catalogs.thirdParties ?? []).find((item) => item.uuid === selectedUuid);
+    if (!tp) return;
+    if (tp.document_type_uuid) formData.owner.document_type_uuid = tp.document_type_uuid;
+    if (tp.document_number) formData.owner.document_number = tp.document_number;
+    formData.owner.verification_digit = tp.nit_check_digit != null ? String(tp.nit_check_digit) : '';
+    formData.owner.owner_name = tp.display_name || tp.raw_company_name || tp.full_name || '';
+    delete validationErrors['owner.document_type_uuid'];
+    delete validationErrors['owner.document_number'];
+    delete validationErrors['owner.owner_name'];
+};
 
 const handleSubmit = async () => {
     if (!validateForm()) {
