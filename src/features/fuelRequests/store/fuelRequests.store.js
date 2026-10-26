@@ -86,7 +86,11 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
 
         async loadQr(uuid) {
             const response = await fuelRequestsService.qr(uuid);
-            this.qr = response?.data?.data ?? response?.data ?? response;
+            // La API responde { success, message, data: { data, url, qr_data, qr_url } }.
+            // El contenido del QR también trae una clave `data` (el texto), así que
+            // `response.data.data` devolvía ese texto y el modal se quedaba sin imágenes.
+            const payload = response?.data ?? response;
+            this.qr = payload?.qr_url || payload?.qr_data ? payload : null;
             return this.qr;
         },
 
