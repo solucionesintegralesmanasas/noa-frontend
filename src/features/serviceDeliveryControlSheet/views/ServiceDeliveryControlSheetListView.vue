@@ -48,7 +48,7 @@
                         </span>
                         <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
                             type="search" placeholder="Buscar por ruta, vehículo, conductor..."
-                            aria-label="Buscar hoja de control" @input="debouncedSearch" />
+                            aria-label="Buscar hoja de control" @input="debouncedSearch()" />
                         <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
                             title="Limpiar" @click="clearSearch">
                             <i class="fad fa-times" />
@@ -68,6 +68,10 @@
                     <div class="form-check form-switch mb-0" title="Mostrar solo planillas cerradas">
                         <input id="filtroSoloCerradas" v-model="soloCerradas" class="form-check-input" type="checkbox" @change="onSoloCerradasChange" />
                         <label class="form-check-label small text-muted" for="filtroSoloCerradas">Solo cerradas</label>
+                    </div>
+                    <div class="form-check form-switch mb-0" title="Agrupar las planillas por proyecto">
+                        <input id="filtroAgruparProyecto" v-model="agruparPorProyecto" class="form-check-input" type="checkbox" @change="onAgruparChange" />
+                        <label class="form-check-label small text-muted" for="filtroAgruparProyecto">Agrupar por proyecto</label>
                     </div>
                     <div v-if="!isViewLoading && !store.loading" class="text-muted text-nowrap">
                         <small>
@@ -123,7 +127,7 @@
                 <div v-else class="card-body p-0">
                     <!-- Vista Escritorio -->
                     <div class="table-responsive scrollbar d-none d-md-block">
-                        <DataTable :value="store.items" v-model:expandedRows="expandedRows" dataKey="uuid" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
+                        <DataTable :value="store.items" v-model:expandedRows="expandedRows" dataKey="uuid" lazy :rowGroupMode="agruparPorProyecto ? 'subheader' : null" groupRowsBy="project.project_name" :expandableRowGroups="agruparPorProyecto" v-model:expandedRowGroups="gruposExpandidos" :paginator="true" :rows="store.pagination.itemsPerPage"
                             :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) *
                                 store.pagination.itemsPerPage
                                 " :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]"
@@ -132,6 +136,11 @@
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
                             emptyMessage="No se encontraron registros" @page="onPageChange">
+
+                            <template #groupheader="{ data }">
+                                <span class="fw-bold text-dark"><i class="fad fa-briefcase text-primary me-2" aria-hidden="true"></i>{{ data.project?.project_name || 'Sin Proyecto' }}</span>
+                                <span class="badge rounded-pill badge-subtle-primary ms-2">{{ planillasDelProyecto(data.project?.project_name) }} planilla{{ planillasDelProyecto(data.project?.project_name) !== 1 ? 's' : '' }}</span>
+                            </template>
 
                             <Column expander style="width: 3rem" />
 
@@ -206,13 +215,20 @@
                                 </template>
                             </Column>
 
-                            <Column header="Acciones" class="text-center" style="width: 110px;">
+                            <Column header="Acciones" class="text-center" style="width: 190px;">
                                 <template #body="{ data }">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
                                         <!-- La vista de detalle no existe (sin ruta): se eliminó el botón muerto. -->
                                         <button v-if="!isServicioCerrado(data)" class="btn btn-falcon-default btn-sm px-2" type="button"
                                             title="Continuar servicio" @click="goToControl(data.uuid)">
                                             <i class="fad fa-steering-wheel text-success"></i>
+                                        </button>
+
+                                        <button v-if="permissions.projectProfile && data.project_uuid" class="btn btn-falcon-default btn-sm px-2" type="button" title="Ver proyecto y sus vehículos" aria-label="Ver proyecto y sus vehículos" @click="goToProject(data.project_uuid)">
+                                            <i class="fad fa-eye text-info" aria-hidden="true"></i>
+                                        </button>
+                                        <button v-if="permissions.projectEdit && data.project_uuid" class="btn btn-falcon-default btn-sm px-2" type="button" title="Editar proyecto" aria-label="Editar proyecto" @click="goToProjectEdit(data.project_uuid)">
+                                            <i class="fad fa-briefcase text-primary" aria-hidden="true"></i>
                                         </button>
 
                                         <!-- Más acciones (Menu) -->
@@ -339,6 +355,10 @@
                         <i class="fad fa-file-pdf text-danger" aria-hidden="true"></i>
                         <span>PDF</span>
                     </button>
+                    <button v-if="permissions.projectProfile && item.project_uuid" class="mc-btn-secondary" type="button" @click="goToProject(item.project_uuid)">
+                        <i class="fad fa-eye text-info" aria-hidden="true"></i>
+                        <span>Proyecto</span>
+                    </button>
                     <button v-if="permissions.edit && !isServicioCerrado(item)" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
                         <i class="fad fa-edit text-warning" aria-hidden="true"></i>
                         <span>Editar</span>
@@ -395,7 +415,7 @@ import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
-import { formatRango as formatRangoHook, diasHijos as diasHijosHook, recorridosCount as recorridosCountHook, recorridosTexto as recorridosTextoHook, esCerrado } from '../hooks/useServiceList.js';
+import { formatRango as formatRangoHook, diasHijos as diasHijosHook, recorridosCount as recorridosCountHook, recorridosTexto as recorridosTextoHook, esCerrado, paginaDestino } from '../hooks/useServiceList.js';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import MobileCard from '@/components/mobile/MobileCard.vue';
@@ -412,6 +432,9 @@ const isViewLoading = ref(true);
 const searchQuery = ref('');
 const projectFilter = ref('');
 const soloCerradas = ref(false);
+const agruparPorProyecto = ref(true);
+const gruposExpandidos = ref([]);
+const planillasDelProyecto = (nombre) => store.items.filter((i) => (i.project?.project_name || undefined) === (nombre || undefined)).length;
 const expandedRows = ref([]);
 
 const showReportsDialog = ref(false);
@@ -422,13 +445,27 @@ const sharingLink = ref(null);
 
 const canShareCoordinatorLink = computed(() => (permissionsStore.roles || []).some(r => r === 'SUPERADMIN' || r === 'ADMIN_EMPRESA' || r?.name === 'SUPERADMIN' || r?.name === 'ADMIN_EMPRESA'));
 
-const permissions = reactive({ create: false, edit: false, delete: false, pdf: false });
+const permissions = reactive({ create: false, edit: false, delete: false, pdf: false, projectProfile: false, projectEdit: false });
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips } = useTableActions(store, router);
 
 const clearSearch = async () => { searchQuery.value = ''; await store.clearFilters(); };
 const refreshTable = () => store.fetchItems();
+// PrimeVue envía { first, rows, page } y los botones móviles { page, rows }.
+// Un cambio de `rows` (desplegable "por página") se aplica antes de saltar de página.
+const onPageChange = async (evento) => {
+    const filas = Number(evento?.rows);
+    if (Number.isInteger(filas) && filas > 0 && filas !== store.pagination.itemsPerPage) {
+        await store.setItemsPerPage(filas);
+        return;
+    }
+    const destino = paginaDestino(evento, store.pagination.itemsPerPage);
+    if (!destino || destino === store.pagination.currentPage) return;
+    await store.setPage(destino);
+};
+
 const onProjectFilterChange = async () => { await store.setProjectFilter(projectFilter.value); };
+const onAgruparChange = async () => { gruposExpandidos.value = []; await store.setAgruparPorProyecto(agruparPorProyecto.value); };
 const onSoloCerradasChange = async () => { await store.setSoloCerradas(soloCerradas.value); };
 
 const recorridosCount = (data) => recorridosCountHook(data);
@@ -442,6 +479,8 @@ const tipoLabel = (type) => { const tipos = { 'DIRECTO_CON_LA_EMPRESA': 'Directo
 const goToInternalControl = () => router.push('/planilla-de-control-de-prestacion-servicios/control-de-servicios');
 const goToCreate = () => router.push('/planilla-de-control-de-prestacion-servicios/crear');
 const goToControl = (uuid) => router.push(`/planilla-de-control-de-prestacion-servicios/control-de-servicios?id=${uuid}`);
+const goToProject = (uuid) => router.push(`/proyectos/perfil/${uuid}`);
+const goToProjectEdit = (uuid) => router.push(`/proyectos/editar/${uuid}`);
 const goToEdit = (uuid) => router.push(`/planilla-de-control-de-prestacion-servicios/editar/${uuid}`);
 
 const handleDelete = (item) => confirmDelete(item, {
@@ -507,8 +546,11 @@ onMounted(async () => {
         // El listado arranca mostrando todo (abiertas y cerradas); el
         // interruptor "Solo cerradas" filtra bajo demanda.
         soloCerradas.value = store.soloCerradas;
+        agruparPorProyecto.value = store.agruparPorProyecto;
         permissions.view = permissionsStore.can('service_delivery_control_sheets.view');
         permissions.edit = permissionsStore.can('service_delivery_control_sheets.update');
+        permissions.projectProfile = permissionsStore.can('projects.profile');
+        permissions.projectEdit = permissionsStore.can('projects.update');
         permissions.delete = permissionsStore.can('service_delivery_control_sheets.delete');
         await store.fetchItems();
     } finally {

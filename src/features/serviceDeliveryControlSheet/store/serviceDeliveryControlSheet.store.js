@@ -22,6 +22,7 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
         projectDetail: null,
         projectFilter: '',
         soloCerradas: false,
+        agruparPorProyecto: true,
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
     }),
@@ -62,6 +63,7 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
                     search: this.search || undefined,
                     project_uuid: this.projectFilter || undefined,
                     solo_cerradas: this.soloCerradas ? true : undefined,
+                    agrupar_proyecto: this.agruparPorProyecto ? true : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -286,9 +288,17 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
             }, 'Error al cargar el registro');
         },
 
+        setItemsPerPage(filas) {
+            const cantidad = Number(filas);
+            if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad === this.pagination.itemsPerPage) return Promise.resolve();
+            this.pagination.itemsPerPage = cantidad;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
+        setAgruparPorProyecto(value) { this.agruparPorProyecto = !!value; this.pagination.currentPage = 1; return this.fetchItems(); },
         setSoloCerradas(value) { this.soloCerradas = !!value; this.pagination.currentPage = 1; return this.fetchItems(); },
 
         /**
