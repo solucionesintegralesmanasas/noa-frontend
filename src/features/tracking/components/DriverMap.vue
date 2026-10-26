@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, watch } from 'vue';
 import { useTrackingStore } from '../store/tracking.store';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { conductoresVigentes, textoUltimoReporte } from '../utils/conductoresVigentes';
 
 const props = defineProps({
     showGeofences: { type: Boolean, default: true },
@@ -88,6 +89,15 @@ watch(
     }
 );
 
+watch(
+    () => store.selectedDriver,
+    (driver) => {
+        if (!map || !driver) return;
+        const marker = markers[driverUuid(driver)];
+        if (marker) map.panTo(marker.getLatLng(), { animate: true });
+    }
+);
+
 
 function getDriverInitials(driver) {
     const first = driver.driver?.first_name || driver.first_name || '';
@@ -96,20 +106,27 @@ function getDriverInitials(driver) {
     return (first[0] || '?').toUpperCase();
 }
 
+function driverUuid(driver) {
+    return driver?.third_party_uuid || driver?.driver?.uuid || null;
+}
+
 function drawDriver(L, driver) {
     if (!driver?.latitude && !driver?.last_location?.latitude) {
         return;
     }
+
+    const uuid = driverUuid(driver);
+    if (!uuid) return;
 
     const lat = driver.latitude ?? driver.last_location?.latitude;
     const lng = driver.longitude ?? driver.last_location?.longitude;
     const isMoving = driver.is_moving ?? driver.last_location?.is_moving ?? false;
     const initials = getDriverInitials(driver);
 
-    if (markers[driver.third_party_uuid]) {
-        markers[driver.third_party_uuid].setLatLng([lat, lng]);
-        markers[driver.third_party_uuid].setIcon(L.divIcon({ html: driverIcon(isMoving, initials), className: '' }));
-        markers[driver.third_party_uuid].bindPopup(buildPopup(driver));
+    if (markers[uuid]) {
+        markers[uuid].setLatLng([lat, lng]);
+        markers[uuid].setIcon(L.divIcon({ html: driverIcon(isMoving, initials), className: '' }));
+        markers[uuid].bindPopup(buildPopup(driver));
         return;
     }
 
@@ -123,7 +140,7 @@ function drawDriver(L, driver) {
         emit('driver-selected', driver);
     });
 
-    markers[driver.third_party_uuid] = marker;
+    markers[uuid] = marker;
 }
 
 function buildPopup(driver) {
@@ -177,6 +194,7 @@ function buildPopup(driver) {
                 <div>
                     <div style="font-weight:700;font-size:13px;color:#0f172a;line-height:1.2;">${fullName}</div>
                     <div style="font-size:11px;color:#64748b;margin-top:1px;">🚗 ${plate}${docNum ? ` · CC ${docNum}` : ''}</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:1px;">Último reporte: ${textoUltimoReporte(driver)}</div>
                 </div>
                 <div style="
                     background:${speedBg};color:${speedColor};
@@ -271,11 +289,15 @@ function drawHistory(L, history) {
 
 let hasFittedDrivers = false;
 
-function fitDrivers() {
-    if (!map || !window.L) return;
-    const points = store.activeDrivers
+function puntosDe(drivers) {
+    return drivers
         .map((d) => [d.latitude ?? d.last_location?.latitude, d.longitude ?? d.last_location?.longitude])
         .filter(([lat, lng]) => lat != null && lng != null);
+}
+
+function fitDrivers(drivers = conductoresVigentes(store.activeDrivers)) {
+    if (!map || !window.L) return;
+    const points = puntosDe(drivers);
     if (!points.length) return;
     if (points.length === 1) {
         map.setView(points[0], 15);
@@ -285,16 +307,32 @@ function fitDrivers() {
     hasFittedDrivers = true;
 }
 
+/** Recentra manualmente: el encuadre automático solo ocurre la primera vez. */
+function centrarFlota() {
+    hasFittedDrivers = false;
+    fitDrivers();
+}
+
 function updateMap() {
     if (!map) return;
     const L = window.L;
     if (!L) return;
 
-    // Actualizar conductores
-    store.activeDrivers.forEach((driver) => drawDriver(L, driver));
+    const vigentes = conductoresVigentes(store.activeDrivers);
+    const uuidVigentes = new Set(vigentes.map(driverUuid).filter(Boolean));
 
-    if (store.activeDrivers.length && !hasFittedDrivers) {
-        fitDrivers();
+    // Reconciliar: un conductor que dejó de reportar (o cuya sesión se cerró)
+    // debe desaparecer del mapa, no quedarse congelado con su último color.
+    Object.keys(markers).forEach((uuid) => {
+        if (uuidVigentes.has(uuid)) return;
+        map.removeLayer(markers[uuid]);
+        delete markers[uuid];
+    });
+
+    vigentes.forEach((driver) => drawDriver(L, driver));
+
+    if (vigentes.length && !hasFittedDrivers) {
+        fitDrivers(vigentes);
     }
 
     // Actualizar selección/historial
@@ -344,5 +382,15 @@ onBeforeUnmount(() => {
             <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1 ml-3"></span>
             Detenido
         </div>
+
+        <button
+            type="button"
+            class="absolute top-3 right-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            title="Centrar la vista en todos los vehículos visibles"
+            @click="centrarFlota"
+        >
+            <i class="fad fa-crosshairs mr-1" aria-hidden="true"></i>
+            Centrar flota
+        </button>
     </div>
 </template>

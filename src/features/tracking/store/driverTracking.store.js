@@ -4,6 +4,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import trackingService from '../services/tracking.service';
 import backgroundTracking from '../services/backgroundTracking.service';
 import { useUserStore } from '@store';
+import logger from '@/utils/logger';
 
 /**
  * DriverTrackingStore — rastreo GPS global y persistente del conductor.
@@ -224,6 +225,9 @@ export const useDriverTrackingStore = defineStore('driverTracking', {
             this._watchId = id;
             this._isNativeWatch = false;
             this.watchActive = true;
+            this.iniciarLatidoWeb();
+            this.registrarVisibilidad();
+            this.solicitarWakeLock();
         },
 
         handlePosition(position) {
@@ -236,6 +240,7 @@ export const useDriverTrackingStore = defineStore('driverTracking', {
             this.coords = { latitude: lat, longitude: lng };
             this.speed = Math.round(rawSpeed * 3.6);
             this.isMoving = rawSpeed > 0.2;
+            this._lastAccuracy = position.coords.accuracy ?? null;
             this.routeHistory.push([lat, lng]);
             if (this.routeHistory.length > 2000) this.routeHistory.splice(0, 500);
 
@@ -292,6 +297,84 @@ export const useDriverTrackingStore = defineStore('driverTracking', {
             return this.sendLocationToServer(data);
         },
 
+        /**
+         * Latido del transmisor web: el watchPosition solo emite cuando hay
+         * movimiento, así que un vehículo parado dejaría de reportar. Envía la
+         * última posición cada minuto para que el mapa lo mantenga visible.
+         */
+        enviarLatido() {
+            if (!this.isTracking || this.useBackground) return;
+            if (this.coords.latitude == null || this.coords.longitude == null) return;
+            this.sendImmediate({
+                lat: this.coords.latitude,
+                lng: this.coords.longitude,
+                speed: this.speed,
+                isMoving: this.isMoving,
+                accuracy: this._lastAccuracy ?? null,
+            });
+        },
+
+        iniciarLatidoWeb() {
+            if (this._heartbeatTimer) return;
+            this._heartbeatTimer = setInterval(() => this.enviarLatido(), 60000);
+        },
+
+        detenerLatidoWeb() {
+            if (!this._heartbeatTimer) return;
+            clearInterval(this._heartbeatTimer);
+            this._heartbeatTimer = null;
+        },
+
+        async solicitarWakeLock() {
+            if (Capacitor.isNativePlatform()) return;
+            if (!navigator.wakeLock?.request) return;
+            try {
+                this._wakeLock = await navigator.wakeLock.request('screen');
+                this._wakeLock.addEventListener?.('release', () => {
+                    this._wakeLock = null;
+                });
+            } catch (err) {
+                logger.warn('[driverTracking] wakeLock:', err?.message);
+            }
+        },
+
+        async liberarWakeLock() {
+            const lock = this._wakeLock;
+            this._wakeLock = null;
+            try {
+                await lock?.release();
+            } catch { /* ya estaba liberado */ }
+        },
+
+        registrarVisibilidad() {
+            if (this._visibilityHandler) return;
+            this._visibilityHandler = () => this.alCambiarVisibilidad();
+            document.addEventListener('visibilitychange', this._visibilityHandler);
+        },
+
+        quitarVisibilidad() {
+            if (!this._visibilityHandler) return;
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+        },
+
+        async alCambiarVisibilidad() {
+            if (!this.isTracking || this.useBackground) return;
+
+            if (document.visibilityState === 'hidden') {
+                // Último punto antes de que el navegador suspenda el watchPosition.
+                this.enviarLatido();
+                return;
+            }
+
+            // Al volver, el Wake Lock se libera solo: hay que pedirlo de nuevo.
+            this.solicitarWakeLock();
+            try {
+                const pos = await this.getCurrentPosition();
+                if (pos?.coords) this.handlePosition(pos);
+            } catch { /* sin fix al volver: el watch sigue activo */ }
+        },
+
         async getCurrentPosition() {
             if (Capacitor.isNativePlatform()) {
                 const perm = await Geolocation.requestPermissions();
@@ -343,6 +426,9 @@ export const useDriverTrackingStore = defineStore('driverTracking', {
                 try { clearInterval(this._nativeTimer); } catch { /* nada */ }
                 this._nativeTimer = null;
             }
+            this.detenerLatidoWeb();
+            this.quitarVisibilidad();
+            await this.liberarWakeLock();
             await this.stopLocalWatch();
             this.session = null;
             this.isTracking = false;
@@ -409,6 +495,16 @@ export const useDriverTrackingStore = defineStore('driverTracking', {
             if (!backgroundTracking.available || !this.useBackground) return;
             try {
                 const st = await backgroundTracking.getStatus();
+                // El plugin puede seguir "disponible" con el servicio ya muerto:
+                // si reporta tracking=false, no descartar los envíos del watch.
+                if (st?.tracking === false) {
+                    this.useBackground = false;
+                    this.errorMsg = 'El servicio de segundo plano se detuvo; transmites mientras la app esté abierta.';
+                    this.iniciarLatidoWeb();
+                    this.registrarVisibilidad();
+                    this.startWatch().catch(() => {});
+                    return;
+                }
                 if (st?.latitude != null && st?.longitude != null) {
                     this.coords = { latitude: st.latitude, longitude: st.longitude };
                     this.speed = st.speed || 0;
