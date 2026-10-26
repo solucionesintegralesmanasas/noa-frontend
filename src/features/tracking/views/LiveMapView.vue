@@ -128,9 +128,10 @@ onBeforeUnmount(() => {
             <div class="col-12">
                 <div ref="mapContainer" class="card border-0 shadow-sm overflow-hidden"
                     :style="{ height: isFullscreen ? '100vh' : 'calc(100vh - 150px)' }">
-                    <DriverMap :interactive="true" :show-geofences="showGeofences" />
+                    <DriverMap :interactive="true" :show-geofences="showGeofences"
+                        :show-legend="!isFullscreen" :fullscreen="isFullscreen" />
 
-                    <div class="position-absolute top-0 start-0 p-2 z-2 d-flex align-items-center gap-2">
+                    <div v-if="!isFullscreen" class="position-absolute top-0 start-0 p-2 z-2 d-flex align-items-center gap-2">
                         <span class="badge bg-white bg-opacity-90 text-dark shadow-sm px-2 py-1 rounded-pill">
                             <span class="dot-green me-1"></span>
                             <small>En movimiento</small>

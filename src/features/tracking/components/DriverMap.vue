@@ -7,6 +7,8 @@ import { conductoresVigentes, textoUltimoReporte } from '../utils/conductoresVig
 const props = defineProps({
     showGeofences: { type: Boolean, default: true },
     interactive: { type: Boolean, default: true },
+    showLegend: { type: Boolean, default: true },
+    fullscreen: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['driver-selected']);
@@ -95,6 +97,16 @@ watch(
         if (!map || !driver) return;
         const marker = markers[driverUuid(driver)];
         if (marker) map.panTo(marker.getLatLng(), { animate: true });
+    }
+);
+
+watch(
+    () => props.fullscreen,
+    () => {
+        if (!map) return;
+        // Al entrar o salir de pantalla completa el contenedor cambia de tamaño:
+        // sin invalidateSize el mapa no ocupa toda la pantalla.
+        setTimeout(() => map.invalidateSize(), 50);
     }
 );
 
@@ -376,7 +388,7 @@ onBeforeUnmount(() => {
     <div class="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-gray-200">
         <div id="trackingMap" class="w-full h-full" style="min-height: 400px;"></div>
 
-        <div class="absolute top-3 left-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm">
+        <div v-if="showLegend" class="absolute top-3 left-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm">
             <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
             En movimiento
             <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1 ml-3"></span>
