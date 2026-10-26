@@ -5,7 +5,7 @@
 import { logger } from "@utils/logger.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { maskRequestData, maskResponseData } from "@utils/mask.js";
-import { handleGlobalError } from "@utils/error-handler.js";
+import { handleGlobalError, isCancelError } from "@utils/error-handler.js";
 
 /**
  * Registry de stores para romper dependencia circular sin dynamic import.
@@ -37,6 +37,11 @@ export const responseInterceptor = {
         return response;
     },
     error: async (error) => {
+        // Las cancelaciones propias (AbortController/axios) son esperadas al anular peticiones
+        // en vuelo (búsqueda, paginación, etc.): no son errores reales y no deben registrarse
+        // como `API Error`, disparar toasts ni limpiar sesión.
+        if (isCancelError(error)) return Promise.reject(error);
+
         const { response, config } = error;
 
         // Las rutas públicas de autenticación gestionan su propio error en la vista

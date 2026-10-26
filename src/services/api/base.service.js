@@ -99,9 +99,13 @@ export class BaseService {
         const requestParams = upperMethod === 'GET' ? this.parametrosDeLectura(params) : { ...params };
         const requestConfig = { ...config };
 
-        // Cancelar petición previa en vuelo cuando es el listado principal paginado del recurso
+        // Cancelar petición previa en vuelo cuando es el listado principal paginado del recurso.
+        // Las peticiones que NO son el listado (p. ej. historial por vehículo) deben excluirse
+        // con `config.listAbort = false`, o se cancelarían entre sí al compartir el AbortController.
         let listController = null;
-        if (upperMethod === 'GET' && (url === '' || url === '/') && !requestConfig.signal && typeof AbortController !== 'undefined') {
+        const esListadoCancelable = requestConfig.listAbort !== false;
+        delete requestConfig.listAbort;
+        if (esListadoCancelable && upperMethod === 'GET' && (url === '' || url === '/') && !requestConfig.signal && typeof AbortController !== 'undefined') {
             if (this._listAbortController) {
                 this._listAbortController.abort();
             }

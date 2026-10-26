@@ -83,7 +83,8 @@ class VehicleInspectionService extends BaseService {
      */
     getVehicleHistory(vehicleUuid, params = {}) {
         return this._request('GET', '', {
-            params: { ...params, filter: { vehicle_uuid: vehicleUuid }, sort: '-inspection_date' }
+            params: { ...params, filter: { vehicle_uuid: vehicleUuid }, sort: '-inspection_date' },
+            config: { listAbort: false }
         });
     }
 

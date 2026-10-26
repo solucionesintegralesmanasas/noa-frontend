@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { toast } from '@/utils/toast.js';
+import { logger } from '@/utils/logger.js';
 import vehicleInspectionsService from '../services/vehicleInspections.service.js';
 
 /**
@@ -267,7 +268,10 @@ export const useVehicleInspectionsStore = defineStore('vehicleInspections', {
                                 this.kmTraveledMap[vUuid] = prev ? prev.mileage : null;
                             }
                         } catch (e) {
-                            console.error(e);
+                            const esCancelada = e?.code === 'ERR_CANCELED' || e?.name === 'CanceledError' || e?.name === 'AbortError';
+                            if (!esCancelada) {
+                                logger.error('No se pudo calcular el kilometraje del vehículo', { vehicleUuid: vUuid, message: e?.message });
+                            }
                         }
                     })()
                 );
