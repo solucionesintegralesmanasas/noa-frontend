@@ -670,8 +670,7 @@
                                             <div class="col-12 col-md-6">
                                                 <div class="p-3 rounded border bg-white h-100 switch-card">
                                                     <label class="form-label fw-medium required" for="corporate_rce_expiration">Fecha de vencimiento pólizas RCC y RCE</label>
-                                                    <input id="corporate_rce_expiration" v-model="formData.corporate_rce_expiration"
-                                                        type="date" class="form-control" :class="{ 'is-invalid': validationErrors.corporate_rce_expiration }" />
+                                                    <DateInput id="corporate_rce_expiration" v-model="formData.corporate_rce_expiration" class="form-control" :class="{ 'is-invalid': validationErrors.corporate_rce_expiration }" />
                                                     <div class="invalid-feedback" v-if="validationErrors.corporate_rce_expiration">{{ validationErrors.corporate_rce_expiration }}</div>
                                                     <p class="text-muted small mb-0 mt-1">Una sola fecha de vencimiento para ambas coberturas colectivas.</p>
                                                 </div>
@@ -980,6 +979,7 @@ import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
 import companiesService from '@/features/companies/services/companies.service.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import Swal from 'sweetalert2';
 import { toast } from '@/utils/toast.js';
 import { logger } from '@/utils/logger.js';

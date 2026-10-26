@@ -9,7 +9,7 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
         qr: null,
         loading: false,
         error: null,
-        pagination: { currentPage: 1, itemsPerPage: 15, totalItems: 0, totalPages: 0 },
+        pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         filters: { status: '', search: '' },
         sortField: null,
         sortOrder: null,

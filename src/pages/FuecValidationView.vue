@@ -662,7 +662,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import dateUtils from '@/utils/date.js';
-import Swal from 'sweetalert2';
+import { showSwalModal } from '@/utils/confirm.js';
+import { logger } from '@/utils/logger.js';
 import FuecService from '@/features/fuec/services/fuec.service.js';
 import getMediaUrl from '@/utils/media.js';
 import { useAuthStore } from '@store/modules/auth.js';
@@ -709,7 +710,7 @@ const verifyAuthenticity = () => {
     const expirationDate = dateUtils.dayjs(currentFuecData.value.expiration_date).endOf('day');
 
     if (currentDate.isBefore(effectiveDate)) {
-        Swal.fire({
+        showSwalModal({
             title: 'No Vigente',
             html: `
                 <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> aún no está en periodo de vigencia.</p>
@@ -728,7 +729,7 @@ const verifyAuthenticity = () => {
     }
 
     if (currentDate.isAfter(expirationDate)) {
-        Swal.fire({
+        showSwalModal({
             title: 'FUEC Vencido',
             html: `
                 <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> se encuentra expirado.</p>
@@ -746,7 +747,7 @@ const verifyAuthenticity = () => {
         return;
     }
 
-    Swal.fire({
+    showSwalModal({
         title: 'Documento Validado',
         html: `
             <p class="mb-2">El FUEC <strong>#${currentFuecData.value.number_fuec || ''}</strong> es válido y está vigente.</p>
@@ -840,7 +841,7 @@ const downloadPDF = async () => {
             verificationCode: verificationCode.value
         });
     } catch (error) {
-        console.error('Error generando PDF:', error);
+        logger.error('Error generando PDF:', error);
         alert('No se pudo generar el PDF. Intente nuevamente o contacte al administrador.');
     }
 };
@@ -868,7 +869,7 @@ const copyVerificationCode = async (event) => {
             }, 2000);
         }
     } catch (err) {
-        console.error('Error al copiar:', err);
+        logger.error('Error al copiar:', err);
         alert('No se pudo copiar el código. Selecciónelo manualmente.');
     }
 };
@@ -916,7 +917,7 @@ const loadFuecData = async (id, code) => {
 
         return data;
     } catch (error) {
-        console.error('Error al cargar/validar el FUEC:', error);
+        logger.error('Error al cargar/validar el FUEC:', error);
         errorMsg.value = error.response?.data?.message || 'No se pudo cargar la información del FUEC.';
         throw error;
     } finally {
@@ -937,7 +938,7 @@ onMounted(async () => {
         const code = route.params.code || urlParams.get('code');
         await loadFuecData(route.params.id, code);
     } else if (!props.currentFuecData && !route.params.id) {
-        const result = await Swal.fire({
+        const result = await showSwalModal({
             title: 'Consultar FUEC',
             text: 'Ingrese el código de verificación del FUEC a consultar:',
             input: 'text',

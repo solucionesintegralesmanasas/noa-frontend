@@ -41,4 +41,12 @@ describe('ListPagination', () => {
         await w.find('select').setValue('25');
         expect(w.emitted('change')[0][0]).toEqual({ page: 1, rows: 25, first: 0 });
     });
+
+    it('con un perPage fuera de las opciones el select no queda en blanco', () => {
+        // Regresión: notificaciones pasaba per-page=15 entre opciones [10,25,50,100]
+        // y el lector de "Filas:" se veía vacío.
+        const select = montar({ perPage: 15, total: 30 }).find('select');
+        expect(select.element.value).toBe('15');
+        expect(select.findAll('option').map((o) => o.text())).toContain('10');
+    });
 });

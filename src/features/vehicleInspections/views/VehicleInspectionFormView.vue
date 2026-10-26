@@ -42,8 +42,7 @@
                             <!-- Fecha de Inspección -->
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required" for="inspection_date">Fecha de Inspección</label>
-                                <input id="inspection_date" v-model="formData.inspection_date" class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.inspection_date }" type="date" />
+                                <DateInput id="inspection_date" v-model="formData.inspection_date" class="form-control" :class="{ 'is-invalid': validationErrors.inspection_date }" />
                                 <div v-if="validationErrors.inspection_date" class="invalid-feedback d-block" id="f-inspection_date-error" role="alert">
                                     {{ validationErrors.inspection_date }}
                                 </div>
@@ -239,6 +238,7 @@ import VehicleInspectionsService from '../services/vehicleInspections.service.js
 import ProjectsService from '../../projects/services/projects.service.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import Swal from 'sweetalert2';
 

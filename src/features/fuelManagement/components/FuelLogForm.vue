@@ -25,7 +25,7 @@
 
                 <div class="col-12 col-sm-6 col-md-4">
                     <label class="form-label required" for="f-date">Fecha</label>
-                    <input id="f-date" v-model="form.date" type="date" class="form-control"
+                    <DateInput id="f-date" v-model="form.date" class="form-control"
                         :class="{ 'is-invalid': errors.date }" :aria-invalid="!!errors.date"
                         :aria-describedby="errors.date ? 'f-date-error' : undefined" />
                     <div v-if="errors.date" id="f-date-error" class="invalid-feedback d-block" role="alert">{{ errors.date }}</div>
@@ -183,6 +183,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { toast } from '@/utils/toast.js';
 import { useFuelManagementStore } from '../store/fuelManagement.store.js';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 
 const props = defineProps({
     /** Registro existente para modo edición (opcional). */

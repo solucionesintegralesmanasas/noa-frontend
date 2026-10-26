@@ -92,3 +92,14 @@ export async function confirmLogout() {
     }
 }
 
+
+/**
+ * Muestra un modal de diálogo de SweetAlert2 importado de forma diferida.
+ * @param {object} options
+ * @returns {Promise<any>}
+ */
+export async function showSwalModal(options) {
+    const Swal = await getSwal();
+    return Swal.fire(options);
+}
+

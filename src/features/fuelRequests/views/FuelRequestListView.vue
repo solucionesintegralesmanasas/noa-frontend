@@ -20,16 +20,10 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <select id="f-tanqueo-estado" v-model="statusFilter" class="form-select form-select-sm" style="max-width: 180px;"
-                    aria-label="Filtrar por estado" @change="refresh">
-                    <option value="">Todos los estados</option>
-                    <option value="PENDIENTE">Pendientes</option>
-                    <option value="APROBADA">Aprobadas</option>
-                    <option value="USADA">Usadas</option>
-                    <option value="RECHAZADA">Rechazadas</option>
-                    <option value="VENCIDA">Vencidas</option>
-                    <option value="ANULADA">Anuladas</option>
-                </select>
+                <label class="visually-hidden" for="f-tanqueo-estado">Filtrar por estado</label>
+                <PrimeSelect input-id="f-tanqueo-estado" v-model="statusFilter" :options="estadosOpciones"
+                    option-label="label" option-value="value" size="small" style="min-width: 180px;"
+                    @change="refresh" />
 
                 <button v-if="can('fuel_requests.create')" type="button" class="btn btn-primary btn-sm text-nowrap"
                     @click="abrirCrear">
@@ -240,6 +234,15 @@ const { handleSort } = useServerSort((field, order) => store.setSort(field, orde
 const isViewLoading = ref(true);
 const search = ref('');
 const statusFilter = ref('');
+const estadosOpciones = [
+    { label: 'Todos los estados', value: '' },
+    { label: 'Pendientes', value: 'PENDIENTE' },
+    { label: 'Aprobadas', value: 'APROBADA' },
+    { label: 'Usadas', value: 'USADA' },
+    { label: 'Rechazadas', value: 'RECHAZADA' },
+    { label: 'Vencidas', value: 'VENCIDA' },
+    { label: 'Anuladas', value: 'ANULADA' },
+];
 const showCreate = ref(false);
 const showQr = ref(false);
 const qrLoading = ref(false);

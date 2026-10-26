@@ -45,9 +45,7 @@
 
                         <div class="col-12 col-md-4">
                             <label class="form-label required" for="start_date">Fecha de Inicio</label>
-                            <input id="start_date" v-model="formData.start_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.start_date }" type="date"
-                                :max="formData.completion_date || undefined" />
+                            <DateInput id="start_date" v-model="formData.start_date" class="form-control" :class="{ 'is-invalid': validationErrors.start_date }" :max="formData.completion_date || undefined" />
                             <div v-if="validationErrors.start_date" class="invalid-feedback d-block" id="f-start_date-error" role="alert">
                                 {{ validationErrors.start_date }}
                             </div>
@@ -55,9 +53,7 @@
 
                         <div class="col-12 col-md-4">
                             <label class="form-label required" for="completion_date">Fecha de Finalización</label>
-                            <input id="completion_date" v-model="formData.completion_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.completion_date }" type="date"
-                                :min="formData.start_date || undefined" />
+                            <DateInput id="completion_date" v-model="formData.completion_date" class="form-control" :class="{ 'is-invalid': validationErrors.completion_date }" :min="formData.start_date || undefined" />
                             <div v-if="validationErrors.completion_date" class="invalid-feedback d-block" id="f-completion_date-error" role="alert">
                                 {{ validationErrors.completion_date }}
                             </div>
@@ -237,6 +233,7 @@ import { usePermissionsStore, useUserStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import { getMediaUrl } from '@/utils/media.js';
 import { parsearFechaFlexible } from '@/utils/date.js';

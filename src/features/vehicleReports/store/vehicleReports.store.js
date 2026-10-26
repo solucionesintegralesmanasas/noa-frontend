@@ -20,37 +20,74 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
         maintenanceStatus: '',
         search: '',
         catalogs: { terceros: [], proyectos: [], affiliatedCompanies: [], agreements: [] },
-        pagination: { currentPage: 1, itemsPerPage: 15, totalItems: 0, totalPages: 0 },
+        pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
     }),
 
     getters: {
-        hasActiveFilter: (s) => !!s.filterType && !!s.filterValue,
+        hasActiveFilter: (s) => {
+            if (!s.filterType) return false;
+            if (s.filterType === 'affiliate' || s.filterType === 'driver' || s.filterType === 'project' || s.filterType === 'agreement') {
+                return !!s.filterValue;
+            }
+            if (s.filterType === 'document') return !!s.documentType || !!s.filterValue || !!s.docStatus;
+            if (s.filterType === 'operation_card') return !!s.filterValue || !!s.operationCardStatus;
+            if (s.filterType === 'maintenance') return !!s.maintenanceStatus || !!s.filterValue;
+            return false;
+        },
         currentParams: (s) => {
             const p = {
-                filter_type: s.filterType || undefined,
                 search: s.search || undefined,
                 page: s.pagination.currentPage,
                 per_page: s.pagination.itemsPerPage,
             };
-            if (s.filterType === 'affiliate' || s.filterType === 'driver') p.third_party_uuid = s.filterValue || undefined;
-            if (s.filterType === 'project') p.project_uuid = s.filterValue || undefined;
-            if (s.filterType === 'document') {
-                p.document_type = s.documentType || undefined;
-                p.doc_status = s.docStatus || undefined;
-                // document usa filterValue como comodín si no hay subtipo
-                if (!p.document_type && s.filterValue) p.document_type = s.filterValue;
+            let active = false;
+
+            if (s.filterType === 'affiliate' || s.filterType === 'driver') {
+                if (s.filterValue) {
+                    p.third_party_uuid = s.filterValue;
+                    active = true;
+                }
+            } else if (s.filterType === 'project') {
+                if (s.filterValue) {
+                    p.project_uuid = s.filterValue;
+                    active = true;
+                }
+            } else if (s.filterType === 'document') {
+                const doc = s.documentType || s.filterValue;
+                if (doc) {
+                    p.document_type = doc;
+                    active = true;
+                }
+                if (s.docStatus) {
+                    p.doc_status = s.docStatus;
+                    active = true;
+                }
+            } else if (s.filterType === 'operation_card') {
+                if (s.filterValue) {
+                    p.affiliated_company = s.filterValue;
+                    active = true;
+                }
+                if (s.operationCardStatus) {
+                    p.operation_card_status = s.operationCardStatus;
+                    active = true;
+                }
+            } else if (s.filterType === 'agreement') {
+                if (s.filterValue) {
+                    p.contracting_entity_name = s.filterValue;
+                    active = true;
+                }
+            } else if (s.filterType === 'maintenance') {
+                const mtto = s.maintenanceStatus || s.filterValue;
+                if (mtto) {
+                    p.maintenance_status = mtto;
+                    active = true;
+                }
             }
-            if (s.filterType === 'operation_card') {
-                p.affiliated_company = s.filterValue || undefined;
-                p.operation_card_status = s.operationCardStatus || undefined;
+
+            if (active && s.filterType) {
+                p.filter_type = s.filterType;
             }
-            if (s.filterType === 'agreement') {
-                p.contracting_entity_name = s.filterValue || undefined;
-            }
-            if (s.filterType === 'maintenance') {
-                p.maintenance_status = s.maintenanceStatus || undefined;
-                if (!p.maintenance_status && s.filterValue) p.maintenance_status = s.filterValue;
-            }
+
             return p;
         },
     },
@@ -68,12 +105,6 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
         },
 
         async fetchItems() {
-            if (!this.filterType) {
-                this.items = [];
-                this.pagination.totalItems = 0;
-                this.pagination.totalPages = 0;
-                return;
-            }
             return this._run(async () => {
                 const response = await vehicleReportsService.report(this.currentParams);
                 const p = response?.data ?? response;
@@ -124,17 +155,16 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
         async clearFilters() {
             this.filterType = '';
             this.filterValue = '';
+            this.documentType = '';
+            this.docStatus = '';
+            this.operationCardStatus = '';
+            this.maintenanceStatus = '';
             this.search = '';
             this.pagination.currentPage = 1;
-            this.items = [];
-            this.pagination.totalItems = 0;
+            await this.fetchItems();
         },
 
         async exportReport(formato) {
-            if (!this.filterType) {
-                await toast('Atención', 'Seleccione primero un filtro para exportar.', 'warning');
-                return;
-            }
             this.exporting = true;
             try {
                 if (formato === 'excel') await vehicleReportsService.downloadExcel(this.currentParams);

@@ -72,9 +72,7 @@ function montar(props = {}, attrs = {}) {
     });
 }
 
-const interno = (wrapper) => wrapper.findComponent(SelectSimulado);
-
-async function abrir(wrapper) {
+const interno = (wrapper) => wrapper.findComponent(SelectSimulado);async function abrir(wrapper) {
     interno(wrapper).vm.$emit('show');
     await wrapper.vm.$nextTick();
 }
@@ -233,6 +231,46 @@ describe('PrimeSelect (wrapper del proyecto)', () => {
         const larga = Array.from({ length: 20 }, (_, i) => ({ uuid: `u${i}`, description: `Opción ${i}` }));
         const wrapper = montar({ options: larga, filter: false });
         expect(wrapper.findComponent(SelectSimulado).props('filter')).toBe(false);
+    });
+});
+
+// Opción «Todas…» con value '': PrimeVue evalúa "seleccionado" con
+// isNotEmpty(modelValue) y el '' se pinta como estado vacío (etiqueta en
+// blanco). El wrapper la traduce con un centinela interno.
+describe('PrimeSelect: opción "Todas" con value vacío', () => {
+    const filtros = [
+        { label: 'Todas las prioridades', value: '' },
+        { label: 'Prioritarias', value: 'PRIORITARIA' },
+    ];
+
+    it('el Select real muestra la opción predeterminada seleccionada', () => {
+        window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+        const wrapper = mount(PrimeSelect, {
+            props: { modelValue: '', options: filtros, optionLabel: 'label', optionValue: 'value', filter: true },
+            global: { plugins: [PrimeVue] },
+        });
+        const label = wrapper.find('.p-select-label');
+        expect(label.text()).toContain('Todas las prioridades');
+        expect(label.classes()).not.toContain('p-select-label-empty');
+    });
+
+    it('el Select interno recibe el centinela mientras el modelo esté vacío', () => {
+        const wrapper = montar({ modelValue: '', options: filtros, optionLabel: 'label', optionValue: 'value' });
+        expect(interno(wrapper).props('modelValue')).toBe('__noa_opcion_vacia__');
+    });
+
+    it('elegir la opción vacía informa valor vacío al padre', async () => {
+        const wrapper = montar({ modelValue: '__noa_opcion_vacia__', options: filtros, optionLabel: 'label', optionValue: 'value' });
+        const select = interno(wrapper);
+        await select.vm.$emit('update:modelValue', '__noa_opcion_vacia__');
+        expect(wrapper.emitted('update:modelValue').at(-1)[0]).toBe('');
+    });
+
+    it('elegir una opción normal informa su valor intacto', async () => {
+        const wrapper = montar({ modelValue: '__noa_opcion_vacia__', options: filtros, optionLabel: 'label', optionValue: 'value' });
+        const select = interno(wrapper);
+        await select.vm.$emit('update:modelValue', 'PRIORITARIA');
+        expect(wrapper.emitted('update:modelValue').at(-1)[0]).toBe('PRIORITARIA');
     });
 });
 

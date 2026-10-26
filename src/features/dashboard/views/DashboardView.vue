@@ -27,13 +27,9 @@
                     </div>
                     <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
                         <label class="fs--1 text-700 fw-semi-bold me-2" for="f-periodo">Periodo:</label>
-                        <select id="f-periodo" v-model="selectedPeriod" class="form-select form-select-sm" style="width: 150px"
-                            @change="refreshData">
-                            <option value="7">Últimos 7 días</option>
-                            <option value="30">Últimos 30 días</option>
-                            <option value="90">Últimos 3 meses</option>
-                            <option value="365">Este año</option>
-                        </select>
+                        <PrimeSelect input-id="f-periodo" v-model="selectedPeriod" :options="periodoOpciones"
+                            option-label="label" option-value="value" size="small" style="min-width: 150px"
+                            @change="refreshData" />
                         <button class="btn btn-primary btn-sm ms-2" @click="refreshData" title="Actualizar datos" aria-label="Actualizar datos">
                             <i class="fas fa-sync-alt" :class="{ 'fa-spin': isRefreshing }" aria-hidden="true"></i>
                         </button>
@@ -317,6 +313,7 @@ import DriverMap from '@/features/tracking/components/DriverMap.vue';
 import ConductorDashboardView from './ConductorDashboardView.vue';
 import ConductorDashboardMobileView from './ConductorDashboardMobileView.vue';
 import { useModoConductor } from '@/hooks/useModoConductor.js';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -357,6 +354,13 @@ const userName = computed(() => {
 });
 const currentTenantName = ref('Tenant Principal');
 const selectedPeriod = ref('30');
+// Mismos valores (texto) que el <select> nativo que reemplazó.
+const periodoOpciones = [
+    { label: 'Últimos 7 días', value: '7' },
+    { label: 'Últimos 30 días', value: '30' },
+    { label: 'Últimos 3 meses', value: '90' },
+    { label: 'Este año', value: '365' },
+];
 const isRefreshing = computed(() => dashboardStore.isLoading);
 
 // ── DATA REAL DEL BACKEND (Sin placeholders innecesarios) ───

@@ -1107,6 +1107,17 @@ onMounted(async () => {
                             formData.license_expiration_date = licencia.expiration_date ? String(licencia.expiration_date).slice(0, 10) : null;
                             formData.license_restrictions = licencia.restrictions ?? null;
                             formData.license_status = licencia.status ?? 'ACTIVA';
+
+                            // El afiliado propietario no es columna del tercero: viaja en
+                            // owners_drivers, serializado en la licencia como
+                            // owner_driver.third_party_uuid. Sin él el campo «Afiliado
+                            // Asignado» queda vacío al editar y guardar lo sobrescribe.
+                            const afiliadoPrevio = licencia.owner_driver?.third_party_uuid
+                                ?? licencia.ownerDriver?.third_party_uuid
+                                ?? null;
+                            if (afiliadoPrevio && !formData.partyTypes.includes('is_affiliate')) {
+                                formData.affiliate_uuid = afiliadoPrevio;
+                            }
                         }
                     } catch {
                         // Sin licencia previa: el formulario queda listo para registrarla.

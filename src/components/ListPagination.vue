@@ -11,7 +11,7 @@
                 <span>Filas:</span>
                 <select :id="selectId" class="noa-pager__select" :value="perPage" aria-label="Filas por página"
                     @change="cambiarFilas(Number($event.target.value))">
-                    <option v-for="opcion in rowsOptions" :key="opcion" :value="opcion">{{ opcion }}</option>
+                    <option v-for="opcion in opcionesEfectivas" :key="opcion" :value="opcion">{{ opcion }}</option>
                 </select>
             </label>
         </div>
@@ -70,8 +70,13 @@ const props = defineProps({
 
 const emit = defineEmits(['change']);
 
-const totalPaginas = computed(() => Math.max(1, Math.ceil(props.total / props.perPage)));
-const desde = computed(() => (props.total === 0 ? 0 : (props.page - 1) * props.perPage + 1));
+/** El valor vigente SIEMPRE es una opción: si la vista pasa un perPage fuera de la
+ * lista (o de su lista propia), se antepone para que el lector «Filas:» no quede en blanco. */
+const opcionesEfectivas = computed(() => (props.rowsOptions.includes(props.perPage)
+    ? props.rowsOptions
+    : [props.perPage, ...props.rowsOptions]));
+
+const totalPaginas = computed(() => Math.max(1, Math.ceil(props.total / props.perPage)));const desde = computed(() => (props.total === 0 ? 0 : (props.page - 1) * props.perPage + 1));
 const hasta = computed(() => Math.min(props.page * props.perPage, props.total));
 
 /** Hasta 7 elementos: 1 … (actual-1) actual (actual+1) … última. */

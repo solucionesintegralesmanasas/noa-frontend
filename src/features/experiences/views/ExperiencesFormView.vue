@@ -65,24 +65,21 @@
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-lg-4 col-xl-4 col-xxl-4">
                             <label class="form-label" for="start_date">Fecha de Inicio</label>
-                            <input id="start_date" v-model="formData.start_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.start_date }" type="date" />
+                            <DateInput id="start_date" v-model="formData.start_date" class="form-control" :class="{ 'is-invalid': validationErrors.start_date }" />
                             <div v-if="validationErrors.start_date" class="invalid-feedback d-block" id="f-start_date-error" role="alert">
                                 {{ validationErrors.start_date }}
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-lg-4 col-xl-4 col-xxl-4">
                             <label class="form-label" for="end_date">Fecha de Fin</label>
-                            <input id="end_date" v-model="formData.end_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.end_date }" type="date" />
+                            <DateInput id="end_date" v-model="formData.end_date" class="form-control" :class="{ 'is-invalid': validationErrors.end_date }" />
                             <div v-if="validationErrors.end_date" class="invalid-feedback d-block" id="f-end_date-error" role="alert">
                                 {{ validationErrors.end_date }}
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-lg-4 col-xl-4 col-xxl-4">
                             <label class="form-label" for="is_ongoing">Vigente Hasta</label>
-                            <input id="is_ongoing" v-model="formData.is_ongoing" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.is_ongoing }" type="date" />
+                            <DateInput id="is_ongoing" v-model="formData.is_ongoing" class="form-control" :class="{ 'is-invalid': validationErrors.is_ongoing }" />
                             <small class="form-text text-muted d-block mt-1">Dejar vacío si la experiencia finalizó.</small>
                             <div v-if="validationErrors.is_ongoing" class="invalid-feedback d-block" id="f-is_ongoing-error" role="alert">
                                 {{ validationErrors.is_ongoing }}
@@ -156,6 +153,7 @@ import { useExperiencesStore } from '../store/experiences.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 
 /** @type {import('vue-router').Route} Ruta activa */

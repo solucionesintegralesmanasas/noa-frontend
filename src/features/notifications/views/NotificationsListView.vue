@@ -12,244 +12,204 @@
         @refresh="refreshTable"
     />
 
-    <!-- ACCIONES RÁPIDAS Y FILTROS -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-3">
-            <div class="row align-items-center justify-content-between g-3">
-                <div class="col-12 col-lg-auto d-flex flex-wrap align-items-center gap-2">
-                    <!-- Botón de Sincronización Manual -->
-                    <button class="btn btn-sm btn-primary shadow-sm" type="button" @click="handleSync" :disabled="store.loading">
-                        <i class="fad fa-sync-alt me-1" :class="{ 'fa-spin': store.loading }" />
-                        Sincronizar Alertas
-                    </button>
-                    <!-- Marcar todas como leídas -->
-                    <button class="btn btn-sm btn-falcon-default" type="button" @click="handleMarkAllAsRead" :disabled="store.loading || store.unreadCount === 0">
-                        <i class="fad fa-check-double me-1 text-success" />
-                        Marcar todo como leído
-                    </button>
-                </div>
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <!-- BARRA SUPERIOR DE ACCIONES Y FILTROS -->
+        <div class="noa-list-toolbar flex-wrap gap-2 py-2 px-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-primary shadow-sm" type="button" @click="handleSync" :disabled="store.loading">
+                    <i class="fad fa-sync-alt me-1" :class="{ 'fa-spin': store.loading }" aria-hidden="true" />
+                    Sincronizar Alertas
+                </button>
+                <button class="btn btn-sm btn-falcon-default" type="button" @click="handleMarkAllAsRead" :disabled="store.loading || store.unreadCount === 0">
+                    <i class="fad fa-check-double me-1 text-success" aria-hidden="true" />
+                    Marcar todo como leído
+                </button>
+            </div>
 
-                <!-- Filtros -->
-                <div class="col-12 col-lg-auto">
-                    <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap">
-                        <select aria-label="Filtrar por estado" v-model="filterStatus" @change="applyFilters" class="form-select form-select-sm border-200 w-100">
-                            <option value="">Todos los estados</option>
-                            <option value="PENDIENTE">Pendientes</option>
-                            <option value="LEIDA">Leídas</option>
-                        </select>
-                        <select aria-label="Filtrar por tipo" v-model="filterType" @change="applyFilters" class="form-select form-select-sm border-200 w-100">
-                            <option value="">Todos los tipos</option>
-                            <option value="VEHICLE_DOCUMENT">Documentos de Vehículo</option>
-                            <option value="OPERATION_CARD">Tarjetas de Operación</option>
-                            <option value="DRIVER_LICENSE">Licencias de Conducción</option>
-                            <option value="FIRST_RTM">Primera RTM</option>
-                            <option value="AGREEMENT">Convenios Colab.</option>
-                            <option value="AFFILIATE_CHARGE">Cobros de Administración</option>
-                            <option value="VEHICLE_INSPECTION_PENDING">Inspección de Vehículo Pendiente</option>
-                            <option value="VEHICLE_MAINTENANCE_ALERT">Mantenimiento Preventivo</option>
-                            <option value="VEHICLE_FUEL_ALERT">Combustible</option>
-                            <option value="SOCIAL_SECURITY_MORA">Seguridad Social</option>
-                        </select>
-                        <label class="visually-hidden" for="f-priority">Filtrar por prioridad</label>
-                        <PrimeSelect input-id="f-priority" v-model="filterPriority" :options="priorityOptions"
-                            option-label="label" option-value="value" size="small" class="w-100"
-                            @change="applyFilters" />
-                    </div>
-                </div>
+            <!-- Filtros: los tres por el mismo componente (PrimeSelect), con un
+                 patrón a11y idéntico: etiqueta oculta + input-id. -->
+            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                <label class="visually-hidden" for="f-notifications-status">Filtrar por estado</label>
+                <PrimeSelect input-id="f-notifications-status" v-model="filterStatus" :options="estadoOpciones"
+                    option-label="label" option-value="value" size="small" style="min-width: 140px;"
+                    @change="applyFilters" />
+
+                <label class="visually-hidden" for="f-notifications-type">Filtrar por tipo</label>
+                <PrimeSelect input-id="f-notifications-type" v-model="filterType" :options="tipoOpciones"
+                    option-label="label" option-value="value" size="small" style="min-width: 170px;"
+                    @change="applyFilters" />
+
+                <label class="visually-hidden" for="f-notifications-priority">Filtrar por prioridad</label>
+                <PrimeSelect input-id="f-notifications-priority" v-model="filterPriority" :options="priorityOptions"
+                    option-label="label" option-value="value" size="small" style="min-width: 160px;"
+                    @change="applyFilters" />
+
+                <span v-if="!isViewLoading && !store.loading" class="noa-results ms-1">
+                    <i class="fas fa-filter" aria-hidden="true" />
+                    {{ totalItems }} resultado{{ totalItems !== 1 ? 's' : '' }}
+                </span>
             </div>
         </div>
-    </div>
 
-    <!-- TABLA DE ALERTAS -->
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <!-- SKELETON -->
-                <div v-if="isViewLoading" class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th v-for="w in ['15%', '40%', '15%', '15%', '15%']" :key="w" style="padding:12px 8px">
-                                        <div class="skeleton-text" :style="`height:16px;width:${w}`" />
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="n in 5" :key="`sk-${n}`">
-                                    <td v-for="i in 5" :key="i">
-                                        <div class="skeleton-text" style="height:18px;width:75%;" />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- DATATABLE -->
-                <div v-else class="card-body p-0">
-                    <DataTable 
-                        :value="store.notifications" 
-                        lazy 
-                        :paginator="true" 
-                        :rows="15"
-                        :totalRecords="store.meta.total || store.notifications.length" 
-                        :loading="store.loading" 
-                        responsiveLayout="scroll"
-                        tableStyle="min-width: 50rem" 
-                        class="table table-sm mb-0 professional-table"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport"
-                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} alertas"
-                        emptyMessage="No se encontraron alertas registradas" 
-                        @page="onPageChange"
-                        :sortField="store.sortField"
-                        :sortOrder="store.sortOrder"
-                        @sort="handleSort"
-                    >
-                        <!-- Columna Prioridad -->
-                        <Column field="priority" header="Prioridad" sortable style="width: 140px;">
-                            <template #body="{ data }">
-                                <span v-if="data.priority === 'PRIORITARIA'" class="badge badge-subtle badge-subtle-danger">
-                                    <i class="fad fa-triangle-exclamation me-1" aria-hidden="true" /> Prioritaria
-                                </span>
-                                <span v-else class="badge badge-subtle badge-subtle-secondary">
-                                    <i class="fad fa-bell me-1" aria-hidden="true" /> Normal
-                                </span>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Tipo -->
-                        <Column field="type" header="Tipo de Alerta" sortable style="width: 200px;">
-                            <template #body="{ data }">
-                                <div class="d-flex align-items-center">
-                                    <i :class="getTypeIcon(data.type) + ' me-2 fs-7'" />
-                                    <span class="fw-medium text-800">{{ getTypeLabel(data.type) }}</span>
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['10%', '16%', '34%', '14%', '12%', '14%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in 5" :key="`sk-${n}`">
+                            <td v-for="i in 5" :key="i">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div class="skeleton-icon" style="height:28px;width:28px;" />
                                 </div>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Título & Detalle -->
-                        <Column field="message" header="Alerta / Detalles">
-                            <template #body="{ data }">
-                                <div class="d-flex flex-column">
-                                    <span class="fw-semibold text-dark fs-10 mb-1">{{ data.title }}</span>
-                                    <span class="text-600 fs-11"><template v-for="(seg, i) in segmentarMensaje(data)" :key="i"><strong v-if="seg.tipo === 'fuerte'" :class="seg.peligro ? 'text-danger' : 'text-warning'">{{ seg.texto }}</strong><router-link v-else-if="seg.tipo === 'enlace'" :to="seg.path" class="alerta-enlace" :title="seg.titulo" :aria-label="seg.aria">{{ seg.texto }}</router-link><template v-else>{{ seg.texto }}</template></template></span>
-                                </div>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Días Restantes -->
-                        <Column field="days_left" header="Plazo" sortable style="width: 180px;">
-                            <template #body="{ data }">
-                                <template v-if="data.type === 'VEHICLE_MAINTENANCE_ALERT'">
-                                    <span v-if="data.days_left < 0" class="badge badge-subtle badge-subtle-danger">
-                                        <i class="fad fa-exclamation-triangle me-1" /> Vencido hace {{ Math.abs(data.days_left) }} km
-                                    </span>
-                                    <span v-else class="badge badge-subtle badge-subtle-warning">
-                                        <i class="fad fa-history me-1" /> Vence en {{ data.days_left }} km
-                                    </span>
-                                </template>
-                                <template v-else-if="data.type === 'VEHICLE_FUEL_ALERT'">
-                                    <span v-if="data.days_left < 0" class="badge badge-subtle badge-subtle-danger">
-                                        <i class="fad fa-gas-pump me-1" /> Excedido por {{ Math.abs(data.days_left) }} km
-                                    </span>
-                                    <span v-else class="badge badge-subtle badge-subtle-warning">
-                                        <i class="fad fa-gas-pump me-1" /> Restan {{ data.days_left }} km
-                                    </span>
-                                </template>
-                                <template v-else>
-                                    <span v-if="data.days_left === null" class="badge badge-subtle badge-subtle-danger">
-                                        <i class="fad fa-exclamation-triangle me-1" /> Faltante / Crítico
-                                    </span>
-                                    <span v-else-if="data.days_left < 0" class="badge badge-subtle badge-subtle-danger">
-                                        <i class="fad fa-calendar-times me-1" /> Vencido hace {{ Math.abs(data.days_left) }} d
-                                    </span>
-                                    <span v-else-if="data.days_left === 0" class="badge badge-subtle badge-subtle-warning">
-                                        <i class="fad fa-clock me-1" /> Vence Hoy
-                                    </span>
-                                    <span v-else-if="data.days_left <= 15" class="badge badge-subtle badge-subtle-warning">
-                                        <i class="fad fa-history me-1" /> {{ data.days_left }} días restantes
-                                    </span>
-                                    <span v-else class="badge badge-subtle badge-subtle-success">
-                                        <i class="fad fa-check-circle me-1" /> {{ data.days_left }} días restantes
-                                    </span>
-                                </template>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Fecha Expiración -->
-                        <Column field="expiry_date" header="Fecha Límite" sortable style="width: 150px;">
-                            <template #body="{ data }">
-                                <span class="text-700 fw-medium">{{ formatDate(data.expiry_date) }}</span>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Estado -->
-                        <Column field="status" header="Estado" sortable style="width: 120px;" class="text-center">
-                            <template #body="{ data }">
-                                <span class="badge rounded-pill badge-subtle" :class="data.status === 'LEIDA' ? 'badge-subtle-secondary' : 'badge-subtle-primary'">
-                                    <i :class="data.status === 'LEIDA' ? 'fad fa-envelope-open me-1' : 'fad fa-envelope me-1'" />
-                                    {{ data.status === 'LEIDA' ? 'Leída' : 'Pendiente' }}
-                                </span>
-                            </template>
-                        </Column>
-
-                        <!-- Columna Acciones -->
-                        <Column header="Acciones" class="text-center" style="width: 170px;">
-                            <template #body="{ data }">
-                                <div class="d-flex align-items-center justify-content-center gap-1">
-                                    <button
-                                        v-if="data.status !== 'LEIDA'"
-                                        class="btn btn-falcon-default btn-sm shadow-sm"
-                                        type="button"
-                                        title="Marcar como leída"
-                                        @click="handleMarkAsRead(data.uuid)"
-                                    >
-                                        <i class="fad fa-check text-success me-1" /> Marcar Leída
-                                    </button>
-                                    <span v-else class="text-muted fs-11 fw-medium">
-                                        <i class="fad fa-check-double text-success me-1" /> Leída
-                                    </span>
-                                    <div v-if="accionesVisibles(data).length > 0" class="dropdown position-static">
-                                        <button class="btn btn-link text-600 btn-sm dropdown-toggle btn-reveal"
-                                            type="button" data-bs-toggle="dropdown" data-boundary="window"
-                                            aria-haspopup="true" aria-expanded="false"
-                                            aria-label="Acciones de la alerta">
-                                            <span class="fas fa-ellipsis-h fs--1" aria-hidden="true"></span>
-                                        </button>
-                                        <div class="dropdown-menu dropdown-menu-end border py-0">
-                                            <div class="py-2">
-                                                <router-link v-for="accion in accionesVisibles(data)"
-                                                    :key="accion.key" class="dropdown-item" :to="accion.path">
-                                                    {{ accion.label }}
-                                                </router-link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </Column>
-                        <!-- Loading state -->
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando datos..." />
-                            </template>
-                        </DataTable>
-                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
+
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable
+                    :value="store.notifications"
+                    lazy
+                    :paginator="false"
+                    :rows="store.perPage"
+                    :totalRecords="totalItems"
+                    :first="(currentPage - 1) * store.perPage"
+                    :loading="store.loading" 
+                    responsiveLayout="scroll"
+                    tableStyle="min-width: 55rem" 
+                    class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron alertas registradas" 
+                    :sortField="sortField"
+                    :sortOrder="sortOrdenPrimeVue"
+                    removableSort
+                    @sort="onSort"
+                >
+                    <!-- Columna Prioridad -->
+                    <Column field="priority" header="Prioridad" sortable style="width: 10%;">
+                        <template #body="{ data }">
+                            <span class="noa-status" :class="data.priority === 'PRIORITARIA' ? 'noa-status--danger' : 'noa-status--muted'">
+                                {{ data.priority === 'PRIORITARIA' ? 'Prioritaria' : 'Normal' }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Columna Tipo -->
+                    <Column field="type" header="Tipo de Alerta" sortable style="width: 16%;">
+                        <template #body="{ data }">
+                            <div class="d-flex align-items-center">
+                                <i :class="getTypeIcon(data.type) + ' me-2 fs-7'" aria-hidden="true" />
+                                <span class="fw-medium text-800">{{ getTypeLabel(data.type) }}</span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- Columna Título & Detalle -->
+                    <Column field="message" header="Alerta / Detalles" style="width: 34%;">
+                        <template #body="{ data }">
+                            <div class="d-flex flex-column">
+                                <span class="fw-semibold text-dark fs-10 mb-1">{{ data.title }}</span>
+                                <span class="text-600 fs-11">
+                                    <template v-for="(seg, i) in segmentarMensaje(data)" :key="i">
+                                        <strong v-if="seg.tipo === 'fuerte'" :class="seg.peligro ? 'text-danger' : 'text-warning'">{{ seg.texto }}</strong>
+                                        <router-link v-else-if="seg.tipo === 'enlace'" :to="seg.path" class="alerta-enlace" :title="seg.titulo" :aria-label="seg.aria">{{ seg.texto }}</router-link>
+                                        <template v-else>{{ seg.texto }}</template>
+                                    </template>
+                                </span>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- Columna Días Restantes -->
+                    <Column field="days_left" header="Plazo" sortable style="width: 14%;">
+                        <template #body="{ data }">
+                            <template v-if="data.type === 'VEHICLE_MAINTENANCE_ALERT'">
+                                <span class="noa-status" :class="data.days_left < 0 ? 'noa-status--danger' : 'noa-status--warning'">
+                                    {{ data.days_left < 0 ? `Vencido (${Math.abs(data.days_left)} km)` : `Vence en ${data.days_left} km` }}
+                                </span>
+                            </template>
+                            <template v-else-if="data.type === 'VEHICLE_FUEL_ALERT'">
+                                <span class="noa-status" :class="data.days_left < 0 ? 'noa-status--danger' : 'noa-status--warning'">
+                                    {{ data.days_left < 0 ? `Excedido (${Math.abs(data.days_left)} km)` : `Restan ${data.days_left} km` }}
+                                </span>
+                            </template>
+                            <template v-else>
+                                <span v-if="data.days_left === null" class="noa-status noa-status--danger">
+                                    Faltante / Crítico
+                                </span>
+                                <span v-else-if="data.days_left < 0" class="noa-status noa-status--danger">
+                                    Vencido hace {{ Math.abs(data.days_left) }} d
+                                </span>
+                                <span v-else-if="data.days_left === 0" class="noa-status noa-status--warning">
+                                    Vence Hoy
+                                </span>
+                                <span v-else-if="data.days_left <= 15" class="noa-status noa-status--warning">
+                                    {{ data.days_left }} días restantes
+                                </span>
+                                <span v-else class="noa-status noa-status--success">
+                                    {{ data.days_left }} días restantes
+                                </span>
+                            </template>
+                        </template>
+                    </Column>
+
+                    <!-- Columna Fecha Expiración -->
+                    <Column field="expiry_date" header="Fecha Límite" sortable style="width: 12%;">
+                        <template #body="{ data }">
+                            <span class="text-700 fw-medium">{{ formatDate(data.expiry_date) }}</span>
+                        </template>
+                    </Column>
+
+                    <!-- Columna Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 14%;">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.title || 'alerta'" />
+                        </template>
+                    </Column>
+
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-bell-slash fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No se encontraron alertas registradas</h6>
+                            <p class="text-muted small mb-0">No hay vencimientos pendientes con los filtros aplicados.</p>
+                        </div>
+                    </template>
+
+                    <!-- Loading state -->
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando alertas..." />
+                    </template>
+                </DataTable>
+            </div>
+            <ListPagination :page="currentPage" :per-page="store.perPage" :total="totalItems" @change="onPageChange" />
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import { useNotificationsStore } from '../store/notifications.store.js';
 import { usePermissionsStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
@@ -266,13 +226,37 @@ const filterType = ref('');
 const filterPriority = ref('');
 const currentPage = ref(1);
 
-const { onSort: handleSort } = useServerSort((field, order) => {
-    const filters = {};
-    if (filterStatus.value) filters.status = filterStatus.value;
-    if (filterType.value) filters.type = filterType.value;
-    if (filterPriority.value) filters.priority = filterPriority.value;
-    store.setSort(field, order, filters);
-}, { route, router });
+const totalItems = computed(() => store.meta?.total ?? store.notifications?.length ?? 0);
+
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => {
+        const filters = {};
+        if (filterStatus.value) filters.status = filterStatus.value;
+        if (filterType.value) filters.type = filterType.value;
+        if (filterPriority.value) filters.priority = filterPriority.value;
+        store.setSort(field, order, filters);
+    },
+});
+
+const estadoOpciones = [
+    { label: 'Todos los estados', value: '' },
+    { label: 'Pendientes', value: 'PENDIENTE' },
+    { label: 'Leídas', value: 'LEIDA' },
+];
+
+const tipoOpciones = [
+    { label: 'Todos los tipos', value: '' },
+    { label: 'Documentos de Vehículo', value: 'VEHICLE_DOCUMENT' },
+    { label: 'Tarjetas de Operación', value: 'OPERATION_CARD' },
+    { label: 'Licencias de Conducción', value: 'DRIVER_LICENSE' },
+    { label: 'Primera RTM', value: 'FIRST_RTM' },
+    { label: 'Convenios Colab.', value: 'AGREEMENT' },
+    { label: 'Cobros de Administración', value: 'AFFILIATE_CHARGE' },
+    { label: 'Inspección Pendiente', value: 'VEHICLE_INSPECTION_PENDING' },
+    { label: 'Mantenimiento Prev.', value: 'VEHICLE_MAINTENANCE_ALERT' },
+    { label: 'Combustible', value: 'VEHICLE_FUEL_ALERT' },
+    { label: 'Seguridad Social', value: 'SOCIAL_SECURITY_MORA' },
+];
 
 const priorityOptions = [
     { label: 'Todas las prioridades', value: '' },
@@ -312,11 +296,10 @@ const getTypeLabel = (type) => {
     }
 };
 
-// Patrones de énfasis (los mismos que usaba el anterior v-html).
+// Patrones de énfasis
 const PATRON_ENFASIS = /(VENCIDO|VENCIDA|VENCIDAS|por vencer|vence en|PRÓXIMO|PRÓXIMA|PROXIMO|PROXIMA)/gi;
 const CLASE_PELIGRO = /^(VENCIDO|VENCIDA|VENCIDAS)$/i;
 
-// Parte el texto en segmentos {tipo: 'texto'|'fuerte'} sin usar v-html.
 const enfatizar = (texto) => {
     if (!texto) return [];
     const out = [];
@@ -333,12 +316,9 @@ const enfatizar = (texto) => {
     return out;
 };
 
-// Divide el mensaje en texto + enlace útil. Si no hay acción válida
-// (sin permiso o etiqueta ausente), devuelve solo texto. Nunca usa v-html.
 const segmentarMensaje = (data) => {
     const message = String(data?.message ?? '');
     let extra = data?.extra_data ?? null;
-    // Defensivo: la API puede entregar extra_data como objeto o como string JSON.
     if (typeof extra === 'string' && extra !== '') {
         try {
             extra = JSON.parse(extra);
@@ -397,8 +377,15 @@ const refreshTable = async () => {
     await loadData();
 };
 
-const onPageChange = async ({ first, rows }) => {
-    currentPage.value = Math.floor(first / rows) + 1;
+const onPageChange = async ({ page, rows }) => {
+    const filas = Number(rows) || store.perPage;
+    if (filas !== store.perPage) {
+        // Cambio de filas por página: el paginador emite page=1.
+        store.perPage = filas;
+        currentPage.value = 1;
+    } else if (page !== undefined) {
+        currentPage.value = page;
+    }
     await loadData();
 };
 
@@ -426,20 +413,41 @@ const handleMarkAsRead = async (uuid) => {
     await store.markAsRead(uuid);
 };
 
-// Menú contextual por fila: las mismas opciones del perfil del vehículo
-// (Ver documentos, Completar, Editar documento, Registrar nuevo),
-// filtradas por el permiso de cada destino.
+// Acciones adicionales de la fila
 const accionesVisibles = (data) => (data?.extra_data?.actions ?? [])
     .filter((a) => a && a.path && (!a.permission || permissionsStore.can(a.permission)));
 
-onMounted(async () => {
-    const sortParam = route.query.sort;
-    const orderParam = route.query.order;
-    if (typeof sortParam === 'string' && sortParam) {
-        store.sortField = sortParam;
-        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+const accionesDe = (data) => {
+    const actions = [];
+    if (data.status !== 'LEIDA') {
+        actions.push({
+            key: 'marcar-leida',
+            label: 'Marcar leída',
+            icon: 'far fa-check',
+            tone: 'success',
+            inline: true,
+            onClick: () => handleMarkAsRead(data.uuid),
+        });
     }
+    const extras = accionesVisibles(data).map((acc) => ({
+        key: acc.key || acc.path,
+        label: acc.label,
+        icon: 'far fa-arrow-right',
+        tone: 'primary',
+        onClick: () => router.push(acc.path),
+    }));
+    return [...actions, ...extras];
+};
+
+onMounted(async () => {
     try {
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            restore(sortParam, orderParam);
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? 'desc' : 'asc';
+        }
         await loadData();
     } finally {
         isViewLoading.value = false;
@@ -463,55 +471,6 @@ onMounted(async () => {
     }
 }
 
-/* Tabla Estilo Profesional */
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.825rem !important;
-    color: #212529;
-    transition: background-color 150ms ease-in-out;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) {
-    background: #f8f9fa !important;
-}
-
-/* Paginador */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: #f8f9fa !important;
-    border-top: 1px solid #e9ecef !important;
-    border-radius: 0 0 0.75rem 0.75rem !important;
-}
-
-:deep(.p-paginator .p-paginator-page) {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.25rem !important;
-    margin: 0 0.125rem;
-    font-size: 0.75rem;
-    transition: all 150ms ease-in-out;
-}
-
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #fff !important;
-}
-
-/* Enlace útil dentro del mensaje: hipervínculo subrayado estilo Word */
 .alerta-enlace {
     color: var(--bs-primary, #2c7be5);
     font-weight: 600;
@@ -527,43 +486,5 @@ onMounted(async () => {
     outline: 2px solid var(--bs-primary, #2c7be5);
     outline-offset: 2px;
     border-radius: 2px;
-}
-
-/* Badges */
-.badge-subtle {
-    font-weight: 500;
-    font-size: 0.75rem;
-    padding: 0.35em 0.6em;
-    border-radius: 0.25rem;
-}
-
-.badge-subtle-success {
-    background: rgba(25, 135, 84, 0.1);
-    color: #198754;
-    border: 1px solid rgba(25, 135, 84, 0.2);
-}
-
-.badge-subtle-warning {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-    border: 1px solid rgba(255, 193, 7, 0.2);
-}
-
-.badge-subtle-danger {
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.2);
-}
-
-.badge-subtle-primary {
-    background: rgba(13, 110, 253, 0.1);
-    color: #0d6efd;
-    border: 1px solid rgba(13, 110, 253, 0.2);
-}
-
-.badge-subtle-secondary {
-    background: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-    border: 1px solid rgba(108, 117, 125, 0.2);
 }
 </style>

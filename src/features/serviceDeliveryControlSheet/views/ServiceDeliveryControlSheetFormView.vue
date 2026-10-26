@@ -88,11 +88,11 @@
 
                         <div class="col-12 col-sm-6 col-lg-3">
                             <label class="form-label required" for="start_date">Fecha de inicio del servicio</label>
-                            <input id="start_date" v-model="formData.start_date" class="form-control"
+                            <DateInput id="start_date" v-model="formData.start_date" class="form-control"
                                 :class="{ 'is-invalid': validationErrors.start_date || validationErrors.service_date }"
                                 :aria-invalid="!!(validationErrors.start_date || validationErrors.service_date)"
                                 :aria-describedby="validationErrors.start_date ? 'f-start_date-error' : (validationErrors.service_date ? 'f-service_date-error' : undefined)"
-                                type="date" autocomplete="off" :min="vigenciaMin || undefined" :max="vigenciaMax || formData.end_date || undefined" />
+                                autocomplete="off" :min="vigenciaMin || undefined" :max="vigenciaMax || formData.end_date || undefined" />
                             <div v-if="validationErrors.start_date" class="invalid-feedback d-block" id="f-start_date-error" role="alert">{{
                                 validationErrors.start_date }}</div>
                             <div v-else-if="validationErrors.service_date" class="invalid-feedback d-block" id="f-service_date-error" role="alert">{{
@@ -101,8 +101,8 @@
 
                         <div class="col-12 col-sm-6 col-lg-3">
                             <label class="form-label" for="end_date">Fecha de fin del servicio</label>
-                            <input id="end_date" v-model="formData.end_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.end_date }" type="date" autocomplete="off"
+                            <DateInput id="end_date" v-model="formData.end_date" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.end_date }" autocomplete="off"
                                 :min="formData.start_date || vigenciaMin || undefined" :max="vigenciaMax || undefined" />
                             <div v-if="validationErrors.end_date" class="invalid-feedback d-block" id="f-end_date-error" role="alert">{{
                                 validationErrors.end_date }}</div>
@@ -383,6 +383,7 @@ import { useServiceDeliveryControlSheetStore } from '../store/serviceDeliveryCon
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import {
     armarPayloadCreacion,

@@ -31,6 +31,32 @@ const props = defineProps({
 // Filtro efectivo: el explícito manda; si no, listas de más de 7 opciones.
 const filtroActivo = computed(() => props.filter ?? ((props.options?.length ?? 0) > 7));
 
+// ── Opción «Todas…» con value '' ─────────────────────────────────────────────
+// PrimeVue evalúa "¿hay algo seleccionado?" con isNotEmpty(modelValue) y un ''
+// se toma como vacío: aunque el modelo coincida con una opción de valor '',
+// el combobox pinta el estado vacío (sin etiqueta) en vez de la opción
+// predeterminada. Si alguna opción trae value '', la respuesta interna viaja
+// con un centinela y el wrapper lo traduce a '' en los dos sentidos.
+const OPCION_VACIA = '__noa_opcion_vacia__';
+
+const valorDe = (o) => (typeof props.optionValue === 'function'
+    ? props.optionValue(o)
+    : String(props.optionValue).split('.').reduce((acc, k) => acc?.[k], o));
+
+const usaSentinela = computed(() => props.optionValue != null
+    && !props.optionGroupLabel
+    && (props.options ?? []).some((o) => o && typeof o === 'object' && valorDe(o) === ''));
+
+const opcionesInternas = computed(() => {
+    if (!usaSentinela.value) return props.options;
+    return (props.options ?? []).map((o) => (valorDe(o) === '' ? { ...o, [props.optionValue]: OPCION_VACIA } : o));
+});
+
+const modeloInterno = computed({
+    get: () => (usaSentinela.value && modelo.value === '' ? OPCION_VACIA : modelo.value),
+    set: (valor) => { modelo.value = usaSentinela.value && valor === OPCION_VACIA ? '' : valor; },
+});
+
 const CAMPOS_CATALOGO_CONOCIDOS = [
     'search_text',
     'display_label',
@@ -130,9 +156,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', alTecla, true));
 <template>
     <PrimeVueSelect
         ref="selectRef"
-        v-model="modelo"
+        v-model="modeloInterno"
         v-bind="attrsLimpios"
-        :options="props.options"
+        :options="opcionesInternas"
         :optionLabel="props.optionLabel"
         :optionValue="props.optionValue"
         :optionGroupLabel="props.optionGroupLabel"

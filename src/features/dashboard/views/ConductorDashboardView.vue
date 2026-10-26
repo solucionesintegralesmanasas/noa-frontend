@@ -45,14 +45,9 @@
                                     <div class="d-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-xs flex-grow-1 flex-lg-grow-0">
                                         <i class="far fa-calendar-alt text-primary fs-11" aria-hidden="true"></i>
                                         <label class="visually-hidden" for="f-periodo-conductor">Periodo</label>
-                                        <select id="f-periodo-conductor" v-model="selectedPeriod" class="form-select form-select-sm border-0 py-0 ps-1 pe-4 shadow-none fs-11 w-100"
-                                            style="cursor: pointer;" @change="loadData">
-                                            <option value="7">Últimos 7 días</option>
-                                            <option value="15">Últimos 15 días</option>
-                                            <option value="30">Últimos 30 días</option>
-                                            <option value="90">Últimos 3 meses</option>
-                                            <option value="365">Este año</option>
-                                        </select>
+                                        <PrimeSelect input-id="f-periodo-conductor" v-model="selectedPeriod" :options="periodoOpciones"
+                                            option-label="label" option-value="value" size="small"
+                                            style="cursor: pointer; min-width: 130px" class="w-100" @change="loadData" />
                                     </div>
 
                                     <button class="btn btn-primary btn-sm px-3 shadow-xs d-inline-flex align-items-center justify-content-center gap-1 flex-shrink-0"
@@ -579,6 +574,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useAuthStore, useUserStore, usePermissionsStore } from '@store';
 import { useDashboardStore } from '../store/dashboard.store';
 import DriverSelfMap from '@/features/tracking/components/DriverSelfMap.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -586,6 +582,14 @@ const dashboardStore = useDashboardStore();
 const permissionsStore = usePermissionsStore();
 
 const selectedPeriod = ref('30');
+// Mismos valores (texto) que el <select> nativo que reemplazó.
+const periodoOpciones = [
+    { label: 'Últimos 7 días', value: '7' },
+    { label: 'Últimos 15 días', value: '15' },
+    { label: 'Últimos 30 días', value: '30' },
+    { label: 'Últimos 3 meses', value: '90' },
+    { label: 'Este año', value: '365' },
+];
 const vehicleSearch = ref('');
 const isLoading = computed(() => dashboardStore.isLoading);
 

@@ -3,7 +3,7 @@
     <div class="d-none d-md-block">
         <BasePageHeader title="Hojas de Control de Servicio"
             description="Gestión de las planillas de control de prestación de servicios."
-            icon="fad fa-clipboard-list text-primary" :show-bg="true" :loading="isViewLoading || store.loading"
+            icon="fad fa-clipboard-list text-primary" :show-bg="true" :loading="isViewLoading"
             :compact="true" :breadcrumbs="[{ label: 'Hojas de Control' }, { label: 'Listado' }]">
             <template #actions>
                 <!-- REFRESH -->
@@ -47,11 +47,10 @@
 
                 <!-- Centro: filtro proyecto -->
                 <div class="d-flex align-items-center gap-2" style="max-width: 22rem; flex: 1 1 14rem;">
-                    <i class="fad fa-briefcase text-muted" aria-hidden="true" />
-                    <select id="filtro-proyecto" v-model="projectFilter" class="form-select form-select-sm" aria-label="Filtrar por proyecto" @change="onProjectFilterChange">
-                        <option value="">Todos los proyectos</option>
-                        <option v-for="p in store.projects" :key="p.uuid" :value="p.uuid">{{ p.project_name }}</option>
-                    </select>
+                    <label class="visually-hidden" for="filtro-proyecto">Filtrar por proyecto</label>
+                    <PrimeSelect input-id="filtro-proyecto" v-model="projectFilter" :options="opcionesProyecto"
+                        option-label="label" option-value="value" size="small" style="min-width: 200px;"
+                        @change="onProjectFilterChange" />
                 </div>
 
                 <!-- Derecha: filtro cerradas + contador -->
@@ -64,8 +63,9 @@
                         <input id="filtroAgruparProyecto" v-model="agruparPorProyecto" class="form-check-input" type="checkbox" @change="onAgruparChange" />
                         <label class="form-check-label small text-muted" for="filtroAgruparProyecto">Agrupar por proyecto</label>
                     </div>
-                    <span v-if="!isViewLoading && !store.loading" class="noa-results">
-                        <i class="fas fa-filter" aria-hidden="true" />
+                    <span v-if="!isViewLoading" class="noa-results">
+                        <i v-if="!store.loading" class="fas fa-filter" aria-hidden="true" />
+                        <span v-else class="spinner-border spinner-border-sm text-primary" style="width: 10px; height: 10px;" role="status" aria-hidden="true"></span>
                         {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
                         <template v-if="store.search"> para "{{ store.search }}"</template>
                     </span>
@@ -357,6 +357,7 @@ import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import RowActions from '@/components/RowActions.vue';
 import ListPagination from '@/components/ListPagination.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
 import { formatRango as formatRangoHook, diasHijos as diasHijosHook, recorridosCount as recorridosCountHook, recorridosTexto as recorridosTextoHook, esCerrado } from '../hooks/useServiceList.js';
 import DataTable from 'primevue/datatable';
@@ -377,6 +378,12 @@ const { handleSort } = useServerSort((field, order) => store.setSort(field, orde
 const isViewLoading = ref(true);
 const searchQuery = ref('');
 const projectFilter = ref('');
+// Mismo contenido que el <select> nativo que reemplazó; el «Todos» de valor
+// vacío lo renderiza el centinela del wrapper PrimeSelect.
+const opcionesProyecto = computed(() => [
+    { label: 'Todos los proyectos', value: '' },
+    ...(store.projects ?? []).map((p) => ({ label: p.project_name, value: p.uuid })),
+]);
 const soloCerradas = ref(false);
 const agruparPorProyecto = ref(store.agruparPorProyecto ?? true);
 const gruposExpandidos = ref([]);
