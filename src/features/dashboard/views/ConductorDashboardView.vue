@@ -271,6 +271,32 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 5. Solicitudes de Tanqueo -->
+                <div v-if="permissionsStore.can('fuel_requests.index')" class="col-12 col-sm-6 col-xl-3">
+                    <div class="card h-100 border-0 shadow-sm module-card card-action-blue">
+                        <div class="card-body p-3 p-lg-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-start justify-content-between mb-3">
+                                    <div class="module-avatar bg-subtle-primary text-primary">
+                                        <i class="fas fa-gas-pump fs-2" aria-hidden="true"></i>
+                                    </div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semi-bold fs-11">QR</span>
+                                </div>
+                                <h5 class="fw-bold text-900 mb-1 fs-16 fs-sm-18">Solicitudes de tanqueo</h5>
+                                <p class="text-600 fs-11 mb-3">
+                                    Solicita combustible y presenta el QR aprobado por la empresa en la estación.
+                                </p>
+                            </div>
+                            <div class="d-flex flex-column gap-2 mt-auto">
+                                <router-link to="/flota/solicitudes-tanqueo" class="btn btn-primary btn-sm w-100 shadow-xs d-flex align-items-center justify-content-center gap-2 py-2">
+                                    <i class="fas fa-qrcode" aria-hidden="true"></i>
+                                    <span>Solicitar / Ver QR</span>
+                                </router-link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -550,13 +576,14 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useAuthStore, useUserStore } from '@store';
+import { useAuthStore, useUserStore, usePermissionsStore } from '@store';
 import { useDashboardStore } from '../store/dashboard.store';
 import DriverSelfMap from '@/features/tracking/components/DriverSelfMap.vue';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const dashboardStore = useDashboardStore();
+const permissionsStore = usePermissionsStore();
 
 const selectedPeriod = ref('30');
 const vehicleSearch = ref('');

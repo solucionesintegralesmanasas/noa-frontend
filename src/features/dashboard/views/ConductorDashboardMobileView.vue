@@ -228,6 +228,16 @@
             <router-link class="mc-btn-secondary" to="/planilla-de-control-de-prestacion-servicios">Listado</router-link>
           </div>
         </article>
+
+        <article v-if="permissionsStore.can('fuel_requests.index')" class="module-card mc-blue" aria-labelledby="mod-tanqueo">
+          <span class="mc-count">QR</span>
+          <span class="mc-icon-wrap" aria-hidden="true"><i class="fas fa-gas-pump" aria-hidden="true"></i></span>
+          <h3 id="mod-tanqueo" class="mc-title">Solicitudes de tanqueo</h3>
+          <p class="mc-desc">Solicita combustible y muestra el QR aprobado</p>
+          <div class="mc-actions">
+            <router-link class="mc-btn-primary" to="/flota/solicitudes-tanqueo">Solicitar / Ver QR</router-link>
+          </div>
+        </article>
       </div>
     </div>
 
