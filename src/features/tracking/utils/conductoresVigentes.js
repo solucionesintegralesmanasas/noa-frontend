@@ -11,8 +11,11 @@
  * vehículo equivocado.
  */
 
-/** Margen defensivo del cliente: 5 minutos más que el umbral del backend (10). */
-export const UMBRAL_SIN_REPORTAR_MS = 15 * 60 * 1000;
+/**
+ * Mismo umbral que el backend (stale_minutes = 12 h): un conductor conserva su
+ * última posición conocida en el mapa aunque lleve rato sin reportar.
+ */
+export const UMBRAL_SIN_REPORTAR_MS = 12 * 60 * 60 * 1000;
 
 function marcaDeTiempo(driver) {
     const valor = driver?.created_at
