@@ -109,7 +109,7 @@
                             input-id="f-conv-resolucion" optionLabel="label" optionValue="uuid" filter
                             placeholder="Seleccione resolución..." class="w-100 mb-2" style="width:100%;" />
                         <label class="form-label small" for="f-conv-emision">Emisión</label>
-                        <DateInput id="f-conv-emision" v-model="conversion.issue_date" class="mb-2" />
+                        <DateInput id="f-conv-emision" v-model="conversion.issue_date" class="form-control mb-2" />
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-primary flex-grow-1" type="button" :disabled="!conversion.billing_resolution_uuid || !conversion.issue_date" @click="convertir">
                                 Confirmar
@@ -122,7 +122,7 @@
                         <label class="form-label small" for="f-pago-monto">Monto (saldo ${{ formatear(saldo) }})</label>
                         <input id="f-pago-monto" v-model.number="pago.amount" class="form-control form-control-sm mb-2" type="number" min="0.01" :max="saldo" step="0.01" />
                         <label class="form-label small" for="f-pago-fecha">Fecha</label>
-                        <DateInput id="f-pago-fecha" v-model="pago.payment_date" class="mb-2" />
+                        <DateInput id="f-pago-fecha" v-model="pago.payment_date" class="form-control mb-2" />
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-success flex-grow-1" type="button" :disabled="!pago.amount || !pago.payment_date" @click="registrarPago">
                                 Guardar pago

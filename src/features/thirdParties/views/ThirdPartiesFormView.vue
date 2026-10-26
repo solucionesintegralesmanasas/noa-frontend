@@ -132,7 +132,10 @@
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                     <label class="form-label required" for="id_card_issue_date">Fecha de Expedición</label>
                                     <DateInput id="id_card_issue_date" v-model="formData.id_card_issue_date"
-                                        :invalid="!!validationErrors['id_card_issue_date']" />
+                                        class="form-control" :class="{ 'is-invalid': validationErrors.id_card_issue_date }"
+                                        :aria-invalid="!!validationErrors['id_card_issue_date']"
+                                        :aria-describedby="validationErrors['id_card_issue_date'] ? 'f-id_card_issue_date-error' : undefined"
+                                        placeholder="YYYY-MM-DD" />
                                     <div v-if="validationErrors.id_card_issue_date" class="invalid-feedback d-block" id="f-id_card_issue_date-error" role="alert">
                                         {{ validationErrors.id_card_issue_date }}
                                     </div>
