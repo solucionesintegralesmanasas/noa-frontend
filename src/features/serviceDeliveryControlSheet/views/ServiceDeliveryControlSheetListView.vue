@@ -60,6 +60,10 @@
                         <input id="filtroSoloCerradas" v-model="soloCerradas" class="form-check-input" type="checkbox" @change="onSoloCerradasChange" />
                         <label class="form-check-label small text-muted" for="filtroSoloCerradas">Solo cerradas</label>
                     </div>
+                    <div class="form-check form-switch mb-0" title="Agrupar las planillas por proyecto">
+                        <input id="filtroAgruparProyecto" v-model="agruparPorProyecto" class="form-check-input" type="checkbox" @change="onAgruparChange" />
+                        <label class="form-check-label small text-muted" for="filtroAgruparProyecto">Agrupar por proyecto</label>
+                    </div>
                     <span v-if="!isViewLoading && !store.loading" class="noa-results">
                         <i class="fas fa-filter" aria-hidden="true" />
                         {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
@@ -100,7 +104,10 @@
             <!-- DATATABLE (Paginación Server-Side) -->
             <div v-else class="card-body p-0">
                 <div class="table-responsive scrollbar">
-                    <DataTable :value="store.items" v-model:expandedRows="expandedRows" dataKey="uuid" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    <DataTable :value="store.items" v-model:expandedRows="expandedRows" dataKey="uuid" lazy
+                        :rowGroupMode="agruparPorProyecto ? 'subheader' : null" groupRowsBy="project.project_name"
+                        :expandableRowGroups="agruparPorProyecto" v-model:expandedRowGroups="gruposExpandidos"
+                        :paginator="false" :rows="store.pagination.itemsPerPage"
                         :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) *
                             store.pagination.itemsPerPage
                             " :loading="store.loading"
@@ -108,6 +115,11 @@
                         responsiveLayout="scroll" tableStyle="min-width: 60rem"
                         class="table table-sm mb-0 professional-table noa-table-fixed"
                         emptyMessage="No se encontraron registros">
+
+                        <template #groupheader="{ data }">
+                            <span class="fw-bold text-dark"><i class="fad fa-briefcase text-primary me-2" aria-hidden="true"></i>{{ data.project?.project_name || 'Sin Proyecto' }}</span>
+                            <span class="badge rounded-pill badge-subtle-primary ms-2">{{ planillasDelProyecto(data.project?.project_name) }} planilla{{ planillasDelProyecto(data.project?.project_name) !== 1 ? 's' : '' }}</span>
+                        </template>
 
                         <Column expander style="width: 3.5rem" />
 
@@ -366,6 +378,9 @@ const isViewLoading = ref(true);
 const searchQuery = ref('');
 const projectFilter = ref('');
 const soloCerradas = ref(false);
+const agruparPorProyecto = ref(store.agruparPorProyecto ?? true);
+const gruposExpandidos = ref([]);
+const planillasDelProyecto = (nombre) => store.items.filter((i) => (i.project?.project_name || undefined) === (nombre || undefined)).length;
 const expandedRows = ref([]);
 
 const showReportsDialog = ref(false);
@@ -383,7 +398,10 @@ const { confirmDelete, initTooltips } = useTableActions(store, router);
 const clearSearch = async () => { searchQuery.value = ''; await store.clearFilters(); };
 const refreshTable = () => store.fetchItems();
 const onProjectFilterChange = async () => { await store.setProjectFilter(projectFilter.value); };
+const onAgruparChange = async () => { gruposExpandidos.value = []; await store.setAgruparPorProyecto(agruparPorProyecto.value); };
 const onSoloCerradasChange = async () => { await store.setSoloCerradas(soloCerradas.value); };
+const goToProject = (uuid) => router.push(`/proyectos/perfil/${uuid}`);
+const goToProjectEdit = (uuid) => router.push(`/proyectos/editar/${uuid}`);
 
 const onPageChange = async ({ page, first, rows }) => {
     store.pagination.itemsPerPage = rows;
@@ -478,6 +496,23 @@ const accionesDe = (data) => {
             onClick: () => goToControl(data.uuid)
         },
         {
+            key: 'proyecto',
+            label: 'Ver proyecto',
+            icon: 'fad fa-eye',
+            tone: 'info',
+            inline: true,
+            visible: !!permissions.projectProfile && !!data.project_uuid,
+            onClick: () => goToProject(data.project_uuid)
+        },
+        {
+            key: 'editarProyecto',
+            label: 'Editar proyecto',
+            icon: 'fad fa-briefcase',
+            tone: 'primary',
+            visible: !!permissions.projectEdit && !!data.project_uuid,
+            onClick: () => goToProjectEdit(data.project_uuid)
+        },
+        {
             key: 'pdf',
             label: 'Descargar PDF',
             icon: 'far fa-file-pdf',
@@ -524,7 +559,10 @@ onMounted(async () => {
         if (store.catalogs.projects) store.projects = store.catalogs.projects;
         permissions.pdf = permissionsStore.can('service_delivery_control_sheets.history_pdf');
         permissions.create = permissionsStore.can('service_delivery_control_sheets.create');
+        permissions.projectProfile = permissionsStore.can('projects.profile');
+        permissions.projectEdit = permissionsStore.can('projects.update');
         soloCerradas.value = store.soloCerradas;
+        agruparPorProyecto.value = store.agruparPorProyecto;
         permissions.view = permissionsStore.can('service_delivery_control_sheets.view');
         permissions.edit = permissionsStore.can('service_delivery_control_sheets.update');
         permissions.delete = permissionsStore.can('service_delivery_control_sheets.delete');

@@ -47,7 +47,8 @@
                         <div class="col-6">
                             <label class="form-label required" for="f-start_date">Vigencia desde</label>
                             <DateInput id="f-start_date" v-model="formData.start_date"
-                                :invalid="!!errors.start_date" v-bind="fieldAria('start_date')" />
+                                class="form-control" :class="{ 'is-invalid': errors.start_date }"
+                                v-bind="fieldAria('start_date')" />
                             <div v-if="errors.start_date" class="invalid-feedback d-block" id="f-start_date-error" role="alert">
                                 {{ errors.start_date }}
                             </div>
@@ -55,7 +56,8 @@
                         <div class="col-6">
                             <label class="form-label required" for="f-end_date">Vigencia hasta</label>
                             <DateInput id="f-end_date" v-model="formData.end_date"
-                                :invalid="!!errors.end_date" v-bind="fieldAria('end_date')" />
+                                class="form-control" :class="{ 'is-invalid': errors.end_date }"
+                                v-bind="fieldAria('end_date')" />
                             <div v-if="errors.end_date" class="invalid-feedback d-block" id="f-end_date-error" role="alert">
                                 {{ errors.end_date }}
                             </div>

@@ -35,3 +35,28 @@ export function recorridosTexto(data) {
 export function esCerrado(data) {
     return !(data?.is_active == 1 || data?.is_active === true);
 }
+
+/**
+ * Página de destino (base 1) a partir del evento del paginador de PrimeVue
+ * (`{ first, rows, page }`) o de los botones móviles (`{ page, rows }`).
+ * Devuelve `null` si el evento no permite calcularla (no se navega).
+ *
+ * @param {Object} evento - Evento de PrimeVue o de los botones móviles.
+ * @param {number} filasActuales - Filas por página del store (respaldo).
+ * @returns {number|null}
+ */
+export function paginaDestino(evento = {}, filasActuales = 10) {
+    if (!evento || typeof evento !== 'object') return null;
+    const filas = Number(evento.rows) > 0 ? Number(evento.rows) : Number(filasActuales);
+    if (!Number.isFinite(filas) || filas <= 0) return null;
+
+    if (evento.page !== undefined && evento.page !== null) {
+        const destino = Number(evento.page);
+        if (!Number.isFinite(destino) || destino < 0) return null;
+        return destino + 1;
+    }
+
+    const first = Number(evento.first);
+    if (!Number.isFinite(first) || first < 0) return null;
+    return Math.floor(first / filas) + 1;
+}

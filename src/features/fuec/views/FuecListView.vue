@@ -11,8 +11,11 @@
             <div class="noa-list-toolbar">
                 <div class="noa-search">
                     <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                    <input id="f-fuec-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por número de FUEC, placa, contratante..."
-                        aria-label="Buscar FUEC" @input="debouncedSearch" />
+                    <input id="f-fuec-busqueda" v-model="searchQuery" class="noa-search__input" type="search"
+                        placeholder="N° FUEC, placa, contratante, ruta, fecha o estado..."
+                        aria-label="Buscar FUEC por número, placa, contratante, ruta, fecha o estado"
+                        title="Busca en todas las columnas del listado. Separa varios términos con espacios para acotar."
+                        @input="debouncedSearch" />
                     <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
                         aria-label="Limpiar búsqueda" @click="clearSearch">
                         <i class="fal fa-times" aria-hidden="true" />
@@ -147,6 +150,27 @@
             </template>
         </MobileSectionHeader>
 
+        <!-- Búsqueda móvil: la barra de escritorio está oculta en esta vista -->
+        <div class="px-1 pb-2">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fad fa-search text-muted" aria-hidden="true"></i>
+                </span>
+                <input id="fuec-busqueda-movil" v-model="searchQuery" class="form-control border-start-0 shadow-none" type="search"
+                    placeholder="Placa, contratante, ruta, fecha..."
+                    aria-label="Buscar FUEC por número, placa, contratante, ruta, fecha o estado"
+                    @input="debouncedSearch" />
+                <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fad fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div v-if="store.search && !isViewLoading && !store.loading" class="text-muted fs-11 mt-1 px-1">
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                para "{{ store.search }}"
+            </div>
+        </div>
+
         <div v-if="store.items && store.items.length > 0" class="d-flex flex-column w-100">
             <MobileCard
                 v-for="item in store.items"
@@ -188,12 +212,14 @@
 
         <MobileEmptyState
             v-else
-            emoji="📜"
-            title="Sin FUECs asignados"
-            description="No hay extractos únicos de contrato activos o asignados a tus vehículos."
-            action-text="Crear FUEC"
-            action-icon="fas fa-plus"
-            @action="goToCreate"
+            :emoji="store.search ? '🔎' : '📜'"
+            :title="store.search ? 'Sin resultados' : 'Sin FUECs asignados'"
+            :description="store.search
+                ? `No hay FUECs que coincidan con «${store.search}».`
+                : 'No hay extractos únicos de contrato activos o asignados a tus vehículos.'"
+            :action-text="store.search ? 'Limpiar búsqueda' : 'Crear FUEC'"
+            :action-icon="store.search ? 'fas fa-times' : 'fas fa-plus'"
+            @action="store.search ? clearSearch() : goToCreate()"
         />
 
         <!-- Paginación Móvil Táctil -->

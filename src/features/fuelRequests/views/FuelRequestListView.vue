@@ -10,7 +10,7 @@
         <div class="noa-list-toolbar">
             <div class="noa-search">
                 <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input id="f-fuel-requests-busqueda" v-model="search" type="search" class="noa-search__input"
+                <input id="f-tanqueo-busqueda" v-model="search" type="search" class="noa-search__input"
                     placeholder="Código, placa o conductor..." aria-label="Buscar solicitudes de tanqueo"
                     @input="debouncedSearch" />
                 <button v-if="search" class="noa-search__clear" type="button" title="Limpiar búsqueda"
@@ -20,7 +20,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <select id="filtro-estado-solicitud" v-model="statusFilter" class="form-select form-select-sm" style="max-width: 180px;"
+                <select id="f-tanqueo-estado" v-model="statusFilter" class="form-select form-select-sm" style="max-width: 180px;"
                     aria-label="Filtrar por estado" @change="refresh">
                     <option value="">Todos los estados</option>
                     <option value="PENDIENTE">Pendientes</option>
@@ -156,11 +156,19 @@
     <Dialog v-model:visible="showQr" header="QR de tanqueo" modal :draggable="false"
         :style="{ width: '760px' }" :breakpoints="{ '768px': '96vw' }">
         <div v-if="store.selected" class="row g-3 align-items-start">
+            <div v-if="qrLoading || qrError" class="col-12">
+                <div v-if="qrLoading" class="d-flex align-items-center gap-2 text-muted small" role="status">
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true" />
+                    Generando QR de tanqueo...
+                </div>
+                <div v-else class="alert alert-warning mb-0 py-2 small" role="alert">{{ qrError }}</div>
+            </div>
             <div class="col-12 col-md-5">
                 <div class="border rounded p-2 text-center">
                     <small class="text-muted d-block mb-1">Validación</small>
                     <img v-if="store.qr?.qr_url" :src="store.qr.qr_url" alt="QR de validación de la solicitud"
                         class="img-fluid" style="max-width: 240px;" />
+                    <p v-else class="text-muted small mb-0 py-4">QR no disponible</p>
                 </div>
             </div>
             <div class="col-12 col-md-7">
@@ -192,6 +200,7 @@
                     <small class="text-muted d-block mb-1">QR con datos (sin internet)</small>
                     <img v-if="store.qr?.qr_data" :src="store.qr.qr_data" alt="QR con los datos de la solicitud"
                         class="img-fluid" style="max-width: 230px;" />
+                    <p v-else class="text-muted small mb-0 py-4">QR no disponible</p>
                 </div>
             </div>
         </div>
@@ -233,6 +242,8 @@ const search = ref('');
 const statusFilter = ref('');
 const showCreate = ref(false);
 const showQr = ref(false);
+const qrLoading = ref(false);
+const qrError = ref('');
 const vehicleUuid = ref('');
 const notes = ref('');
 
@@ -330,11 +341,20 @@ const anular = async (item) => {
 
 const verQr = async (item) => {
     store.selected = item;
+    store.qr = null;
+    qrError.value = '';
     showQr.value = true;
+    qrLoading.value = true;
     try {
         await store.loadQr(item.uuid);
-    } catch {
-        // El detalle sigue visible aunque el QR no se pueda generar.
+        if (!store.qr) {
+            qrError.value = 'La respuesta del servidor no contiene las imágenes del QR.';
+        }
+    } catch (error) {
+        qrError.value = error?.response?.data?.message
+            || 'No se pudo generar el QR. La solicitud debe estar aprobada y vigente.';
+    } finally {
+        qrLoading.value = false;
     }
 };
 
