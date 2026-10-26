@@ -34,21 +34,16 @@ export function formatThirdPartyOption(item, labelField = 'company_name') {
     const docNumber = toCleanString(item.document_number);
     const personType = toCleanString(item.person_type).toUpperCase();
 
-    let primaryName = '';
-    if (personType === 'NATURAL' && fullName) {
-        primaryName = fullName;
-    } else {
-        primaryName =
-            companyName ||
-            tradeName ||
-            fullName ||
-            toCleanString(item.full_name) ||
-            toCleanString(item.display_name) ||
-            toCleanString(item.name) ||
-            toCleanString(item.label) ||
-            docNumber ||
-            'Sin nombre';
-    }
+        const fallbackName = companyName ||
+        tradeName ||
+        fullName ||
+        toCleanString(item.full_name) ||
+        toCleanString(item.display_name) ||
+        toCleanString(item.name) ||
+        toCleanString(item.label) ||
+        docNumber ||
+        'Sin nombre';
+    const primaryName = (personType === 'NATURAL' && fullName) ? fullName : fallbackName;
 
     const displayLabel = docNumber && !primaryName.includes(docNumber)
         ? `${primaryName} — ${docNumber}`

@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
     formatThirdPartyOption,
     formatThirdPartyList,
-    formatVehicleOption,
     formatVehicleList,
 } from '../catalogFormatters.js';
 

@@ -57,7 +57,6 @@ export class BaseService {
         const isSuperAdmin = hasRole(ROLES.SUPERADMIN);
         const isConductor = hasRole(ROLES.CONDUCTOR);
         const hasAfiliadoRole = hasRole(ROLES.AFILIADO);
-        const hasEmpleadoRole = hasRole(ROLES.EMPLEADO);
 
         // Solo el rol AFILIADO filtra por su propio third_party_uuid en cliente;
         // para CONDUCTOR y EMPLEADO el backend aplica su propio alcance sin pisar catálogos.
