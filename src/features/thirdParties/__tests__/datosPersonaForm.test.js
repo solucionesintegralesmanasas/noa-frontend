@@ -130,6 +130,9 @@ const llenarPersonaNatural = async (vista) => {
         await setValue('branch_uuid', 'sede-1');
         await setValue('f-partyTypes', 'is_customer');
     }
+    await setValue('f-birth_place_uuid', 'ciudad-1');
+    const fechaNacimiento = vista.find('#f-birth_date');
+    await fechaNacimiento.setValue('1985-04-12');
     await setValue('f-id_card_issue_place_uuid', 'ciudad-1');
     await setValue('f-sex', 'F');
     await setValue('f-marital_status', 'SOLTERO');
@@ -151,6 +154,8 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         await selectorTipoPersona(vista).setValue('NATURAL');
 
         for (const campo of [
+            'birth_place_uuid',
+            'birth_date',
             'id_card_issue_place_uuid',
             'id_card_issue_date',
             'sex',
@@ -171,6 +176,8 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         const errorFecha = errorDe(vista, 'id_card_issue_date');
         expect(errorFecha.attributes('id')).toBe('f-id_card_issue_date-error');
         expect(errorFecha.attributes('role')).toBe('alert');
+        expect(errorDe(vista, 'birth_place_uuid').exists()).toBe(true);
+        expect(errorDe(vista, 'birth_date').exists()).toBe(true);
         expect(errorDe(vista, 'sex').exists()).toBe(true);
         expect(errorDe(vista, 'marital_status').exists()).toBe(true);
         expect(errorDe(vista, 'blood_type').exists()).toBe(true);
@@ -181,13 +188,15 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         await flushPromises();
         await selectorTipoPersona(vista).setValue('JURIDICA');
 
+        expect(vista.find('label[for="f-birth_place_uuid"]').exists()).toBe(false);
+        expect(vista.find('label[for="f-birth_date"]').exists()).toBe(false);
         expect(vista.find('label[for="f-id_card_issue_place_uuid"]').exists()).toBe(false);
         expect(vista.find('label[for="f-sex"]').exists()).toBe(false);
         expect(vista.find('label[for="f-marital_status"]').exists()).toBe(false);
         expect(vista.find('label[for="f-blood_type"]').exists()).toBe(false);
     });
 
-    it('el payload de creación lleva los cinco datos de persona', async () => {
+    it('el payload de creación lleva los datos de persona', async () => {
         const vista = montarVista();
         await flushPromises();
         await llenarPersonaNatural(vista);
@@ -197,6 +206,8 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
 
         expect(createItem).toHaveBeenCalledTimes(1);
         const payload = createItem.mock.calls[0][0];
+        expect(payload.birth_place_uuid).toBe('ciudad-1');
+        expect(payload.birth_date).toBe('1985-04-12');
         expect(payload.id_card_issue_place_uuid).toBe('ciudad-1');
         expect(payload.id_card_issue_date).toBe('2005-06-15');
         expect(payload.sex).toBe('F');
@@ -234,6 +245,8 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
 
         expect(createItem).toHaveBeenCalledTimes(1);
         const payload = createItem.mock.calls[0][0];
+        expect(payload.birth_place_uuid).toBeNull();
+        expect(payload.birth_date).toBeNull();
         expect(payload.id_card_issue_place_uuid).toBeNull();
         expect(payload.id_card_issue_date).toBeNull();
         expect(payload.sex).toBeNull();

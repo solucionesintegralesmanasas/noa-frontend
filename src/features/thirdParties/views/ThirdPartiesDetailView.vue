@@ -48,7 +48,17 @@
                         <dd class="col-7 text-dark fw-semibold">{{ item.trade_name || item.company_name ||
                             `${item.first_name || ''} ${item.last_name || ''}` || '—' }}</dd>
 
-                        <!-- Datos de la cédula (solo personas naturales con datos) -->
+                        <!-- Datos de nacimiento y cédula (solo personas naturales con datos) -->
+                        <template v-if="item.birth_place?.name">
+                            <dt class="col-5 text-muted fw-medium">Lugar de Nacimiento:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ item.birth_place.name }}</dd>
+                        </template>
+
+                        <template v-if="item.birth_date && textoFechaNacimiento">
+                            <dt class="col-5 text-muted fw-medium">Fecha de Nacimiento:</dt>
+                            <dd class="col-7 text-dark fw-semibold">{{ textoFechaNacimiento }}</dd>
+                        </template>
+
                         <template v-if="item.id_card_issue_place?.name">
                             <dt class="col-5 text-muted fw-medium">Lugar de Expedición:</dt>
                             <dd class="col-7 text-dark fw-semibold">{{ item.id_card_issue_place.name }}</dd>
@@ -156,6 +166,10 @@ const isViewLoading = ref(true);
  */
 const textoSexo = computed(() => MAPA_SEXO[item.value.sex] || '');
 const textoEstadoCivil = computed(() => MAPA_ESTADO_CIVIL[item.value.marital_status] || '');
+const textoFechaNacimiento = computed(() => {
+    if (!item.value.birth_date) return '';
+    return dateUtils.format(item.value.birth_date, 'DD-MM-YYYY');
+});
 const textoFechaExpedicion = computed(() => {
     if (!item.value.id_card_issue_date) return '';
     return dateUtils.format(item.value.id_card_issue_date, 'DD-MM-YYYY');

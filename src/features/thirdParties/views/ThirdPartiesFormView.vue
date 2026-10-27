@@ -117,9 +117,32 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Datos de la cédula (solo personas naturales) -->
+                            <!-- Datos de nacimiento y cédula (solo personas naturales) -->
                             <div class="row g-2 g-md-3 mt-1">
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-birth_place_uuid">Lugar de Nacimiento</label>
+                                    <PrimeSelect input-id="f-birth_place_uuid" v-model="formData.birth_place_uuid"
+                                        :options="store.catalogs.cities" option-value="uuid" option-label="name"
+                                        placeholder="Ciudad de nacimiento" showClear filter class="w-100"
+                                        :invalid="!!validationErrors['birth_place_uuid']"
+                                        :aria-invalid="!!validationErrors['birth_place_uuid']"
+                                        :aria-describedby="validationErrors['birth_place_uuid'] ? 'f-birth_place_uuid-error' : undefined" />
+                                    <div v-if="validationErrors.birth_place_uuid" class="invalid-feedback d-block" id="f-birth_place_uuid-error" role="alert">
+                                        {{ validationErrors.birth_place_uuid }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-birth_date">Fecha de Nacimiento</label>
+                                    <DateInput id="f-birth_date" v-model="formData.birth_date"
+                                        class="form-control" :class="{ 'is-invalid': !!validationErrors['birth_date'] }"
+                                        :invalid="!!validationErrors['birth_date']"
+                                        :aria-invalid="!!validationErrors['birth_date']"
+                                        :aria-describedby="validationErrors['birth_date'] ? 'f-birth_date-error' : undefined" />
+                                    <div v-if="validationErrors.birth_date" class="invalid-feedback d-block" id="f-birth_date-error" role="alert">
+                                        {{ validationErrors.birth_date }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
                                     <label class="form-label required" for="f-id_card_issue_place_uuid">Lugar de Expedición</label>
                                     <PrimeSelect input-id="f-id_card_issue_place_uuid" v-model="formData.id_card_issue_place_uuid"
                                         :options="store.catalogs.cities" option-value="uuid" option-label="name"
@@ -131,7 +154,7 @@
                                         {{ validationErrors.id_card_issue_place_uuid }}
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <div class="col-12 col-sm-6 col-md-3">
                                     <label class="form-label required" for="f-id_card_issue_date">Fecha de Expedición</label>
                                     <DateInput id="f-id_card_issue_date" v-model="formData.id_card_issue_date"
                                         class="form-control" :class="{ 'is-invalid': !!validationErrors['id_card_issue_date'] }"
@@ -142,7 +165,7 @@
                                         {{ validationErrors.id_card_issue_date }}
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <label class="form-label required" for="f-sex">Sexo</label>
                                     <PrimeSelect input-id="f-sex" v-model="formData.sex"
                                         :options="SEXOS" option-label="label" option-value="value"
@@ -154,7 +177,7 @@
                                         {{ validationErrors.sex }}
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <label class="form-label required" for="f-marital_status">Estado Civil</label>
                                     <PrimeSelect input-id="f-marital_status" v-model="formData.marital_status"
                                         :options="ESTADOS_CIVILES" option-label="label" option-value="value"
@@ -166,7 +189,7 @@
                                         {{ validationErrors.marital_status }}
                                     </div>
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                                <div class="col-12 col-sm-6 col-md-4">
                                     <label class="form-label required" for="f-blood_type">Grupo Sanguíneo</label>
                                     <PrimeSelect input-id="f-blood_type" v-model="formData.blood_type"
                                         :options="GRUPOS_SANGUINEOS" option-label="label" option-value="value"
@@ -606,6 +629,8 @@ const formData = reactive({
     is_driver: '0',
     is_others: '0',
     person_type: '',
+    birth_place_uuid: '',
+    birth_date: '',
     id_card_issue_place_uuid: '',
     id_card_issue_date: '',
     sex: '',
@@ -844,6 +869,8 @@ const validateForm = () => {
         formData.first_name = null;
         formData.last_name = null;
         formData.trade_name = null;
+        formData.birth_place_uuid = null;
+        formData.birth_date = null;
         formData.id_card_issue_place_uuid = null;
         formData.id_card_issue_date = null;
         formData.sex = null;
@@ -853,10 +880,17 @@ const validateForm = () => {
         if (isEmpty(formData.first_name)) validationErrors.first_name = 'Este campo es obligatorio';
         if (isEmpty(formData.last_name)) validationErrors.last_name = 'Este campo es obligatorio';
 
-        // Datos de la cédula: obligatorios para personas naturales.
+        // Datos de nacimiento y cédula: obligatorios para personas naturales.
+        const hoyLocal = new Date().toLocaleDateString('en-CA');
+        const fechaNac = formData.birth_date ? String(formData.birth_date).slice(0, 10) : '';
+        const fechaExp = formData.id_card_issue_date ? String(formData.id_card_issue_date).slice(0, 10) : '';
+
+        if (isEmpty(formData.birth_place_uuid)) validationErrors.birth_place_uuid = 'Este campo es obligatorio';
+        if (isEmpty(formData.birth_date)) validationErrors.birth_date = 'Este campo es obligatorio';
+        else if (fechaNac >= hoyLocal) validationErrors.birth_date = 'La fecha de nacimiento debe ser anterior a hoy';
         if (isEmpty(formData.id_card_issue_place_uuid)) validationErrors.id_card_issue_place_uuid = 'Este campo es obligatorio';
         if (isEmpty(formData.id_card_issue_date)) validationErrors.id_card_issue_date = 'Este campo es obligatorio';
-        else if (new Date(formData.id_card_issue_date) > new Date()) validationErrors.id_card_issue_date = 'La fecha de expedición no puede ser posterior a hoy';
+        else if (fechaExp > hoyLocal) validationErrors.id_card_issue_date = 'La fecha de expedición no puede ser posterior a hoy';
         if (isEmpty(formData.sex)) validationErrors.sex = 'Este campo es obligatorio';
         if (isEmpty(formData.marital_status)) validationErrors.marital_status = 'Este campo es obligatorio';
         if (isEmpty(formData.blood_type)) validationErrors.blood_type = 'Este campo es obligatorio';
@@ -1060,8 +1094,11 @@ onMounted(async () => {
                 if (!formData.branch_uuid && item.branch?.uuid) {
                     formData.branch_uuid = item.branch.uuid;
                 }
-                // La fecha de expedición de la cédula llega serializada con hora
-                // ('2005-06-15 00:00:00'): el input date nativo solo acepta ISO corto.
+                // Las fechas llegan serializadas con hora ('2005-06-15 00:00:00'):
+                // el DateInput acepta formato ISO corto YYYY-MM-DD.
+                if (formData.birth_date) {
+                    formData.birth_date = String(formData.birth_date).slice(0, 10);
+                }
                 if (formData.id_card_issue_date) {
                     formData.id_card_issue_date = String(formData.id_card_issue_date).slice(0, 10);
                 }
