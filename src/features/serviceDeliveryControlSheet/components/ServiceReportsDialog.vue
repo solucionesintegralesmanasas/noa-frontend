@@ -2,7 +2,7 @@
     <Dialog v-model:visible="visible" :modal="true" :closable="true" :draggable="false" :style="{ width: '560px' }" class="p-fluid">
         <template #header>
             <div class="d-flex align-items-center gap-2">
-                <i class="fad fa-file-chart-column text-primary fs-4" aria-hidden="true"></i>
+                <i class="fad fa-file-chart-line text-primary fs-4" aria-hidden="true"></i>
                 <h5 class="mb-0 fw-bold">Reportes de Control de Servicio (solo cerradas)</h5>
             </div>
         </template>
@@ -73,19 +73,30 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import { useServiceDeliveryControlSheetStore } from '../store/serviceDeliveryControlSheet.store.js';
 
-defineProps({ vehicles: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });
+const props = defineProps({ vehicles: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] }, project: { type: Object, default: null } });
 const visible = defineModel('visible', { default: false });
 const store = useServiceDeliveryControlSheetStore();
 const downloading = ref(false);
 const error = ref('');
 const tipo = ref('rango');
 const filtros = reactive({ fecha_desde: '', fecha_hasta: '', fecha: '', vehicle_uuid: '', third_party_uuid: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+
+watch(visible, (abierto) => {
+    if (abierto && props.project) {
+        if (!filtros.fecha_desde && props.project.start_date) {
+            filtros.fecha_desde = String(props.project.start_date).slice(0, 10);
+        }
+        if (!filtros.fecha_hasta && props.project.completion_date) {
+            filtros.fecha_hasta = String(props.project.completion_date).slice(0, 10);
+        }
+    }
+});
 const tipos = [
     { label: '1. Por rango de fechas', value: 'rango' },
     { label: '2. Por vehículo', value: 'vehiculo' },
@@ -124,6 +135,7 @@ const descargar = async (formato) => {
         if (filtros.vehicle_uuid) params.vehicle_uuid = filtros.vehicle_uuid;
         if (tipo.value === 'conductor') params.third_party_uuid = filtros.third_party_uuid;
         if (tipo.value === 'mensual') { params.month = filtros.month; params.year = filtros.year; }
+        if (props.project?.uuid) params.project_uuid = props.project.uuid;
         await store.downloadReport(tipo.value, params, formato);
     } catch (e) {
         error.value = e?.response?.data?.message || e?.message || 'No se pudo generar el reporte. Revisa que haya días cerrados en ese filtro.';

@@ -1,9 +1,29 @@
-<template>
+﻿<template>
     <div class="row g-2 g-md-3">
         <div class="col-12 col-xxl-10 offset-xxl-1 col-xl-12">
 
             <BasePageHeader :title="pageTitle" :subtitle="pageSubtitle" icon="fad fa-clipboard-list text-primary"
                 :breadcrumbs="breadcrumbs" :show-back="true" @back="goBack" />
+
+            <!-- BANNER DEPRECATED PARA ACTUALIZAR HOJA DE CONTROL -->
+            <div v-if="isEditMode" class="alert alert-warning border border-warning shadow-sm rounded-3 p-3 mb-3 d-flex align-items-start gap-2" role="alert">
+                <i class="fad fa-exclamation-triangle text-warning fs-4 flex-shrink-0 mt-1" aria-hidden="true"></i>
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading fw-bold mb-1 fs-12 text-uppercase text-warning-emphasis">
+                        <span class="badge bg-warning text-dark me-1">DEPRECATED</span>
+                        Funcionalidad en desuso — Actualización Manual de Planilla
+                    </h6>
+                    <p class="mb-1 fs-11 text-dark">
+                        Esta pantalla de edición manual está obsoleta y se eliminará próximamente de la plataforma. La gestión operativa, kilometrajes, recorridos y firmas se realizan en tiempo real desde <strong>Control en Ruta</strong>.
+                    </p>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-warning btn-xs fw-semibold shadow-xs" @click="router.push('/planilla-de-control-de-prestacion-servicios/control-de-servicios')">
+                            <i class="fad fa-steering-wheel me-1" aria-hidden="true"></i>
+                            Ir a Control en Ruta
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div class="card border-0 shadow-sm fade-in-up" style="animation-delay: 0.1s;">
                 <div class="card-header bg-light py-2 px-3 border-bottom">
@@ -369,13 +389,15 @@
 
 <script setup>
 import { toast } from '@/utils/toast.js';
-import Swal from 'sweetalert2';
+import { showSwalModal, closeSwal, showLoadingModal } from '@/utils/confirm.js';
 /**
  * @author Darwin Montes
  * @version 1.0.0
  * @created_at 2026-06-19
  * @module {Features.Fleet}
  * @resource {ServiceDeliveryControlSheet}
+ * @deprecated La edición manual directa de hojas de control está obsoleta y en desuso;
+ * el registro operativo de campo debe realizarse a través de Control en Ruta.
  */
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -775,22 +797,18 @@ const shareCoordinatorLink = async () => {
     if (!isEditMode.value) return;
     try {
         sharingLink.value = true;
-        Swal.fire({
+        await showLoadingModal({
             title: 'Generando enlace...',
-            text: 'Por favor espera mientras generamos el enlace de firma temporal.',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            text: 'Por favor espera mientras generamos el enlace de firma temporal.'
         });
 
         const result = await store.generateCoordinatorSignUrl(route.params.id);
         const publicUrl = result?.url ?? '';
         if (!publicUrl) throw new Error('Sin enlace');
 
-        Swal.close();
+        await closeSwal();
 
-        Swal.fire({
+        showSwalModal({
             title: '¡Enlace Generado!',
             html: `
                 <p>Comparte este enlace con el coordinador de servicios. Tiene una vigencia de <b>1 hora</b> y su firma se plasmará en el campo RECIBO Y FIRMA:</p>
@@ -807,7 +825,7 @@ const shareCoordinatorLink = async () => {
         }).then((result) => {
             if (result.isConfirmed) {
                 navigator.clipboard.writeText(publicUrl).then(() => {
-                    Swal.fire({
+                    showSwalModal({
                         title: '¡Copiado!',
                         text: 'El enlace de firma ha sido copiado al portapapeles.',
                         icon: 'success',
@@ -822,8 +840,8 @@ const shareCoordinatorLink = async () => {
         });
     } catch (err) {
         console.error('Error al generar enlace de firma:', err);
-        Swal.close();
-        Swal.fire({
+        await closeSwal();
+        showSwalModal({
             title: 'Error',
             text: err.response?.data?.message ?? 'No se pudo generar el enlace de firma del coordinador.',
             icon: 'error',
@@ -863,7 +881,7 @@ const handleSubmit = async () => {
             await store.updateItem(route.params.id, buildPayload());
         } else if (esModoMasivo.value) {
             // SPEC-009: confirmación con el conteo antes de crear N hojas.
-            const confirmacion = await Swal.fire({
+            const confirmacion = await showSwalModal({
                 title: 'Crear hojas por proyecto',
                 html: textoResumenCreacion.value,
                 icon: 'question',

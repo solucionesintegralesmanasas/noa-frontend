@@ -86,7 +86,7 @@ export const useUsersStore = defineStore('users', {
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setSort(field, order) {
             this.sortField = field;
-            this.sortOrder = order;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
             this.pagination.currentPage = 1;
             return this.fetchItems();
         },

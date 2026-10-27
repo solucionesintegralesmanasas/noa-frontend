@@ -92,7 +92,7 @@ export const useTrackingStore = defineStore('tracking', {
                 const response = await trackingService.getGeofences({
                     per_page: 100,
                     sort_by: this.sortField || undefined,
-                    sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                     ...actualParams,
                 }, { signal: actualSignal });
                 this.geofences = response.data?.data || response.data || [];
@@ -107,7 +107,7 @@ export const useTrackingStore = defineStore('tracking', {
 
         setSort(field, order) {
             this.sortField = field;
-            this.sortOrder = order;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
             return this.fetchGeofences();
         },
 

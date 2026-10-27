@@ -26,10 +26,11 @@ export const serviceDeliveryControlSheetRoutes = [
         name: 'serviceDeliveryControlSheet.edit',
         component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
         meta: {
-            title: 'Editar',
+            title: 'Editar (Deprecated)',
             auth: true,
             layout: 'dashboard',
             permissions: ['service_delivery_control_sheets.update'],
+            deprecated: true,
         },
     },
     {

@@ -39,7 +39,7 @@ export const useObjectsContractsStore = defineStore('objectsContracts', {
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
                     sort_by: this.sortField || undefined,
-                    sort_order: this.sortOrder === 1 ? 'asc' : this.sortOrder === -1 ? 'desc' : undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
