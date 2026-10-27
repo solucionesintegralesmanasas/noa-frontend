@@ -12,33 +12,18 @@ export const serviceDeliveryControlSheetRoutes = [
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/crear',
-        name: 'serviceDeliveryControlSheet.create',
-        component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
-        meta: {
-            title: 'Crear',
-            auth: true,
-            layout: 'dashboard',
-            permissions: ['service_delivery_control_sheets.create'],
-        },
+        redirect: '/planilla-de-control-de-prestacion-servicios/control-de-servicios',
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/editar/:id',
-        name: 'serviceDeliveryControlSheet.edit',
-        component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
-        meta: {
-            title: 'Editar (Deprecated)',
-            auth: true,
-            layout: 'dashboard',
-            permissions: ['service_delivery_control_sheets.update'],
-            deprecated: true,
-        },
+        redirect: '/planilla-de-control-de-prestacion-servicios',
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/control-de-servicios',
         name: 'serviceDeliveryControlSheet.internal-control',
         component: () => import('./views/ServiceTemplateView.vue'),
         meta: {
-            title: 'Servicio Subcontratado',
+            title: 'Control en Ruta',
             auth: true,
             layout: 'dashboard',
             permissions: ['service_delivery_control_sheets.index'],

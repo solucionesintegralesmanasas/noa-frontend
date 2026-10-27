@@ -22,17 +22,7 @@
                     <i class="fad fa-sync" aria-hidden="true" />
                 </button>
 
-                <!-- CREATE -->
-                <button
-                    v-if="permissionsStore.can('service_delivery_control_sheets.create') && !permissionsStore.hasRole('CONDUCTOR')"
-                    class="btn btn-primary btn-sm px-3 me-2"
-                    type="button"
-                    title="Nuevo registro de planilla"
-                    @click="goToCreate"
-                >
-                    <i class="fad fa-plus me-1" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">+ Nueva Planilla</span>
-                </button>
+
 
                 <!-- CUSTOM: Control de Servicios (En Ruta) -->
                 <button
@@ -801,7 +791,6 @@ const tipoLabel = (type) => {
 };
 
 const goToInternalControl = () => router.push('/planilla-de-control-de-prestacion-servicios/control-de-servicios');
-const goToCreate = () => router.push('/planilla-de-control-de-prestacion-servicios/crear');
 const goToControl = (uuid) => router.push(`/planilla-de-control-de-prestacion-servicios/control-de-servicios?id=${uuid}`);
 
 const downloadParentPdf = async (data) => {

@@ -72,13 +72,13 @@ Ejemplo:
 
 ---
 
-## 📋 Estado de la Revisión de Código (2026-10-26) y Tareas Pendientes
+## 📋 Estado de la Revisión de Código (2026-10-26 / 2026-10-27) y Tareas Pendientes
 
-Durante la jornada del 26 de octubre de 2026 se llevó a cabo una revisión integral de código (`/code-review`) cubriendo estándares arquitectónicos y especificaciones de producto para el **Rediseño del módulo de Hoja de Control de Servicio**, la **Normalización de ordenamiento server-side** y los **Datos de Persona en Terceros (Issue #9)**.
+Durante las jornadas del 26 y 27 de octubre de 2026 se llevó a cabo una revisión integral de código (`/code-review`) cubriendo estándares arquitectónicos y especificaciones de producto para el **Rediseño del módulo de Hoja de Control de Servicio**, la **Normalización de ordenamiento server-side** y los **Datos de Persona en Terceros (Issue #9)**.
 
 A continuación se resume lo completado y los ítems pendientes por abordar.
 
-### ✅ Corregido y Verificado en la Sesión
+### ✅ Corregido, Verificado y Subido al Repositorio
 
 1. **Normalización del Ordenamiento Server-Side (Pinia + Backend):**
    - Corregidos **16 stores Pinia** para soportar el formato `'desc'`/`'asc'` enviado por `useServerSort.js`, garantizando que la dirección del orden no se pierda ni quede indefinida en los payloads de la API, y normalizando a `1`/`-1` para el indicador visual de orden en PrimeVue.
@@ -104,42 +104,40 @@ A continuación se resume lo completado y los ítems pendientes por abordar.
      - Icono actualizado a `fad fa-file-chart-line` (FontAwesome 5 Pro).
      - Pre-carga automática de rango de fechas (`fecha_desde` / `fecha_hasta`) y propagación del `project_uuid` seleccionado.
 
+4. **Gestión de Ramas y Commits en Git (Working Tree Limpio):**
+   - Se estructuraron commits atómicos separados por tarea y módulo:
+     - **Backend:** `fa6bf84` (Hojas de control y ordenamiento) y `421123c` (Issue #9 Terceros).
+     - **Frontend:** `3c03b0b` (Hojas de control, rediseño y stores) y `be5b1bc` (Issue #9 Terceros).
+   - Rebase lineal completado y ramas integradas y subidas a `origin/feature`.
+
+5. **Estandarización de Alertas Modales (`confirm.js` con Carga Diferida):**
+   - Centralizado el manejo de diálogos asíncronos y modales con `showSwalModal()`, `closeSwal()` y `showLoadingModal()` en [`src/utils/confirm.js`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/utils/confirm.js).
+   - Removido todo `import Swal from 'sweetalert2'` directo en las vistas de `serviceDeliveryControlSheet`, asegurando carga diferida por chunks (lazy chunking).
+
+6. **Validación de Fechas y Zona Horaria en Terceros (Issue #9):**
+   - En [`ThirdPartiesFormView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/thirdParties/views/ThirdPartiesFormView.vue), normalizada la validación de `birth_date` y `id_card_issue_date` usando formato estándar local `YYYY-MM-DD` (`en-CA`), previniendo desajustes por medianoche UTC.
+   - Verificado con suite de pruebas unitarias (`datosPersonaForm.test.js`) pasando al 100%.
+
+7. **Limpieza de Linter y Suite de Pruebas:**
+   - Retirado código muerto (`renderKmDia`), dejando ESLint con **0 errores**.
+   - Suite completa de 318 pruebas unitarias pasando al 100%.
+
 ---
 
 ### ⏳ Pendientes por Completar de la Revisión de Código
 
-Los siguientes puntos fueron identificados durante la auditoría de estándares y especificaciones y deben completarse en las siguientes iteraciones:
-
-#### 1. Gestión de Ramas y Commits en Git (Working Tree Limpio)
-- **Problema:** En el working tree actual coinciden dos tareas de negocio distintas:
-  1. El rediseño y ordenamiento de Hojas de Control de Servicio (`serviceDeliveryControlSheet`, stores Pinia y `PcpEvidence`).
-  2. El Issue #9: Datos de nacimiento y cédula en Terceros (`ThirdParty`, `ValidaDatosPersona`, migraciones y vistas de terceros).
+#### 1. Deprecación y Retiro Definitivo de Vista Legacy (En curso)
+- **Contexto:** La vista [`ServiceDeliveryControlSheetFormView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/serviceDeliveryControlSheet/views/ServiceDeliveryControlSheetFormView.vue) corresponde a la edición legacy de hojas de control. El paradigma operativo actual traslada la gestión diaria a "Control en Ruta" y la aprobación ágil del coordinador.
 - **Acción requerida:**
-  - Crear una rama específica para el Issue #9 (ej. `feature/issue-9-terceros-datos-nacimiento`) y commitear sus cambios de forma aislada.
-  - Crear una rama para el rediseño de Hojas de Control (ej. `feature/redisenio-hojas-control-servicio`) con los cambios de frontend y backend correspondientes.
+  - Retirar la ruta `ServiceDeliveryControlSheetEdit` del enrutador y redirigir intentos de acceso a la lista principal.
+  - Eliminar o desacoplar el componente obsoleto de la aplicación.
 
-#### 2. Estandarización de Alertas Modales (`sweetalert2` vs `@/utils/toast.js`)
-- **Problema:** [`ServiceDeliveryControlSheetListView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/serviceDeliveryControlSheet/views/ServiceDeliveryControlSheetListView.vue) y [`ServiceDeliveryControlSheetFormView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/serviceDeliveryControlSheet/views/ServiceDeliveryControlSheetFormView.vue) aún importan `Swal from 'sweetalert2'` directamente en vez de emplear la utilidad centralizada del proyecto.
+#### 2. Optimización de Consultas y Caching de Métricas PCP (Backend)
+- **Contexto:** Para proyectos con flotillas de más de 50 vehículos y meses acumulados, `resumenProyectosEnLote` computa evidencias y firmas en tiempo de ejecución.
 - **Acción requerida:**
-  - Migrar todas las invocaciones a `showSwalModal()` desde `@/utils/toast.js` para mantener una única fuente de verdad en temas, accesibilidad y configuración de modales.
+  - Incorporar migración con índice compuesto en la tabla de evidencias/firmas (`service_delivery_control_sheet_uuid`, `rol`, `status`).
+  - Implementar cacheo ligero para proyectos cuyo estado operativo sea `"Cerrado"` o `"Inactivo"`.
 
-#### 3. Deprecación y Retiro Definitivo de Vista Legacy
-- **Problema:** [`ServiceDeliveryControlSheetFormView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/serviceDeliveryControlSheet/views/ServiceDeliveryControlSheetFormView.vue) se encuentra marcada como deprecated tras el cambio de paradigma hacia "Control en Ruta" y la firma rápida del coordinador.
+#### 3. Pruebas Automatizadas de Integración / E2E
 - **Acción requerida:**
-  - Remover la ruta `ServiceDeliveryControlSheetEdit` del archivo de rutas cuando se dé por finalizada la fase de transición.
-  - Eliminar el componente o dejar una redirección informativa temporal.
-
-#### 4. Validación de Fechas y Zona Horaria en Terceros (Issue #9)
-- **Problema:** En [`ThirdPartiesFormView.vue`](file:///C:/xampp/htdocs/tsb-design/noa-frontend-tsb/src/features/thirdParties/views/ThirdPartiesFormView.vue), la regla `before:today` para `birth_date` puede disparar falsos positivos si la conversión de la fecha local a medianoche UTC adelanta o retrasa el día según el huso horario del cliente.
-- **Acción requerida:**
-  - Normalizar el formateo de fecha a formato ISO estricto `YYYY-MM-DD` sin desfase de zona antes de someterlo a validación en el hook y en VeeValidate.
-
-#### 5. Optimización de Consultas y Caching de Métricas PCP (Backend)
-- **Problema:** Para proyectos de transporte a gran escala (con más de 50 vehículos y cientos de días acumulados), `resumenProyectosEnLote` realiza agregaciones en tiempo de consulta que evalúan firmas y días incompletos.
-- **Acción requerida:**
-  - Evaluar la incorporación de un índice compuesto en la tabla de evidencias/firmas (`service_delivery_control_sheet_uuid`, `rol`, `status`).
-  - Analizar un mecanismo de cacheo ligero para proyectos cuyo estado operativo esté `"Cerrado"` o `"Inactivo"`.
-
-#### 6. Pruebas Automatizadas de Integración / E2E
-- **Acción requerida:**
-  - Incorporar pruebas automáticas para el flujo completo del modal de firma del coordinador (aprobación/rechazo de evidencias) y para la descarga consolidada de PDF filtrada por proyecto.
+  - Añadir pruebas automáticas para el modal de firma rápida del coordinador y la exportación consolidada de PDF filtrada por proyecto.
