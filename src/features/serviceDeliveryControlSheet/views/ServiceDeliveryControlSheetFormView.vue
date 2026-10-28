@@ -1,37 +1,17 @@
-﻿<template>
+<template>
     <div class="row g-2 g-md-3">
         <div class="col-12 col-xxl-10 offset-xxl-1 col-xl-12">
 
             <BasePageHeader :title="pageTitle" :subtitle="pageSubtitle" icon="fad fa-clipboard-list text-primary"
                 :breadcrumbs="breadcrumbs" :show-back="true" @back="goBack" />
 
-            <!-- BANNER DEPRECATED PARA ACTUALIZAR HOJA DE CONTROL -->
-            <div v-if="isEditMode" class="alert alert-warning border border-warning shadow-sm rounded-3 p-3 mb-3 d-flex align-items-start gap-2" role="alert">
-                <i class="fad fa-exclamation-triangle text-warning fs-4 flex-shrink-0 mt-1" aria-hidden="true"></i>
-                <div class="flex-grow-1">
-                    <h6 class="alert-heading fw-bold mb-1 fs-12 text-uppercase text-warning-emphasis">
-                        <span class="badge bg-warning text-dark me-1">DEPRECATED</span>
-                        Funcionalidad en desuso — Actualización Manual de Planilla
-                    </h6>
-                    <p class="mb-1 fs-11 text-dark">
-                        Esta pantalla de edición manual está obsoleta y se eliminará próximamente de la plataforma. La gestión operativa, kilometrajes, recorridos y firmas se realizan en tiempo real desde <strong>Control en Ruta</strong>.
-                    </p>
-                    <div class="mt-2">
-                        <button type="button" class="btn btn-warning btn-xs fw-semibold shadow-xs" @click="router.push('/planilla-de-control-de-prestacion-servicios/control-de-servicios')">
-                            <i class="fad fa-steering-wheel me-1" aria-hidden="true"></i>
-                            Ir a Control en Ruta
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <div class="card border-0 shadow-sm fade-in-up" style="animation-delay: 0.1s;">
                 <div class="card-header bg-light py-2 px-3 border-bottom">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fad fa-edit text-primary"></i>
+                        <i class="fad fa-edit text-primary" aria-hidden="true"></i>
                         <h6 class="mb-0 fw-medium">Formulario de Control de Servicios</h6>
                         <span class="badge bg-primary bg-opacity-10 text-primary ms-2">
-                            <i class="fad fa-asterisk me-1" style="font-size: 0.5rem;"></i>Campos obligatorios
+                            <i class="fad fa-asterisk me-1" style="font-size: 0.5rem;" aria-hidden="true"></i>Campos obligatorios
                         </span>
                     </div>
                 </div>
@@ -55,13 +35,13 @@
                         <!-- SECCIÓN 1: INFORMACIÓN DEL SERVICIO -->
                         <div class="col-12">
                             <hr class="my-2">
-                            <h6 class="fw-medium text-primary"><i class="fad fa-info-circle me-1"></i>Información del
+                            <h6 class="fw-medium text-primary"><i class="fad fa-info-circle me-1" aria-hidden="true"></i>Información del
                                 Servicio</h6>
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3" v-if="isSuperAdmin">
-                            <label class="form-label required" for="company_uuid">Empresa</label>
-                            <PrimeSelect :input-id="'company_uuid'" v-model="formData.company_uuid"
+                            <label class="form-label required" for="f-company_uuid">Empresa</label>
+                            <PrimeSelect :input-id="'f-company_uuid'" v-model="formData.company_uuid"
                                 :options="store.catalogs.companies" option-value="uuid" option-label="business_name"
                                 placeholder="Seleccione..." showClear filter class="w-100"
                                 :invalid="!!validationErrors['company_uuid']" />
@@ -70,8 +50,8 @@
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-6">
-                            <label class="form-label required" for="project_uuid">Proyecto</label>
-                            <PrimeSelect :input-id="'project_uuid'" v-model="formData.project_uuid"
+                            <label class="form-label required" for="f-project_uuid">Proyecto</label>
+                            <PrimeSelect :input-id="'f-project_uuid'" v-model="formData.project_uuid"
                                 :options="store.projects" option-value="uuid" option-label="project_name"
                                 placeholder="Seleccione el proyecto..." showClear filter class="w-100"
                                 :invalid="!!validationErrors['project_uuid']" />
@@ -86,19 +66,22 @@
 
                         <!-- En creación directa el responsable sale de la asignación de cada coche (SPEC-009) -->
                         <div class="col-12 col-sm-6 col-lg-3" v-if="!esModoMasivo">
-                            <label class="form-label" for="official_name_and_surname">Responsable de servicio</label>
-                            <input id="official_name_and_surname" v-model="formData.official_name_and_surname"
+                            <label class="form-label" for="f-official_name_and_surname">Responsable de servicio</label>
+                            <input id="f-official_name_and_surname" v-model="formData.official_name_and_surname"
                                 class="form-control"
-                                :class="{ 'is-invalid': validationErrors.official_name_and_surname }" type="text"
+                                :class="{ 'is-invalid': validationErrors.official_name_and_surname }"
+                                :aria-invalid="!!validationErrors.official_name_and_surname"
+                                :aria-describedby="validationErrors.official_name_and_surname ? 'f-official_name_and_surname-error' : undefined"
+                                type="text"
                                 placeholder="Se autocompleta al elegir el conductor" autocomplete="off" />
                             <div v-if="validationErrors.official_name_and_surname" class="invalid-feedback d-block" id="f-official_name_and_surname-error" role="alert">{{
                                 validationErrors.official_name_and_surname }}</div>
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label required" for="type_of_control_sheet">Tipo de hoja de
+                            <label class="form-label required" for="f-type_of_control_sheet">Tipo de hoja de
                                 control</label>
-                            <PrimeSelect :input-id="'type_of_control_sheet'" v-model="formData.type_of_control_sheet"
+                            <PrimeSelect :input-id="'f-type_of_control_sheet'" v-model="formData.type_of_control_sheet"
                                 :options="[{ label: 'Directo con la empresa', value: 'DIRECTO_CON_LA_EMPRESA' }, { label: 'Subcontratado', value: 'SUBCONTRATADO' }, { label: 'Con vehículo contratado', value: 'CON_VEHICULO_CONTRATADO' }, { label: 'Vehículo externo de plataforma', value: 'EXTERNO_PLATAFORMA' }]"
                                 option-label="label" option-value="value" class="w-100"
                                 :invalid="!!validationErrors['type_of_control_sheet']" />
@@ -107,8 +90,8 @@
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label required" for="start_date">Fecha de inicio del servicio</label>
-                            <DateInput id="start_date" v-model="formData.start_date" class="form-control"
+                            <label class="form-label required" for="f-start_date">Fecha de inicio del servicio</label>
+                            <DateInput id="f-start_date" v-model="formData.start_date" class="form-control"
                                 :class="{ 'is-invalid': validationErrors.start_date || validationErrors.service_date }"
                                 :aria-invalid="!!(validationErrors.start_date || validationErrors.service_date)"
                                 :aria-describedby="validationErrors.start_date ? 'f-start_date-error' : (validationErrors.service_date ? 'f-service_date-error' : undefined)"
@@ -120,9 +103,12 @@
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label" for="end_date">Fecha de fin del servicio</label>
-                            <DateInput id="end_date" v-model="formData.end_date" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.end_date }" autocomplete="off"
+                            <label class="form-label" for="f-end_date">Fecha de fin del servicio</label>
+                            <DateInput id="f-end_date" v-model="formData.end_date" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.end_date }"
+                                :aria-invalid="!!validationErrors.end_date"
+                                :aria-describedby="validationErrors.end_date ? 'f-end_date-error' : undefined"
+                                autocomplete="off"
                                 :min="formData.start_date || vigenciaMin || undefined" :max="vigenciaMax || undefined" />
                             <div v-if="validationErrors.end_date" class="invalid-feedback d-block" id="f-end_date-error" role="alert">{{
                                 validationErrors.end_date }}</div>
@@ -132,7 +118,7 @@
 
                         <div v-if="diasServicio > 1" class="col-12">
                             <div class="alert alert-primary d-flex align-items-center gap-2 py-2 px-3 mb-0">
-                                <i class="fad fa-calendar-alt text-primary"></i>
+                                <i class="fad fa-calendar-alt text-primary" aria-hidden="true"></i>
                                 <span>Servicio programado para <strong>{{ diasServicio }} días</strong> (desde
                                     {{ formatFecha(formData.start_date) }} hasta {{ formatFecha(formData.end_date)
                                     }}). Se generará una planilla diaria por cada día automáticamente. Solo los días cerrados salen en reportes.</span>
@@ -140,13 +126,13 @@
                         </div>
                         <div v-if="fueraDeVigencia" class="col-12">
                             <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-0" role="alert">
-                                <i class="fad fa-exclamation-triangle"></i>
+                                <i class="fad fa-exclamation-triangle" aria-hidden="true"></i>
                                 <span>Las fechas están fuera de la vigencia del proyecto ({{ formatFecha(vigenciaMin) }} al {{ formatFecha(vigenciaMax) }}). El backend las rechazará.</span>
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <label class="form-label" for="statusSelect">Estado</label>
-                            <PrimeSelect :input-id="'statusSelect'" v-model="formData.is_active"
+                            <label class="form-label" for="f-is_active">Estado</label>
+                            <PrimeSelect :input-id="'f-is_active'" v-model="formData.is_active"
                                 :options="[{ label: 'Activo', value: '1' }, { label: 'Inactivo', value: '0' }]"
                                 option-label="label" option-value="value" class="w-100"
                                 :invalid="!!validationErrors['is_active']" />
@@ -155,9 +141,12 @@
                             </div>
                         </div>
                         <div class="col-12 col-sm-12 col-lg-12">
-                            <label class="form-label" for="daily_route">Recorrido del servicio <span class="text-muted fw-normal">(opcional)</span></label>
-                            <input id="daily_route" v-model="formData.daily_route" class="form-control"
-                                :class="{ 'is-invalid': validationErrors.daily_route }" type="text"
+                            <label class="form-label" for="f-daily_route">Recorrido del servicio <span class="text-muted fw-normal">(opcional)</span></label>
+                            <input id="f-daily_route" v-model="formData.daily_route" class="form-control"
+                                :class="{ 'is-invalid': validationErrors.daily_route }"
+                                :aria-invalid="!!validationErrors.daily_route"
+                                :aria-describedby="validationErrors.daily_route ? 'f-daily_route-error' : undefined"
+                                type="text"
                                 placeholder="Ej: Recorrido Norte - Sur, entrega cliente X..." autocomplete="off" />
                             <div v-if="validationErrors.daily_route" class="invalid-feedback d-block" id="f-daily_route-error" role="alert">{{
                                 validationErrors.daily_route }}</div>
@@ -165,7 +154,7 @@
 
                         <div class="col-12" v-if="!isEditMode">
                             <div class="alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-0 small">
-                                <i class="fad fa-route text-primary"></i>
+                                <i class="fad fa-route text-primary" aria-hidden="true"></i>
                                 <span>Los recorridos de cada planilla diaria los registrará el conductor durante la operación (Control de Servicios). Una planilla diaria puede tener muchos recorridos.</span>
                             </div>
                         </div>
@@ -269,8 +258,8 @@
                             <!-- EDICIÓN: una sola hoja con su par histórico (editable) -->
                             <template v-else>
                                 <div class="col-12 col-sm-6 col-xl-6">
-                                    <label class="form-label required" for="vehicle_uuid">Vehículo</label>
-                                    <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
+                                    <label class="form-label required" for="f-vehicle_uuid">Vehículo</label>
+                                    <PrimeSelect :input-id="'f-vehicle_uuid'" v-model="formData.vehicle_uuid"
                                         :options="vehiculosFiltrados" option-value="uuid"
                                         option-label="vehicle_license_plate" placeholder="Seleccione..." showClear filter
                                         class="w-100" :invalid="!!validationErrors['vehicle_uuid']" />
@@ -279,8 +268,8 @@
                                 </div>
 
                                 <div class="col-12 col-sm-6 col-xl-6">
-                                    <label class="form-label required" for="third_party_uuid">Conductor</label>
-                                    <PrimeSelect :input-id="'third_party_uuid'" v-model="formData.third_party_uuid"
+                                    <label class="form-label required" for="f-third_party_uuid">Conductor</label>
+                                    <PrimeSelect :input-id="'f-third_party_uuid'" v-model="formData.third_party_uuid"
                                         :options="conductoresFiltrados" option-value="uuid"
                                         :option-label="(opt) => `${opt.first_name || ''} ${opt.last_name || ''}`.trim()"
                                         placeholder="Seleccione..." showClear filter class="w-100"
@@ -295,49 +284,55 @@
                         <template v-if="isExternalType">
                             <div class="col-12">
                                 <hr class="my-2">
-                                <h6 class="fw-medium text-primary"><i class="fad fa-truck me-1"></i>Vehículo externo / subcontratado
+                                <h6 class="fw-medium text-primary"><i class="fad fa-truck me-1" aria-hidden="true"></i>Vehículo externo / subcontratado
                                     <span class="badge bg-warning text-dark ms-2">{{ tipoLabel }}</span>
                                 </h6>
                             </div>
                             <div class="col-12 col-sm-6 col-xl-3">
-                                <label class="form-label required" for="vehicle_license_plate">Placa del vehículo</label>
-                                <input id="vehicle_license_plate" v-model="formData.vehicle_license_plate" class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.vehicle_license_plate }" type="text"
+                                <label class="form-label required" for="f-vehicle_license_plate">Placa del vehículo</label>
+                                <input id="f-vehicle_license_plate" v-model="formData.vehicle_license_plate" class="form-control"
+                                    :class="{ 'is-invalid': validationErrors.vehicle_license_plate }"
+                                    :aria-invalid="!!validationErrors.vehicle_license_plate"
+                                    :aria-describedby="validationErrors.vehicle_license_plate ? 'f-vehicle_license_plate-error' : undefined"
+                                    type="text"
                                     placeholder="Ej: ABC123" autocomplete="off" style="text-transform: uppercase" />
                                 <div v-if="validationErrors.vehicle_license_plate" class="invalid-feedback d-block" id="f-vehicle_license_plate-error" role="alert">{{
                                     validationErrors.vehicle_license_plate }}</div>
                             </div>
                             <div class="col-12 col-sm-6 col-xl-4">
-                                <label class="form-label required" for="driver_name_and_surname">Nombre del conductor</label>
-                                <input id="driver_name_and_surname" v-model="formData.driver_name_and_surname" class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.driver_name_and_surname }" type="text"
+                                <label class="form-label required" for="f-driver_name_and_surname">Nombre del conductor</label>
+                                <input id="f-driver_name_and_surname" v-model="formData.driver_name_and_surname" class="form-control"
+                                    :class="{ 'is-invalid': validationErrors.driver_name_and_surname }"
+                                    :aria-invalid="!!validationErrors.driver_name_and_surname"
+                                    :aria-describedby="validationErrors.driver_name_and_surname ? 'f-driver_name_and_surname-error' : undefined"
+                                    type="text"
                                     placeholder="Nombre y apellido" autocomplete="off" />
                                 <div v-if="validationErrors.driver_name_and_surname" class="invalid-feedback d-block" id="f-driver_name_and_surname-error" role="alert">{{
                                     validationErrors.driver_name_and_surname }}</div>
                             </div>
                             <div class="col-12 col-sm-6 col-xl-2">
-                                <label class="form-label" for="driver_license_number">Licencia</label>
-                                <input id="driver_license_number" v-model="formData.driver_license_number" class="form-control" type="text"
+                                <label class="form-label" for="f-driver_license_number">Licencia</label>
+                                <input id="f-driver_license_number" v-model="formData.driver_license_number" class="form-control" type="text"
                                     placeholder="N.º licencia" autocomplete="off" />
                             </div>
                             <div class="col-12 col-sm-6 col-xl-3">
-                                <label class="form-label" for="vehicle_class_uuid">Clase de vehículo</label>
-                                <PrimeSelect :input-id="'vehicle_class_uuid'" v-model="formData.vehicle_class_uuid"
+                                <label class="form-label" for="f-vehicle_class_uuid">Clase de vehículo</label>
+                                <PrimeSelect :input-id="'f-vehicle_class_uuid'" v-model="formData.vehicle_class_uuid"
                                     :options="store.catalogs.vehicleClasses" option-value="uuid"
                                     :option-label="(opt) => opt.description ?? opt.class_code_class ?? opt.uuid"
                                     placeholder="Seleccione..." showClear filter class="w-100"
                                     :invalid="!!validationErrors['vehicle_class_uuid']" />
                             </div>
                             <div class="col-12 col-sm-6 col-xl-5">
-                                <label class="form-label" for="fuec_uuid_ext">FUEC asociado (opcional)</label>
-                                <PrimeSelect :input-id="'fuec_uuid_ext'" v-model="formData.fuec_uuid"
+                                <label class="form-label" for="f-fuec_uuid_ext">FUEC asociado (opcional)</label>
+                                <PrimeSelect :input-id="'f-fuec_uuid_ext'" v-model="formData.fuec_uuid"
                                     :options="store.catalogs.fuecs" option-value="uuid"
                                     :option-label="(opt) => opt.fuec_number ?? opt.uuid" placeholder="Seleccione..."
                                     showClear filter class="w-100" :invalid="!!validationErrors['fuec_uuid']" />
                             </div>
                             <div class="col-12 col-sm-6 col-xl-4" v-if="formData.type_of_control_sheet === 'EXTERNO_PLATAFORMA'">
-                                <label class="form-label" for="vehicle_uuid_ext">Vehículo de plataforma (si está registrado)</label>
-                                <PrimeSelect :input-id="'vehicle_uuid_ext'" v-model="formData.vehicle_uuid"
+                                <label class="form-label" for="f-vehicle_uuid_ext">Vehículo de plataforma (si está registrado)</label>
+                                <PrimeSelect :input-id="'f-vehicle_uuid_ext'" v-model="formData.vehicle_uuid"
                                     :options="vehiculosFiltrados" option-value="uuid"
                                     option-label="vehicle_license_plate"
                                     placeholder="No está registrado / ingreso manual" showClear filter class="w-100"
@@ -352,7 +347,7 @@
                             <button v-if="isEditMode && canShareCoordinatorLink" type="button" class="btn btn-outline-primary mt-2"
                                 :disabled="sharingLink" @click="shareCoordinatorLink">
                                 <span v-if="sharingLink" class="spinner-border spinner-border-sm me-1"></span>
-                                <i v-else class="fad fa-share-alt me-1"></i>
+                                <i v-else class="fad fa-share-alt me-1" aria-hidden="true"></i>
                                 Compartir firma del coordinador (1 hora)
                             </button>
                         </div>
@@ -364,7 +359,7 @@
                 <div class="card-body py-3">
                     <div class="d-flex align-items-start gap-3">
                         <div class="bg-primary bg-opacity-10 rounded-circle p-2 flex-shrink-0">
-                            <i class="fad fa-lightbulb text-primary fs-5"></i>
+                            <i class="fad fa-lightbulb text-primary fs-5" aria-hidden="true"></i>
                         </div>
                         <div>
                             <h6 class="fw-medium mb-1">Consejos para la hoja de control</h6>
@@ -389,6 +384,7 @@
 
 <script setup>
 import { toast } from '@/utils/toast.js';
+import logger from '@/utils/logger.js';
 import { showSwalModal, closeSwal, showLoadingModal } from '@/utils/confirm.js';
 /**
  * @author Darwin Montes
@@ -410,8 +406,6 @@ import BaseFormActions from '@/components/BaseFormActions.vue';
 import {
     armarPayloadCreacion,
     asignacionesActivas,
-    asignacionDeConductor,
-    asignacionDeVehiculo,
     filasDeProyecto,
     opcionesConductores,
     opcionesVehiculos,
@@ -426,13 +420,10 @@ const permissionsStore = usePermissionsStore();
 const userStore = useUserStore();
 
 // --- ESTADOS ---
-const isSuperAdmin = computed(() => permissionsStore.roles?.includes('SUPERADMIN'));
+const isSuperAdmin = computed(() => permissionsStore.hasRole('superadmin'));
 
 // Solo administradores (SUPERADMIN o ADMIN_EMPRESA) pueden compartir el enlace de firma
-const canShareCoordinatorLink = computed(() => (permissionsStore.roles || []).some((r) => {
-    const name = typeof r === 'string' ? r : (r?.name ?? '');
-    return name === 'SUPERADMIN' || name === 'ADMIN_EMPRESA';
-}));
+const canShareCoordinatorLink = computed(() => permissionsStore.hasRole('superadmin') || permissionsStore.hasRole('administrador'));
 const isEditMode = computed(() => route.params.id !== undefined);
 const pageTitle = computed(() => isEditMode.value ? 'Actualizar Hoja de Control' : 'Registrar Hoja de Control');
 const pageSubtitle = computed(() => isEditMode.value ? 'Modifica los datos del registro' : 'Completa los datos para crear un nuevo registro');
@@ -548,7 +539,7 @@ const textoResumenCreacion = computed(() => {
     const { hojas, planillasDiarias } = resumenBulk.value;
     const hojasTexto = `<b>${hojas}</b> ${hojas === 1 ? 'hoja' : 'hojas'} (una por coche)`;
 
-    if (planillasDiarias <= 1) {
+    if (diasServicio.value <= 1) {
         return `Se crearán ${hojasTexto}. Un solo día: cada hoja es su propia planilla diaria.`;
     }
 
@@ -594,34 +585,6 @@ const conductoresFiltrados = computed(() => {
     return opciones;
 });
 
-/**
- * Completa el otro extremo del par conductor ↔ vehículo con la asignación
- * activa del proyecto. Evita que se guarden combinaciones que no existen.
- *
- * @param {'conductor'|'vehiculo'} origen - Campo que cambió.
- */
-const completarParDelProyecto = (origen) => {
-    if (esModoMasivo.value || !formData.project_uuid || !proyectoCargado.value) return;
-    const asignaciones = asignacionesProyecto.value;
-    if (!asignaciones.length) return;
-
-    if (origen === 'conductor' && formData.third_party_uuid) {
-        const asignacion = asignacionDeConductor(asignaciones, formData.third_party_uuid);
-        if (asignacion?.vehicle_uuid && asignacion.vehicle_uuid !== formData.vehicle_uuid) {
-            formData.vehicle_uuid = asignacion.vehicle_uuid;
-        }
-    }
-
-    if (origen === 'vehiculo' && formData.vehicle_uuid) {
-        const asignacion = asignacionDeVehiculo(asignaciones, formData.vehicle_uuid);
-        if (asignacion?.third_party_uuid && asignacion.third_party_uuid !== formData.third_party_uuid) {
-            formData.third_party_uuid = asignacion.third_party_uuid;
-        }
-    }
-};
-
-
-
 // --- LOGICA DEL COMPONENTE ---
 
 // Autocompletar el nombre del responsable y el vehículo del conductor elegido.
@@ -637,14 +600,10 @@ watch(() => formData.third_party_uuid, (newUuid) => {
     } else if (!isExternalType.value) {
         formData.official_name_and_surname = '';
     }
-
-    completarParDelProyecto('conductor');
 });
 
-// Al elegir el vehículo, traer el conductor que el proyecto tiene asignado.
-watch(() => formData.vehicle_uuid, () => {
-    completarParDelProyecto('vehiculo');
-});
+// Al elegir el vehículo, no sobreescribir el conductor en edición (histórico editable).
+watch(() => formData.vehicle_uuid, () => {});
 
 // Al cambiar de empresa, recargar proyectos
 watch(() => formData.company_uuid, async (newCompany) => {
@@ -833,13 +792,13 @@ const shareCoordinatorLink = async () => {
                         showConfirmButton: false
                     });
                 }).catch(err => {
-                    console.error('Error al copiar:', err);
+                    logger.error('Error al copiar enlace de firma:', err);
                     toast('Error', 'No se pudo copiar automáticamente. Por favor selecciónalo y cópialo manualmente.', 'warning');
                 });
             }
         });
     } catch (err) {
-        console.error('Error al generar enlace de firma:', err);
+        logger.error('Error al generar enlace de firma:', err);
         await closeSwal();
         showSwalModal({
             title: 'Error',
