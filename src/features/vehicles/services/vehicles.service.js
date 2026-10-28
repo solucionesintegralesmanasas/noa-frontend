@@ -1,5 +1,6 @@
 import { BaseService } from '@services/api/base.service.js';
 import { logger } from '@/utils/logger.js';
+import { formatThirdPartyList, toCatalogArray } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio para la gestión de vehículos.
@@ -122,17 +123,17 @@ class VehiclesService extends BaseService {
                 return item;
             });
 
-        const fetchSafe = async (url) => {
+        const fetchSafe = async (url, includeThirdPartyFilter = false) => {
             try {
-                const { isAfiliado, thirdPartyUuid } = this._getUserContext();
+                const { isAfiliadoRole, thirdPartyUuid } = this._getUserContext();
                 const params = {};
-                if (isAfiliado && thirdPartyUuid) {
+                if (includeThirdPartyFilter && isAfiliadoRole && thirdPartyUuid) {
                     params.third_party_uuid = thirdPartyUuid;
                 }
                 const instance = this._getInstance();
                 const res = await instance.get(url, { params });
                 const data = res.data;
-                return toArray(data?.data ?? data ?? []);
+                return toCatalogArray(data?.data ?? data ?? []);
             } catch (err) {
                 logger.warn(`Error cargando catálogo: ${url}`, err.message);
                 return [];
@@ -146,7 +147,7 @@ class VehiclesService extends BaseService {
             fetchSafe('catalogs/vehicle-classes/list'),
             fetchSafe('catalogs/brands/list'),
             fetchSafe(`administration/branches/list?company_uuid=${companyUuid || ''}`),
-            fetchSafe(`third-parties/list?type=is_affiliate&companyUuid=${companyUuid || ''}`),
+            fetchSafe(`third-parties/list?type=is_affiliate&companyUuid=${companyUuid || ''}`, true),
             fetchSafe('catalogs/type-of-documents/list'),
         ]);
 
@@ -155,12 +156,7 @@ class VehiclesService extends BaseService {
             vehicleClasses: withLabel(vehicleClasses, 'description', ['name']),
             brands: withLabel(brands, 'description', ['name']),
             branches: withLabel(branches, 'name', ['business_name']),
-            thirdParties: withLabel(thirdParties, 'company_name', [
-                (item) => [item.first_name, item.last_name].filter(Boolean).join(' ').trim(),
-                'full_name',
-                'display_name',
-                'document_number',
-            ]),
+            thirdParties: formatThirdPartyList(thirdParties, 'company_name'),
             typeOfDocuments: withLabel(typeOfDocuments, 'name', ['description']),
         };
     }

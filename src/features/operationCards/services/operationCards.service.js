@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { formatVehicleList } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio para la gestión de tarjetas de operación.
@@ -78,16 +79,7 @@ class OperationCardsService extends BaseService {
             fetchSafe('fleet-management/vehicles/list' + vehicleQuery)
         ]);
 
-        // Deduplica los vehículos por uuid/placa para evitar opciones repetidas en el desplegable
-        const seenVehicles = new Set();
-        const uniqueVehicles = (vehicles || []).filter((v) => {
-            const key = v?.uuid ?? v?.vehicle_license_plate;
-            if (!key || seenVehicles.has(key)) return false;
-            seenVehicles.add(key);
-            return true;
-        });
-
-        return { companies, vehicles: uniqueVehicles };
+        return { companies, vehicles: formatVehicleList(vehicles) };
     }
 }
 

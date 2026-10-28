@@ -23,6 +23,8 @@ export const useRupRecordsStore = defineStore('rupRecords', {
         catalogs: {},
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -67,6 +69,8 @@ export const useRupRecordsStore = defineStore('rupRecords', {
                     page: this.pagination.currentPage,
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -75,6 +79,13 @@ export const useRupRecordsStore = defineStore('rupRecords', {
                 this.pagination.totalPages = p.last_page ?? 1;
                 this.pagination.itemsPerPage = p.per_page ?? this.pagination.itemsPerPage;
             }, 'Error al cargar los datos');
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
         },
 
         /**

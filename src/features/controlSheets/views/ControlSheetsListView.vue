@@ -7,214 +7,151 @@
             :breadcrumbs="[{ label: 'Planillas de Control' }, { label: 'Listado' }]" @refresh="refreshTable" @create="goToCreate"
             :canCreate="can('control_sheets.create')" />
 
-    <!-- BARRA DE BÃšSQUEDA -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-2">
-            <div
-                class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
-                <div
-                    class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">BÃºsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" />
-                        </span>
-                        <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search" placeholder="Buscar por empresa o placa..." aria-label="Buscar hoja de control" @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
-                            title="Limpiar bÃºsqueda" @click="clearSearch">
-                            <i class="fad fa-times" />
-                        </button>
-                    </div>
+        <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+        <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+            <div class="noa-list-toolbar">
+                <div class="noa-search">
+                    <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                    <input id="f-control-sheets-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar por empresa o placa..."
+                        aria-label="Buscar hoja de control" @input="debouncedSearch" />
+                    <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
+                        aria-label="Limpiar búsqueda" @click="clearSearch">
+                        <i class="fal fa-times" aria-hidden="true" />
+                    </button>
                 </div>
 
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? "s" : "" }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
+                <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                    <i class="fas fa-filter" aria-hidden="true" />
+                    {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                    <template v-if="store.search"> para "{{ store.search }}"</template>
+                </span>
+            </div>
+
+            <!-- SKELETON -->
+            <div v-if="isViewLoading" class="card-body p-0">
+                <div class="table-responsive scrollbar">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th v-for="w in (isSuperAdmin ? ['28%', '30%', '16%', '14%', '12%'] : ['25%', '35%', '16%', '12%', '12%'])" :key="w"
+                                    style="padding:12px 8px">
+                                    <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                                <td v-for="i in 4" :key="i">
+                                    <div class="skeleton-text" style="height:18px;width:75%;" />
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <div v-for="j in 2" :key="j" class="skeleton-icon"
+                                            style="height:28px;width:28px;" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- TABLA -->
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <div class="bg-holder d-none d-lg-block bg-card"
-                    style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
+            <!-- DATATABLE (Paginación Server-Side) -->
+            <div v-else class="card-body p-0">
+                <div class="table-responsive scrollbar">
+                    <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                        :totalRecords="store.pagination.totalItems"
+                        :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                        :loading="store.loading" responsiveLayout="scroll"
+                        tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                        emptyMessage="No se encontraron registros"
+                        :sortField="store.sortField" :sortOrder="store.sortOrder" @sort="handleSort">
 
-                <!-- SKELETON -->
-                <div v-if="isViewLoading" class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th v-for="w in (isSuperAdmin ? ['25%', '20%', '20%', '15%', '10%', '10%'] : ['30%', '20%', '20%', '15%', '15%'])" :key="w"
-                                        style="padding:12px 8px">
-                                        <div class="skeleton-text" :style="`height:16px;width:${w}`" />
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="skeleton-icon" style="height:32px;width:32px;" />
-                                            <div class="flex-grow-1">
-                                                <div class="skeleton-text mb-1" style="height:18px;width:80%;" />
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="skeleton-text" style="height:18px;width:75%;" />
-                                    </td>
-                                    <td>
-                                        <div class="skeleton-text" style="height:18px;width:75%;" />
-                                    </td>
-                                    <td>
-                                        <div class="skeleton-badge mx-auto" style="height:24px;width:60px;" />
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <div v-for="j in 2" :key="j" class="skeleton-icon"
-                                                style="height:28px;width:28px;" />
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div v-else class="card-body p-0">
-                    <!-- Vista Escritorio -->
-                    <div class="table-responsive scrollbar d-none d-md-block">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
-                            :totalRecords="store.pagination.totalItems"
-                            :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                            :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]" responsiveLayout="scroll"
-                            tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
-
-                            <Column v-if="isSuperAdmin" header="Empresa / VehÃ­culo" sortable style="min-width: 180px;">
-                                <template #body="{ data }">
-                                    <div class="d-flex flex-column">
-                                        <span class="text-dark fw-medium text-truncate" style="max-width: 180px;" :title="data.company?.business_name">
-                                            <i class="fad fa-building text-muted me-1"></i>{{ data.company?.business_name || 'â€”' }}
-                                        </span>
-                                        <span class="text-muted mt-1 fw-bold" style="font-size: 0.85rem;">
-                                            <i class="fad fa-car-side text-muted me-1"></i>{{ data.vehicle?.vehicle_license_plate || 'â€”' }}
-                                        </span>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column v-else header="VehÃ­culo" sortable style="min-width: 140px;">
-                                <template #body="{ data }">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fad fa-car-side text-muted"></i>
-                                        <span class="text-dark fw-bold">{{ data.vehicle?.vehicle_license_plate || 'â€”' }}</span>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column field="observations" header="Observaciones" sortable>
-                                <template #body="{ data }">
-                                    <span class="text-truncate d-inline-block"
-                                        style="max-width: 200px; font-size:0.85rem;" :title="data.observations">
-                                        {{ data.observations || 'â€”' }}
+                        <Column v-if="isSuperAdmin" header="Empresa / Vehículo" sortable style="width: 28%;">
+                            <template #body="{ data }">
+                                <div class="d-flex flex-column">
+                                    <span class="noa-cell-strong text-truncate" :title="data.company?.business_name">
+                                        <i class="fad fa-building text-muted me-1" aria-hidden="true" />{{ data.company?.business_name || '—' }}
                                     </span>
-                                </template>
-                            </Column>
-
-                            <Column header="Documentos" class="text-center" style="width: 120px;">
-                                <template #body="{ data }">
-                                    <div v-if="data.media && data.media.length > 0"
-                                        class="d-flex flex-wrap justify-content-center gap-1">
-                                        <a v-for="file in data.media" :key="file.uuid"
-                                            :href="file.original_url || file.url" target="_blank"
-                                            class="btn btn-sm btn-falcon-default px-2 py-1"
-                                            :title="file.file_name || file.name"
-                                            v-tooltip="file.file_name || file.name">
-                                            <i class="fad fa-file-pdf text-danger" style="font-size: 13px;"></i>
-                                        </a>
-                                    </div>
-                                    <span v-else class="text-muted small">â€”</span>
-                                </template>
-                            </Column>
-
-                            <Column field="is_active" header="Estado" sortable class="text-center"
-                                style="width: 110px;">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill badge-subtle"
-                                        :class="data.is_active ? 'badge-subtle-success' : 'badge-subtle-warning'"
-                                        style="font-size:0.8rem;padding:0.4em 0.75em;">
-                                        <i :class="data.is_active ? 'fad fa-check-circle me-1' : 'fad fa-circle me-1'"
-                                            style="font-size:10px;" />
-                                        {{ data.is_active ? "Activo" : "Inactivo" }}
+                                    <span class="noa-cell-sub mt-1">
+                                        <i class="fad fa-car-side text-muted me-1" aria-hidden="true" />{{ data.vehicle?.vehicle_license_plate || '—' }}
                                     </span>
-                                </template>
-                            </Column>
-
-                            <Column header="Acciones" class="text-center" style="width: 80px;"
-                                v-if="can('control_sheets.update') || can('control_sheets.delete')">
-                                <template #body="{ data }">
-                                    <!-- El botón Imprimir llamaba a handlePrint(), que no existe:
-                                         los PDFs ya se abren desde la columna Documentos. -->
-                                    <button v-if="can('control_sheets.update')" class="btn btn-falcon-default btn-sm px-2" type="button" title="Editar" @click="goToEdit(data.uuid)">
-                                        <i class="fad fa-edit text-warning"></i>
-                                    </button>
-                                    <button v-if="can('control_sheets.delete')" class="btn btn-falcon-default btn-sm px-2" type="button" title="Eliminar" @click="handleDelete(data)">
-                                        <i class="fad fa-trash text-danger"></i>
-                                    </button>
-                                </template>
-                            </Column>
-
-                            <!-- Empty state -->
-                            <template #empty>
-                                <div class="text-center py-5">
-                                    <i class="fad fa-clipboard-list fs-1 text-muted opacity-50 mb-3 d-block" />
-                                    <h6 class="text-muted mb-1 fw-medium">No hay registros encontrados</h6>
-                                    <p class="text-muted small mb-3">Comienza creando tu primera planilla de control.</p>
-                                    <button v-if="can('control_sheets.create')" class="btn btn-primary btn-sm"
-                                        @click="goToCreate">
-                                        <i class="fad fa-plus me-1" />Nuevo Registro
-                                    </button>
                                 </div>
                             </template>
+                        </Column>
 
-                            <!-- Loading state -->
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando registros..." />
-                            </template>
-
-                            <!-- Footer -->
-                            <template #footer>
-                                <div
-                                    class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3 bg-light rounded-bottom">
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-list me-1" /> Mostrando <strong>{{ store.items.length
-                                            }}</strong> de <strong>{{ store.pagination.totalItems }}</strong> registros
-                                    </small>
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-pages me-1" /> PÃ¡gina <strong>{{ store.pagination.currentPage
-                                            }}</strong> de <strong>{{ store.pagination.totalPages }}</strong>
-                                    </small>
+                        <Column v-else header="Vehículo" sortable style="width: 25%;">
+                            <template #body="{ data }">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fad fa-car-side text-muted" aria-hidden="true" />
+                                    <span class="noa-cell-strong">{{ data.vehicle?.vehicle_license_plate || '—' }}</span>
                                 </div>
                             </template>
-                        </DataTable>
-                    </div>
+                        </Column>
+
+                        <Column field="observations" header="Observaciones" sortable :style="isSuperAdmin ? 'width: 30%;' : 'width: 35%;'">
+                            <template #body="{ data }">
+                                <span class="text-truncate d-inline-block" style="max-width: 280px;" :title="data.observations">
+                                    {{ data.observations || '—' }}
+                                </span>
+                            </template>
+                        </Column>
+
+                        <Column header="Documentos" class="text-center" style="width: 16%;">
+                            <template #body="{ data }">
+                                <div v-if="data.media && data.media.length > 0"
+                                    class="d-flex flex-wrap justify-content-center gap-1">
+                                    <a v-for="file in data.media" :key="file.uuid"
+                                        :href="file.original_url || file.url" target="_blank"
+                                        class="btn btn-sm btn-falcon-default px-2 py-1"
+                                        :title="file.file_name || file.name"
+                                        :aria-label="`Abrir documento ${file.file_name || file.name}`">
+                                        <i class="fad fa-file-pdf text-danger" style="font-size: 13px;" aria-hidden="true" />
+                                    </a>
+                                </div>
+                                <span v-else class="text-muted small">—</span>
+                            </template>
+                        </Column>
+
+                        <Column field="is_active" header="Estado" sortable class="text-center"
+                            :style="isSuperAdmin ? 'width: 14%;' : 'width: 12%;'">
+                            <template #body="{ data }">
+                                <span class="noa-status"
+                                    :class="data.is_active ? 'noa-status--success' : 'noa-status--warning'">
+                                    {{ data.is_active ? "Activo" : "Inactivo" }}
+                                </span>
+                            </template>
+                        </Column>
+
+                        <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 12%;">
+                            <template #body="{ data }">
+                                <RowActions :actions="accionesDe(data)" :row-label="data.vehicle?.vehicle_license_plate || 'planilla'" />
+                            </template>
+                        </Column>
+
+                        <!-- Empty state -->
+                        <template #empty>
+                            <div class="text-center py-5">
+                                <i class="fad fa-clipboard-list fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                                <h6 class="text-muted mb-1 fw-medium">No hay registros encontrados</h6>
+                                <p class="text-muted small mb-3">Comienza creando tu primera planilla de control.</p>
+                                <button v-if="can('control_sheets.create')" class="btn btn-primary btn-sm" type="button"
+                                    @click="goToCreate">
+                                    <i class="fad fa-plus me-1" aria-hidden="true" />Nuevo Registro
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Loading state -->
+                        <template #loading>
+                            <NoaTableSpinner message="Cargando registros..." />
+                        </template>
+                    </DataTable>
                 </div>
+                <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                    :total="store.pagination.totalItems" @change="onPageChange" />
             </div>
         </div>
-    </div>
     </div>
 
     <!-- VISTA MÓVIL ANDROID CAPACITOR (Pantalla completa de borde a borde) -->
@@ -255,8 +192,6 @@
                             <span>PDF</span>
                         </a>
                     </template>
-                    <!-- El botón Imprimir llamaba a handlePrint(), que no existe:
-                         los PDFs ya se abren desde la columna Documentos. -->
                     <button v-if="can('control_sheets.update')" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
                         <i class="fad fa-edit text-warning" aria-hidden="true"></i>
                         <span>Editar</span>
@@ -278,55 +213,48 @@
         <!-- Paginación Móvil Táctil -->
         <div v-if="store.pagination.totalPages > 1" class="d-flex justify-content-between align-items-center mt-2 pt-1 px-1">
             <button class="btn btn-light btn-sm border px-3 rounded-pill fs-11" :disabled="store.pagination.currentPage <= 1"
-                @click="onPageChange({ page: store.pagination.currentPage - 2, rows: store.pagination.itemsPerPage })">
+                @click="onPageChange({ page: store.pagination.currentPage - 1, rows: store.pagination.itemsPerPage, first: (store.pagination.currentPage - 2) * store.pagination.itemsPerPage })">
                 <i class="fas fa-chevron-left me-1" aria-hidden="true"></i> Anterior
             </button>
             <span class="fs-11 text-muted fw-semibold">
                 {{ store.pagination.currentPage }} / {{ store.pagination.totalPages }}
             </span>
             <button class="btn btn-light btn-sm border px-3 rounded-pill fs-11" :disabled="store.pagination.currentPage >= store.pagination.totalPages"
-                @click="onPageChange({ page: store.pagination.currentPage, rows: store.pagination.itemsPerPage })">
+                @click="onPageChange({ page: store.pagination.currentPage + 1, rows: store.pagination.itemsPerPage, first: store.pagination.currentPage * store.pagination.itemsPerPage })">
                 Siguiente <i class="fas fa-chevron-right ms-1" aria-hidden="true"></i>
             </button>
         </div>
     </div>
-    <!-- MENÃš PRIMEVUE (Evita recortes en tablas/tarjetas) -->
-    
 </template>
 
 <script setup>
-/**
- * @author Darwin Montes
- * @version 1.0.0
- * @created_at 2026-06-29
- * @module {Features.Fleet}
- * @resource {ControlSheet}
- */
-
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useControlSheetsStore } from '../store/controlSheets.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import MobileCard from '@/components/mobile/MobileCard.vue';
 import MobileSectionHeader from '@/components/mobile/MobileSectionHeader.vue';
 import MobileEmptyState from '@/components/mobile/MobileEmptyState.vue';
 
+const route = useRoute();
 const router = useRouter();
 const store = useControlSheetsStore();
 const permissionsStore = usePermissionsStore();
+const { onSort: handleSort } = useServerSort((field, order) => store.setSort(field, order), { route, router });
 
-const isSuperAdmin = computed(() => permissionsStore.roles?.includes('SUPERADMIN'));
+const isSuperAdmin = computed(() => permissionsStore.hasRole('superadmin'));
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
-
-
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
@@ -335,23 +263,36 @@ const can = (action) => permissionsStore.can(action);
 
 const clearSearch = async () => { searchQuery.value = ''; await store.clearFilters(); };
 const refreshTable = () => store.fetchItems();
-const onPageChange = async ({ first, rows }) => {
-    await store.setPage(Math.floor(first / rows) + 1);
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
 const goToCreate = () => router.push('/planillas-de-control-de-servicios/crear');
 const goToEdit = (uuid) => router.push(`/planillas-de-control-de-servicios/editar/${uuid}`);
 
 const handleDelete = (item) => confirmDelete(item, {
-    title: 'Â¿Eliminar registro?',
-    html: `<p class="mb-2">Â¿EstÃ¡s seguro de eliminar la planilla del vehÃ­culo <strong>"${item.vehicle?.vehicle_license_plate || 'este registro'}"</strong>?</p>
+    title: '¿Eliminar registro?',
+    html: `<p class="mb-2">¿Estás seguro de eliminar la planilla del vehículo <strong>"${item.vehicle?.vehicle_license_plate || 'este registro'}"</strong>?</p>
            <div class="alert alert-warning small mb-0 mt-2">
                <i class="fad fa-exclamation-triangle me-1"></i>
-               Esta acciÃ³n no se puede deshacer.
+               Esta acción no se puede deshacer.
            </div>`
 });
 
+const accionesDe = (data) => [
+    { key: 'editar', label: 'Editar', icon: 'far fa-pen', tone: 'warning', inline: true, visible: can('control_sheets.update'), onClick: () => goToEdit(data.uuid) },
+    { key: 'eliminar', label: 'Eliminar', icon: 'far fa-trash-alt', tone: 'danger', visible: can('control_sheets.delete'), onClick: () => handleDelete(data) },
+];
+
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        store.sortField = sortParam;
+        store.sortOrder = orderParam === 'desc' ? -1 : 1;
+    }
     try {
         searchQuery.value = store.search;
         await store.fetchItems();
@@ -365,11 +306,8 @@ onUnmounted(() => destroyTooltips());
 </script>
 
 <style scoped>
-:root {
-    --table-header-bg: #f8f9fa;
-    --table-hover-bg: #f8f9fa;
-    --table-border: #e9ecef;
-    --transition-fast: 150ms ease-in-out;
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
 }
 
 @keyframes fadeInUp {
@@ -383,190 +321,4 @@ onUnmounted(() => destroyTooltips());
         transform: translateY(0);
     }
 }
-
-.fade-in-up {
-    animation: fadeInUp 0.4s ease-out forwards;
-}
-
-.card {
-    border-radius: 0.75rem !important;
-    transition: box-shadow var(--transition-fast);
-}
-
-.card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
-}
-
-/* Avatar */
-.avatar-placeholder {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
-    font-weight: 600;
-    flex-shrink: 0;
-    user-select: none;
-    transition: transform var(--transition-fast);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) .avatar-placeholder {
-    transform: scale(1.05);
-}
-
-/* Tabla */
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid var(--table-border) !important;
-    background: var(--table-header-bg);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--table-border);
-    font-size: 0.825rem !important;
-    color: #212529;
-    transition: background-color var(--transition-fast);
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) {
-    background: var(--table-hover-bg) !important;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:last-child > td) {
-    border-bottom: none;
-}
-
-/* Badges */
-.badge-subtle {
-    font-weight: 500;
-    transition: all var(--transition-fast);
-    white-space: nowrap;
-}
-
-.badge-subtle-success {
-    background: rgba(25, 135, 84, .1);
-    color: #198754;
-    border: 1px solid rgba(25, 135, 84, .2);
-}
-
-.badge-subtle-warning {
-    background: rgba(255, 193, 7, .1);
-    color: #856404;
-    border: 1px solid rgba(255, 193, 7, .2);
-}
-
-.badge-subtle:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
-}
-
-/* Botones */
-:deep(.btn-group .btn) {
-    padding: 0.3rem 0.5rem;
-    transition: all var(--transition-fast);
-}
-
-:deep(.btn-group .btn:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
-    z-index: 1;
-}
-
-:deep(.btn-group .btn + .btn) {
-    margin-left: -1px;
-}
-
-/* Paginador */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: var(--table-header-bg) !important;
-    border-top: 1px solid var(--table-border) !important;
-    border-radius: 0 0 0.75rem 0.75rem !important;
-}
-
-:deep(.p-paginator .p-paginator-page) {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.25rem !important;
-    margin: 0 0.125rem;
-    font-size: 0.8rem;
-    transition: all var(--transition-fast);
-}
-
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #fff !important;
-}
-
-:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover) {
-    background: #e9ecef !important;
-}
-
-:deep(.p-paginator .p-paginator-current) {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-:deep(.p-paginator .p-dropdown) {
-    min-height: auto !important;
-    height: 28px !important;
-    font-size: 0.75rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-label) {
-    font-size: 0.75rem !important;
-    padding: 0 0.25rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-trigger) {
-    width: 20px !important;
-}
-
-:deep(.p-paginator .p-dropdown-panel .p-dropdown-items li) {
-    font-size: 0.8rem !important;
-    padding: 0.25rem 0.75rem !important;
-}
-
-/* Input bÃºsqueda */
-.input-group:focus-within {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .15);
-    border-radius: 0.25rem;
-}
-
-.input-group .form-control:focus {
-    box-shadow: none;
-}
-
-.bg-opacity-10 {
-    --bs-bg-opacity: 0.1;
-}
-
-/* Scrollbar */
-.scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.scrollbar::-webkit-scrollbar-track {
-    background: #f1f3f5;
-    border-radius: 3px;
-}
-
-.scrollbar::-webkit-scrollbar-thumb {
-    background: #adb5bd;
-    border-radius: 3px;
-}
-
-.scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #6c757d;
-}
 </style>
-
-
-

@@ -228,6 +228,16 @@
             <router-link class="mc-btn-secondary" to="/planilla-de-control-de-prestacion-servicios">Listado</router-link>
           </div>
         </article>
+
+        <article v-if="permissionsStore.can('fuel_requests.index')" class="module-card mc-blue" aria-labelledby="mod-tanqueo">
+          <span class="mc-count">QR</span>
+          <span class="mc-icon-wrap" aria-hidden="true"><i class="fas fa-gas-pump" aria-hidden="true"></i></span>
+          <h3 id="mod-tanqueo" class="mc-title">Solicitudes de tanqueo</h3>
+          <p class="mc-desc">Solicita combustible y muestra el QR aprobado</p>
+          <div class="mc-actions">
+            <router-link class="mc-btn-primary" to="/flota/solicitudes-tanqueo">Solicitar / Ver QR</router-link>
+          </div>
+        </article>
       </div>
     </div>
 
@@ -285,9 +295,18 @@
 import { computed, onMounted, ref } from 'vue';
 import { useAuthStore, useConfigStore, usePermissionsStore, useUserStore } from '@store';
 import { useDashboardStore } from '../store/dashboard.store';
+import { useDriverTrackingStore } from '../../tracking/store/driverTracking.store.js';
 import { confirmLogout } from '@/utils/confirm.js';
 import { env } from '@utils/env.js';
 import { logger } from '@utils/logger.js';
+import {
+  filtrarVehiculos,
+  formatearNumero,
+  formatearPlaca,
+  iniciales as inicialesDe,
+  primerNombre as primerNombreDe,
+  saludoPorHora,
+} from '../utils/presentacionConductor.js';
 
 const appVersion = computed(() => env.APP_VERSION || '1.1.0');
 
@@ -296,6 +315,7 @@ const configStore = useConfigStore();
 const userStore = useUserStore();
 const permissionsStore = usePermissionsStore();
 const dashboardStore = useDashboardStore();
+const driverTracking = useDriverTrackingStore();
 
 const busqueda = ref('');
 const isLoggingOut = ref(false);
@@ -324,51 +344,16 @@ const nombreCompleto = computed(() => {
   void authStore.currentTenant;
   return datos.value.conductor?.name || userStore.fullName || userStore.username || 'Conductor';
 });
-const primerNombre = computed(() => {
-  const crudo = nombreCompleto.value.trim();
-  if (!crudo) return 'Conductor';
-  const primera = crudo.split(/\s+/)[0];
-  return primera.charAt(0).toUpperCase() + primera.slice(1).toLowerCase();
-});
-const iniciales = computed(() => {
-  const partes = nombreCompleto.value.trim().split(/\s+/).filter(Boolean);
-  if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase();
-  return (partes[0] || 'CO').substring(0, 2).toUpperCase();
-});
+const primerNombre = computed(() => primerNombreDe(nombreCompleto.value));
+const iniciales = computed(() => inicialesDe(nombreCompleto.value));
 const documento = computed(() => datos.value.conductor?.document || null);
 const licencia = computed(() => datos.value.conductor?.license || null);
 const kpis = computed(() => datos.value.kpis || {});
 const vehiculos = computed(() => datos.value.vehicles || []);
 
-const saludo = computed(() => {
-  const hora = new Date().getHours();
-  if (hora < 12) return 'Buenos días';
-  if (hora < 18) return 'Buenas tardes';
-  return 'Buenas noches';
-});
+const saludo = computed(() => saludoPorHora());
 
-const vehiculosFiltrados = computed(() => {
-  const consulta = busqueda.value.trim().toLowerCase();
-  if (!consulta) return vehiculos.value;
-  return vehiculos.value.filter((v) => {
-    const placa = String(v.plate || '').toLowerCase();
-    const marca = String(v.brand || '').toLowerCase();
-    const linea = String(v.line || '').toLowerCase();
-    return placa.includes(consulta) || marca.includes(consulta) || linea.includes(consulta);
-  });
-});
-
-function formatearNumero(valor) {
-  if (valor === null || valor === undefined || Number.isNaN(Number(valor))) return '0';
-  return Number(valor).toLocaleString('es-CO');
-}
-
-function formatearPlaca(placa) {
-  if (!placa) return 'SIN-PLACA';
-  const limpia = String(placa).trim().toUpperCase();
-  if (limpia.length === 6) return `${limpia.substring(0, 3)} · ${limpia.substring(3)}`;
-  return limpia;
-}
+const vehiculosFiltrados = computed(() => filtrarVehiculos(vehiculos.value, busqueda.value));
 
 const primerVehiculo = computed(() => {
   if (vehiculos.value && vehiculos.value.length > 0) {
@@ -403,6 +388,14 @@ const tieneInspeccionHoy = computed(() => !!inspeccionHoy.value);
 onMounted(async () => {
   try {
     await dashboardStore.fetchConductorDashboardData(30);
+    // Auto-arranque del GPS al iniciar sesión (igual que el dashboard web):
+    // solo arranca si el conductor tiene un vehículo asignado.
+    if (permissionsStore.hasRole('CONDUCTOR')) {
+      driverTracking.autoStartSiProcede({
+        vehicles: vehiculos.value,
+        preferredVehicleUuid: primerVehiculo.value?.uuid || null,
+      }).catch(() => {});
+    }
   } catch (error) {
     logger.error('No se pudo cargar el panel móvil del conductor', error);
   }

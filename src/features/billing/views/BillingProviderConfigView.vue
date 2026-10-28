@@ -345,7 +345,7 @@
                     </div>
                     <div class="col-12 col-md-3">
                         <label class="form-label" for="f-resolution_date">Fecha resolución</label>
-                        <input id="f-resolution_date" v-model="resolucion.resolution_date" class="form-control" type="date" />
+                        <DateInput id="f-resolution_date" v-model="resolucion.resolution_date" class="form-control" />
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label" for="f-technical_key">Clave técnica</label>
@@ -361,11 +361,11 @@
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label required" for="f-date_from">Vigencia desde</label>
-                        <input id="f-date_from" v-model="resolucion.date_from" class="form-control" type="date" />
+                        <DateInput id="f-date_from" v-model="resolucion.date_from" class="form-control" />
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label required" for="f-date_to">Vigencia hasta</label>
-                        <input id="f-date_to" v-model="resolucion.date_to" class="form-control" type="date" />
+                        <DateInput id="f-date_to" v-model="resolucion.date_to" class="form-control" />
                     </div>
                     <div class="col-12">
                         <div class="alert alert-light border small py-2 px-3 mb-0 d-flex align-items-start gap-2" role="note">
@@ -498,6 +498,7 @@ import { useTableActions } from '@/hooks/useTableActions.js';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
+import DateInput from '@/components/form/DateInput.vue';
 
 const route = useRoute();
 const router = useRouter();

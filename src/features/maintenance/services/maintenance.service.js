@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { formatThirdPartyList, formatVehicleList } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio para la gestión de terceros desde el módulo de mantenimiento.
@@ -83,8 +84,8 @@ class MaintenanceService extends BaseService {
 
         return {
             companies,
-            vehicles,
-            thirdParties,
+            vehicles: formatVehicleList(vehicles),
+            thirdParties: formatThirdPartyList(thirdParties, 'company_name'),
         };
     }
 }

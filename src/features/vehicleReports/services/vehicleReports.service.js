@@ -1,5 +1,6 @@
 import { BaseService } from '@services/api/base.service.js';
 import { logger } from '@/utils/logger.js';
+import { formatThirdPartyList } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio del reporte de vehículos.
@@ -11,6 +12,7 @@ class VehicleReportsService extends BaseService {
             resourcePath: 'reports/vehicles',
             metadata: { module: 'reports', service: 'vehicles' },
         });
+        this._reportAbortController = null;
     }
 
     /**
@@ -24,8 +26,30 @@ class VehicleReportsService extends BaseService {
             if (v === undefined || v === null || v === '' || v === 'undefined') continue;
             limpios[k] = v;
         }
-        const res = await this._getInstance().get(this.resourcePath, { params: limpios });
-        return res.data;
+        let reportController = null;
+        if (typeof AbortController !== 'undefined') {
+            if (this._reportAbortController) {
+                this._reportAbortController.abort();
+            }
+            reportController = new AbortController();
+            this._reportAbortController = reportController;
+        }
+        try {
+            const res = await this._getInstance().get(this.resourcePath, {
+                params: limpios,
+                ...(reportController ? { signal: reportController.signal } : {}),
+            });
+            return res.data;
+        } catch (error) {
+            if (reportController?.signal?.aborted) {
+                error.__isCanceled = true;
+            }
+            throw error;
+        } finally {
+            if (reportController && this._reportAbortController === reportController) {
+                this._reportAbortController = null;
+            }
+        }
     }
 
     async downloadExcel(params = {}) {
@@ -78,20 +102,18 @@ class VehicleReportsService extends BaseService {
         if (filterType === 'affiliate') {
             const afiliados = await fetchSafe('third-parties/list', { type: 'is_affiliate' });
             return {
-                terceros: withLabel(afiliados, 'company_name', [
-                    (i) => [i.first_name, i.last_name].filter(Boolean).join(' ').trim(),
-                    'document_number',
-                ]),
+                terceros: formatThirdPartyList(afiliados, 'company_name'),
             };
         }
         if (filterType === 'driver') {
             // Catálogo propio: solo personas naturales con asignación activa (nunca jurídicas)
             const conductores = await fetchSafe('reports/vehicles/catalogs/drivers');
             const normalizados = (Array.isArray(conductores) ? conductores : []).map((c) => ({
-                uuid: c.value,
-                company_name: c.label,
+                ...c,
+                uuid: c.value ?? c.uuid,
+                company_name: c.label ?? c.company_name,
             }));
-            return { terceros: withLabel(normalizados, 'company_name', ['document_number']) };
+            return { terceros: formatThirdPartyList(normalizados, 'company_name') };
         }
         if (filterType === 'project') {
             const proyectos = await fetchSafe('projects/list');

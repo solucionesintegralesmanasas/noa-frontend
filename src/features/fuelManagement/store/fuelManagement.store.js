@@ -21,6 +21,8 @@ export const useFuelManagementStore = defineStore('fuelManagement', {
         statusError: false,
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -57,6 +59,8 @@ export const useFuelManagementStore = defineStore('fuelManagement', {
                     page: this.pagination.currentPage,
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -194,6 +198,12 @@ export const useFuelManagementStore = defineStore('fuelManagement', {
         },
 
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
     },

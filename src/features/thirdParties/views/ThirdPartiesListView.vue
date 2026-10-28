@@ -5,49 +5,24 @@
         :breadcrumbs="[{ label: 'Terceros' }, { label: pageTitle === 'Listado' ? 'Todos' : pageTitle }]"
         @refresh="refreshTable" @create="goToCreate" />
 
-    <!-- BARRA DE BÚSQUEDA -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-2">
-            <div
-                class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
-
-                <!-- Izquierda: título + input -->
-                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" />
-                        </span>
-                        <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search" placeholder="Buscar..." aria-label="Buscar tercero" @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
-                            title="Limpiar búsqueda" @click="clearSearch">
-                            <i class="fad fa-times" />
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Derecha: contador -->
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
-                </div>
-
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-third-parties-busqueda" v-model="searchQuery" class="noa-search__input" type="search" placeholder="Buscar..."
+                    aria-label="Buscar tercero" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button" title="Limpiar búsqueda"
+                    aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
             </div>
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
         </div>
-    </div>
-
-    <!-- TABLA -->
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <div class="bg-holder d-none d-lg-block bg-card"
-                    style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
 
                 <!-- SKELETON -->
                 <div v-if="isViewLoading" class="card-body p-0">
@@ -81,22 +56,21 @@
                 <!-- DATATABLE (Paginación Server-Side) -->
                 <div v-else class="card-body p-0">
                     <div class="table-responsive scrollbar">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
+                        <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
                             :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) *
                                 store.pagination.itemsPerPage
-                                " :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]"
-                            responsiveLayout="scroll" tableStyle="min-width: 50rem"
-                            class="table table-sm mb-0 professional-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
-                            <Column field="document_number" header="Documento" sortable>
+                                " :loading="store.loading"
+                            responsiveLayout="scroll" tableStyle="min-width: 60rem"
+                            class="table table-sm mb-0 professional-table noa-table-fixed"
+                            :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort
+                            emptyMessage="No se encontraron registros" @sort="onSort">
+                            <Column field="document_number" header="Documento" sortable style="width: 11%;">
                                 <template #body="{ data }">
-                                    <span class="text-dark">{{ data.document_number || '-' }}</span>
+                                    <span class="noa-cell-strong">{{ data.document_number || '-' }}</span>
                                 </template>
                             </Column>
 
-                            <Column field="trade_name" header="Nombre/Razón Social" sortable>
+                            <Column field="trade_name" header="Nombre/Razón Social" sortable style="width: 27%;">
                                 <template #body="{ data }">
                                     <span class="text-dark">
                                         {{ data.full_name || data.trade_name || data.company_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || '-' }}
@@ -104,83 +78,29 @@
                                 </template>
                             </Column>
 
-                            <Column field="email" header="Email" sortable>
+                            <Column field="email" header="Email" sortable style="width: 23%;">
                                 <template #body="{ data }">
                                     <span class="text-dark">{{ data.email || '-' }}</span>
                                 </template>
                             </Column>
 
-                            <Column field="branch.name" header="Sucursal" sortable>
+                            <Column field="branch.name" header="Sucursal" sortable style="width: 13%;">
                                 <template #body="{ data }">
                                     <span class="text-dark">{{ data.branch?.name || '—' }}</span>
                                 </template>
                             </Column>
 
-                            <Column field="is_active" header="Estado" sortable class="text-center"
-                                style="width: 120px;">
+                            <Column field="is_active" header="Estado" sortable style="width: 12%;">
                                 <template #body="{ data }">
-                                    <span class="badge rounded-pill badge-subtle" :class="data.is_active
-                                        ? 'badge-subtle-success'
-                                        : 'badge-subtle-warning'
-                                        ">
-                                        <i :class="data.is_active
-                                            ? 'fad fa-check-circle me-1'
-                                            : 'fad fa-circle me-1'
-                                            " style="font-size:10px;" />
+                                    <span class="noa-status" :class="data.is_active ? 'noa-status--success' : 'noa-status--muted'">
                                         {{ data.is_active ? "Activo" : "Inactivo" }}
                                     </span>
                                 </template>
                             </Column>
 
-                            <Column header="Acciones" class="text-center" style="min-width:190px; width: 190px;">
+                            <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 14%;">
                                 <template #body="{ data }">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="canView" class="btn btn-falcon-default" type="button"
-                                            title="Ver detalle" :aria-label="`Ver detalle de ${data.trade_name}`" @click="goToDetail(data.uuid)">
-                                            <i class="fad fa-eye text-primary" style="font-size:14px;" />
-                                        </button>
-                                        <button v-if="canUpdate" class="btn btn-falcon-default" type="button"
-                                            title="Editar" :aria-label="`Editar ${data.trade_name}`" @click="goToEdit(data.uuid)">
-                                            <i class="fad fa-edit text-warning" style="font-size:14px;" />
-                                        </button>
-                                        <button
-                                            v-if="store.typeFilter === 'is_driver' || data.is_driver || (data.roles && data.roles.includes('is_driver'))"
-                                            class="btn btn-falcon-default" type="button"                                             title="Gestión de Licencias" :aria-label="etiquetaBotonLicencias(data)"
-                                            @click="openLicensesModal(data.uuid, data.company_uuid)">
-                                            <!-- Icono dinámico: verde si tiene licencia ACTIVA y vigente -->
-                                            <i v-if="tieneFilaLicenciaVigente(data)" class="fad fa-id-card text-success"
-                                                style="font-size:14px;" title="Licencia activa y vigente"
-                                                aria-hidden="true" />
-                                            <i v-else-if="!data.driver_licenses || data.driver_licenses.length === 0"
-                                                class="fad fa-id-card text-secondary" style="font-size:14px;"
-                                                title="Sin licencias registradas" aria-hidden="true" />
-                                            <i v-else class="fad fa-exclamation-triangle text-danger"
-                                                style="font-size:14px;" title="Licencia vencida o inactiva"
-                                                aria-hidden="true" />
-                                        </button>
-                                        <button
-                                            v-if="store.typeFilter === 'is_driver' || store.typeFilter === 'is_employee' || data.is_driver || data.is_employee"
-                                            class="btn btn-falcon-default" type="button" title="Seguridad Social" :aria-label="`Seguridad social de ${data.trade_name}`"
-                                            @click="openSocialSecurityModal(data.uuid, data.company_uuid)">
-                                            <i class="fad fa-shield-alt text-success" style="font-size:14px;" />
-                                        </button>
-                                        <button
-                                            v-if="store.typeFilter === 'is_driver' || data.is_driver || (data.roles && data.roles.includes('is_driver'))"
-                                            class="btn btn-falcon-default" type="button" title="Ver Ficha Técnica" :aria-label="`Ver ficha técnica de ${data.trade_name}`"
-                                            @click="goToTechnicalSheet(data.uuid, data.company_uuid)">
-                                            <i class="fad fa-file-pdf text-danger" style="font-size:14px;" />
-                                        </button>
-                                        <button
-                                            v-if="store.typeFilter === 'is_driver' || data.is_driver || (data.roles && data.roles.includes('is_driver'))"
-                                            class="btn btn-falcon-default" type="button" title="Proyectos" :aria-label="`Proyectos de ${data.trade_name}`"
-                                            @click="goToProjects(data)">
-                                            <i class="fad fa-briefcase text-primary" style="font-size:14px;" />
-                                        </button>
-                                        <button v-if="canDelete" class="btn btn-falcon-default" type="button"
-                                            title="Eliminar" :aria-label="`Eliminar ${data.trade_name}`" @click="handleDelete(data)">
-                                            <i class="fad fa-trash text-danger" style="font-size:14px;" />
-                                        </button>
-                                    </div>
+                                    <RowActions :actions="accionesDe(data)" :row-label="nombreDe(data)" />
                                 </template>
                             </Column>
                             <!-- Loading state -->
@@ -189,10 +109,11 @@
                             </template>
                         </DataTable>
                     </div>
+                    <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                        :total="store.pagination.totalItems" @change="onPageChange" />
                 </div>
             </div>
-        </div>
-    </div>
+
 
     <!-- Modal Historial de Licencias -->
     <div class="modal fade" id="driverLicensesListModal" tabindex="-1" aria-hidden="true">
@@ -606,8 +527,11 @@ import Swal from 'sweetalert2';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import { useServerSort } from '@/hooks/useServerSort.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -624,6 +548,9 @@ const searchQuery = ref('');
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 const can = (action) => permissionsStore.can(action);
 
@@ -816,6 +743,39 @@ const loadLicensesForModal = async (uuid) => {
  * @param {Object} data - Fila del conductor.
  * @returns {string}
  */
+/** Nombre visible del tercero para los aria-label de las acciones. */
+const nombreDe = (data) => data.full_name || data.trade_name || data.company_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'tercero';
+
+const esConductor = (data) => store.typeFilter === 'is_driver' || data.is_driver || (data.roles && data.roles.includes('is_driver'));
+const esConductorOEmpleado = (data) => store.typeFilter === 'is_driver' || store.typeFilter === 'is_employee' || data.is_driver || data.is_employee;
+
+/**
+ * Acciones de la fila. Ver y Editar quedan en línea; las específicas de conductor/empleado
+ * pasan al menú "⋮" y Eliminar va al final, separado.
+ */
+const accionesDe = (data) => {
+    const sinLicencias = !data.driver_licenses || data.driver_licenses.length === 0;
+    const licenciaVigente = tieneFilaLicenciaVigente(data);
+    return [
+        { key: 'ver', label: 'Ver detalle', icon: 'far fa-eye', tone: 'primary', inline: true, visible: canView.value, onClick: () => goToDetail(data.uuid) },
+        { key: 'editar', label: 'Editar', icon: 'far fa-pen', tone: 'warning', inline: true, visible: canUpdate.value, onClick: () => goToEdit(data.uuid) },
+        {
+            key: 'licencias',
+            label: 'Gestión de licencias',
+            ariaLabel: etiquetaBotonLicencias(data),
+            icon: licenciaVigente || sinLicencias ? 'far fa-id-card' : 'far fa-exclamation-triangle',
+            tone: licenciaVigente ? 'success' : sinLicencias ? 'neutral' : 'danger',
+            description: licenciaVigente ? 'Licencia activa y vigente' : sinLicencias ? 'Sin licencias registradas' : 'Licencia vencida o inactiva',
+            visible: !!esConductor(data),
+            onClick: () => openLicensesModal(data.uuid, data.company_uuid),
+        },
+        { key: 'seguridad-social', label: 'Seguridad social', icon: 'far fa-shield-check', tone: 'success', visible: !!esConductorOEmpleado(data), onClick: () => openSocialSecurityModal(data.uuid, data.company_uuid) },
+        { key: 'ficha', label: 'Ver ficha técnica', icon: 'far fa-file-pdf', tone: 'neutral', visible: !!esConductor(data), onClick: () => goToTechnicalSheet(data.uuid, data.company_uuid) },
+        { key: 'proyectos', label: 'Proyectos', icon: 'far fa-briefcase', tone: 'primary', visible: !!esConductor(data), onClick: () => goToProjects(data) },
+        { key: 'eliminar', label: 'Eliminar', icon: 'far fa-trash-alt', tone: 'danger', visible: canDelete.value, onClick: () => handleDelete(data) },
+    ];
+};
+
 const etiquetaBotonLicencias = (data) => {
     const nombre = data.full_name || data.trade_name || 'conductor';
     if (tieneFilaLicenciaVigente(data)) return `Gestionar licencias de ${nombre}: licencia activa y vigente`;
@@ -1074,9 +1034,38 @@ const goToProjects = (driver) => {
     router.push({ path: '/proyectos', query: { third_party_uuid: driver.uuid } });
 };
 
+watch(
+    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
+    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
+        router.replace({
+            query: {
+                ...route.query,
+                search: newSearch || undefined,
+                page: newPage > 1 ? newPage : undefined,
+                per_page: newPerPage !== 10 ? newPerPage : undefined,
+                sort: newSort || undefined,
+                order: newSort ? (newOrder || 'asc') : undefined,
+            },
+        });
+    }
+);
+
 onMounted(async () => {
     try {
-        searchQuery.value = store.search;
+        const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
+        const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
+        const querySearch = route.query.search || '';
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+
+        store.search = querySearch;
+        store.pagination.currentPage = queryPage;
+        store.pagination.itemsPerPage = queryPerPage;
+        store.sortField = querySort;
+        store.sortOrder = querySort ? queryOrder : null;
+        restore(querySort, querySort ? queryOrder : null);
+
+        searchQuery.value = querySearch;
         store.typeFilter = determineTypeFromRoute();
         await store.fetchItems();
     } finally {
@@ -1111,131 +1100,5 @@ onUnmounted(() => destroyTooltips());
         opacity: 1;
         transform: translate3d(0, 0, 0);
     }
-}
-
-/* Tabla Estilo Profesional Falcon */
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.825rem !important;
-    color: #212529;
-    transition: background-color 150ms ease-in-out;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) {
-    background: #f8f9fa !important;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:last-child > td) {
-    border-bottom: none;
-}
-
-/* Paginador */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: #f8f9fa !important;
-    border-top: 1px solid #e9ecef !important;
-    border-radius: 0 0 0.75rem 0.75rem !important;
-}
-
-:deep(.p-paginator .p-paginator-page) {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.25rem !important;
-    margin: 0 0.125rem;
-    font-size: 0.75rem;
-    transition: all 150ms ease-in-out;
-}
-
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #fff !important;
-}
-
-:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover) {
-    background: #e9ecef !important;
-}
-
-:deep(.p-paginator .p-paginator-current) {
-    font-size: 0.75rem;
-    color: #6c757d;
-}
-
-:deep(.p-paginator .p-dropdown) {
-    min-height: auto !important;
-    height: 26px !important;
-    font-size: 0.75rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-label) {
-    font-size: 0.725rem !important;
-    padding: 0 0.25rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-trigger) {
-    width: 18px !important;
-}
-
-/* Badges */
-.badge-subtle {
-    font-weight: 500;
-    font-size: 0.75rem;
-    padding: 0.35em 0.6em;
-    transition: all 150ms ease-in-out;
-    white-space: nowrap;
-}
-
-.badge-subtle-success {
-    background: rgba(25, 135, 84, 0.1);
-    color: #198754;
-    border: 1px solid rgba(25, 135, 84, 0.2);
-}
-
-.badge-subtle-secondary {
-    background: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-    border: 1px solid rgba(108, 117, 125, 0.2);
-}
-
-.badge-subtle-info {
-    background: rgba(13, 202, 240, 0.1);
-    color: #0dcaf0;
-    border: 1px solid rgba(13, 202, 240, 0.2);
-}
-
-.badge-subtle-warning {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-    border: 1px solid rgba(255, 193, 7, 0.2);
-}
-
-.badge-subtle:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Botones Acciones */
-:deep(.btn-group .btn) {
-    padding: 0.25rem 0.45rem;
-    transition: all 150ms ease-in-out;
-}
-
-:deep(.btn-group .btn:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    z-index: 1;
 }
 </style>

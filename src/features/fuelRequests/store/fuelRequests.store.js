@@ -9,8 +9,10 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
         qr: null,
         loading: false,
         error: null,
-        pagination: { currentPage: 1, itemsPerPage: 15, totalItems: 0, totalPages: 0 },
+        pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         filters: { status: '', search: '' },
+        sortField: null,
+        sortOrder: null,
     }),
 
     actions: {
@@ -23,6 +25,8 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
                     per_page: this.pagination.itemsPerPage,
                     status: this.filters.status || undefined,
                     search: this.filters.search || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -86,12 +90,23 @@ export const useFuelRequestsStore = defineStore('fuelRequests', {
 
         async loadQr(uuid) {
             const response = await fuelRequestsService.qr(uuid);
-            this.qr = response?.data?.data ?? response?.data ?? response;
+            // La API responde { success, message, data: { data, url, qr_data, qr_url } }.
+            // El contenido del QR también trae una clave `data` (el texto), así que
+            // `response.data.data` devolvía ese texto y el modal se quedaba sin imágenes.
+            const payload = response?.data ?? response;
+            this.qr = payload?.qr_url || payload?.qr_data ? payload : null;
             return this.qr;
         },
 
         setPage(page) {
             this.pagination.currentPage = page;
+            return this.fetchItems();
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
+            this.pagination.currentPage = 1;
             return this.fetchItems();
         },
     },

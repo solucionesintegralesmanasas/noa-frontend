@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { formatThirdPartyList, formatVehicleList } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio para la gestión de inspecciones de vehículos.
@@ -82,7 +83,8 @@ class VehicleInspectionService extends BaseService {
      */
     getVehicleHistory(vehicleUuid, params = {}) {
         return this._request('GET', '', {
-            params: { ...params, filter: { vehicle_uuid: vehicleUuid }, sort: '-inspection_date' }
+            params: { ...params, filter: { vehicle_uuid: vehicleUuid }, sort: '-inspection_date' },
+            config: { listAbort: false }
         });
     }
 
@@ -127,7 +129,12 @@ class VehicleInspectionService extends BaseService {
             fetchSafe('catalogs/inspection-items/list')
         ]);
 
-        return { companies, vehicles, drivers, inspectionItems };
+        return {
+            companies,
+            vehicles: formatVehicleList(vehicles),
+            drivers: formatThirdPartyList(drivers, 'first_name'),
+            inspectionItems,
+        };
     }
 }
 

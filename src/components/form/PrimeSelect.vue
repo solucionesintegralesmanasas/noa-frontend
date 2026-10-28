@@ -31,6 +31,88 @@ const props = defineProps({
 // Filtro efectivo: el explícito manda; si no, listas de más de 7 opciones.
 const filtroActivo = computed(() => props.filter ?? ((props.options?.length ?? 0) > 7));
 
+// ── Opción «Todas…» con value '' ─────────────────────────────────────────────
+// PrimeVue evalúa "¿hay algo seleccionado?" con isNotEmpty(modelValue) y un ''
+// se toma como vacío: aunque el modelo coincida con una opción de valor '',
+// el combobox pinta el estado vacío (sin etiqueta) en vez de la opción
+// predeterminada. Si alguna opción trae value '', la respuesta interna viaja
+// con un centinela y el wrapper lo traduce a '' en los dos sentidos.
+const OPCION_VACIA = '__noa_opcion_vacia__';
+
+const valorDe = (o) => (typeof props.optionValue === 'function'
+    ? props.optionValue(o)
+    : String(props.optionValue).split('.').reduce((acc, k) => acc?.[k], o));
+
+const usaSentinela = computed(() => props.optionValue != null
+    && !props.optionGroupLabel
+    && (props.options ?? []).some((o) => o && typeof o === 'object' && valorDe(o) === ''));
+
+const opcionesInternas = computed(() => {
+    if (!usaSentinela.value) return props.options;
+    return (props.options ?? []).map((o) => (valorDe(o) === '' ? { ...o, [props.optionValue]: OPCION_VACIA } : o));
+});
+
+const modeloInterno = computed({
+    get: () => (usaSentinela.value && modelo.value === '' ? OPCION_VACIA : modelo.value),
+    set: (valor) => { modelo.value = usaSentinela.value && valor === OPCION_VACIA ? '' : valor; },
+});
+
+const CAMPOS_CATALOGO_CONOCIDOS = [
+    'search_text',
+    'display_label',
+    'display_name',
+    'full_name',
+    'company_name',
+    'trade_name',
+    'first_name',
+    'last_name',
+    'document_number',
+    'vehicle_license_plate',
+    'internal_number',
+    'display_plate',
+];
+
+// Si el consumidor no fijó filterFields y las opciones son registros de terceros o vehículos,
+// ampliamos automáticamente los campos de búsqueda para permitir buscar por documento,
+// apellido, nombre compuesto, razón social, placa o número interno.
+const camposFiltroEfectivos = computed(() => {
+    if (props.filterFields !== undefined) return props.filterFields;
+    if (props.optionGroupLabel || !Array.isArray(props.options) || props.options.length === 0) {
+        return undefined;
+    }
+    const muestra = props.options.find((o) => o && typeof o === 'object');
+    if (!muestra) return undefined;
+
+    const tieneCamposRicos = [
+        'search_text',
+        'document_number',
+        'first_name',
+        'last_name',
+        'trade_name',
+        'internal_number',
+    ].some((k) => muestra[k] !== undefined && muestra[k] !== null && muestra[k] !== '');
+
+    if (!tieneCamposRicos) return undefined;
+
+    const campos = [];
+    if (props.optionLabel) campos.push(props.optionLabel);
+    for (const campo of CAMPOS_CATALOGO_CONOCIDOS) {
+        if (campo !== props.optionLabel) campos.push(campo);
+    }
+    campos.push((o) => [
+        o?.first_name,
+        o?.last_name,
+        o?.last_name,
+        o?.first_name,
+        o?.company_name,
+        o?.trade_name,
+        o?.document_number,
+        o?.vehicle_license_plate,
+        o?.internal_number,
+    ].filter(Boolean).join(' '));
+    return campos;
+});
+
 // Se reenvía todo salvo el filtro, que se reemite desde el wrapper para que el
 // padre lo reciba una sola vez.
 const attrsLimpios = computed(() => {
@@ -74,14 +156,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', alTecla, true));
 <template>
     <PrimeVueSelect
         ref="selectRef"
-        v-model="modelo"
+        v-model="modeloInterno"
         v-bind="attrsLimpios"
-        :options="props.options"
+        :options="opcionesInternas"
         :optionLabel="props.optionLabel"
         :optionValue="props.optionValue"
         :optionGroupLabel="props.optionGroupLabel"
         :optionGroupChildren="props.optionGroupChildren"
-        :filterFields="props.filterFields"
+        :filterFields="camposFiltroEfectivos"
         :filter="filtroActivo"
         :focusOnHover="false"
         :autoFilterFocus="true"

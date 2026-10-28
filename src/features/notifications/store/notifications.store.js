@@ -30,6 +30,8 @@ export const useNotificationsStore = defineStore('notifications', {
         notifications: [],
         latestNotifications: [],
         meta: {},
+        // Filas por página del listado del módulo (debe ser una de las opciones del paginador).
+        perPage: 10,
         loading: false,
         pollingInterval: null,
         sseSource: null,
@@ -42,6 +44,8 @@ export const useNotificationsStore = defineStore('notifications', {
         // Conteo real de pendientes por prioridad (alimenta los clumps).
         unreadCounts: { total: 0, PRIORITARIA: 0, NORMAL: 0 },
         expiryAlertInterval: null,
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -60,24 +64,29 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     actions: {
-        async fetchNotifications(page = 1, filters = {}) {
+        async fetchNotifications(page = 1, filters = {}, perPage = null) {
             this.loading = true;
             try {
                 const userStore = useUserStore();
                 const tenantId = userStore.company_uuid;
                 const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
-                
+                const filas = Number(perPage) || this.perPage;
+
                 const response = await client.get('/notifications', {
                     params: {
                         page,
+                        per_page: filas,
+                        sort_by: this.sortField || undefined,
+                        sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                         ...filters
                     }
                 });
-                
+
                 if (response.data && response.data.success) {
                     const paginator = response.data.data;
                     if (paginator && Array.isArray(paginator.data)) {
                         this.notifications = paginator.data;
+                        this.perPage = Number(paginator.per_page) || filas;
                         this.meta = {
                             total: paginator.total,
                             per_page: paginator.per_page,
@@ -99,6 +108,12 @@ export const useNotificationsStore = defineStore('notifications', {
             } finally {
                 this.loading = false;
             }
+        },
+
+        setSort(field, order, filters = {}) {
+            this.sortField = field;
+            this.sortOrder = order;
+            return this.fetchNotifications(1, filters);
         },
 
         async syncNotifications() {
@@ -127,6 +142,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 this.loading = false;
             }
         },
+
 
         async requestSync() {
             try {

@@ -1,183 +1,152 @@
 <template>
-    <BasePageHeader :title="'Listado de ' + 'Capacidad de Transporte'"
+    <BasePageHeader :title="'Listado de Capacidad de Transporte'"
         description="Gestión de la capacidad de transporte autorizada y operativa asociada a las resoluciones habilitantes."
         icon="fad fa-truck-loading text-primary" :show-refresh="true" :show-create="true" :show-bg="true"
         :loading="isViewLoading || store.loading" :compact="true"
         :breadcrumbs="[{ label: 'Capacidad de Transporte' }, { label: 'Listado' }]" @refresh="refreshTable"
         @create="goToCreate" />
 
-    <!-- BARRA DE BÚSQUEDA -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-2">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-conveyor-capacity-busqueda" v-model="searchQuery" class="noa-search__input"
+                    type="search" placeholder="Buscar por tipo de vehículo o resolución..."
+                    aria-label="Buscar capacidad de arrastre" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
 
-                <!-- Izquierda: título + input -->
-                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" />
-                        </span>
-                        <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search" placeholder="Buscar por tipo de vehículo o resolución..."
-                            aria-label="Buscar capacidad de arrastre" @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
-                            title="Limpiar búsqueda" @click="clearSearch">
-                            <i class="fad fa-times" />
-                        </button>
-                    </div>
-                </div>
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
 
-                <!-- Derecha: contador -->
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
-                </div>
-
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['22%', '20%', '14%', '14%', '10%', '10%', '10%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td v-for="i in 6" :key="i">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon" style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <!-- TABLA -->
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <div class="bg-holder d-none d-lg-block bg-card"
-                    style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    :totalRecords="store.pagination.totalItems"
+                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                    :loading="store.loading" responsiveLayout="scroll"
+                    tableStyle="min-width: 55rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron registros de capacidad"
+                    :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort @sort="onSort">
 
-                <!-- SKELETON -->
-                <div v-if="isViewLoading" class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th v-for="w in ['20%', '15%', '15%', '15%', '15%', '10%', '10%']" :key="w"
-                                        style="padding:12px 8px">
-                                        <div class="skeleton-text" :style="`height:16px;width:${w}`" />
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
-                                    <td v-for="i in 6" :key="i">
-                                        <div class="skeleton-text" style="height:18px;width:75%;" />
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <div v-for="j in 2" :key="j" class="skeleton-icon"
-                                                style="height:28px;width:28px;" />
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    <!-- Resolución Habilitante -->
+                    <Column field="enabling_resolution.resolution_number" header="Resolución Habilitante"
+                        sortable style="width: 22%;">
+                        <template #body="{ data }">
+                            <span class="noa-cell-strong">
+                                {{ data.enabling_resolution?.resolution_number || '—' }}
+                            </span>
+                        </template>
+                    </Column>
 
-                <!-- DATATABLE (Paginación Server-Side) -->
-                <div v-else class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
-                            :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) *
-                                store.pagination.itemsPerPage
-                                " :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]" responsiveLayout="scroll"
-                            tableStyle="min-width: 60rem" class="table table-sm mb-0 professional-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros de capacidad" @page="onPageChange">
-                            <!-- Columna: Resolución Habilitante -->
-                            <Column field="enabling_resolution.resolution_number" header="Resolución Habilitante"
-                                sortable style="min-width: 180px;">
-                                <template #body="{ data }">
-                                    <span class="text-dark fw-medium">
-                                        {{ data.enabling_resolution?.resolution_number || '—' }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Tipo de Vehículo -->
+                    <Column field="vehicle_type" header="Tipo de Vehículo" sortable style="width: 20%;">
+                        <template #body="{ data }">
+                            <span class="text-dark fw-medium">
+                                {{ data.vehicle_type || '—' }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Tipo de Vehículo -->
-                            <Column field="vehicle_type" header="Tipo de Vehículo" sortable style="min-width: 140px;">
-                                <template #body="{ data }">
-                                    <span class="text-dark fw-semibold">
-                                        {{ data.vehicle_type || '—' }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Capacidad Autorizada -->
+                    <Column field="authorized_capacity" header="Cap. Autorizada" sortable class="text-end" header-class="text-end" style="width: 14%;">
+                        <template #body="{ data }">
+                            <span class="font-monospace text-dark">
+                                {{ formatNumber(data.authorized_capacity) }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Capacidad Autorizada -->
-                            <Column field="authorized_capacity" header="Cap. Autorizada" sortable class="text-end"
-                                style="min-width: 130px;">
-                                <template #body="{ data }">
-                                    <span class="text-dark">
-                                        {{ formatNumber(data.authorized_capacity) }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Capacidad Actual -->
+                    <Column field="current_capacity" header="Cap. Actual" sortable class="text-end" header-class="text-end" style="width: 14%;">
+                        <template #body="{ data }">
+                            <span class="font-monospace text-dark">
+                                {{ formatNumber(data.current_capacity) }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Capacidad Actual -->
-                            <Column field="current_capacity" header="Cap. Actual" sortable class="text-end"
-                                style="min-width: 130px;">
-                                <template #body="{ data }">
-                                    <span class="text-dark">
-                                        {{ formatNumber(data.current_capacity) }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Cap. Mínima Propia -->
+                    <Column field="minimum_own_capacity" header="Cap. Mín. Propia" sortable class="text-end" header-class="text-end" style="width: 10%;">
+                        <template #body="{ data }">
+                            <span class="badge bg-light text-dark border">
+                                {{ formatNumber(data.minimum_own_capacity) }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Cap. Mínima Propia -->
-                            <Column field="minimum_own_capacity" header="Cap. Mín. Propia" sortable class="text-end"
-                                style="min-width: 140px;">
-                                <template #body="{ data }">
-                                    <span class="badge bg-light text-dark border">
-                                        {{ formatNumber(data.minimum_own_capacity) }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Estado -->
+                    <Column field="status" header="Estado" sortable class="text-center" header-class="text-center" style="width: 10%;">
+                        <template #body="{ data }">
+                            <span class="noa-status" :class="data.status ? 'noa-status--success' : 'noa-status--warning'">
+                                {{ data.status ? "Habilitado" : "Deshabilitado" }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Estado -->
-                            <Column field="status" header="Estado" sortable class="text-center" style="width: 120px;">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill badge-subtle" :class="data.status
-                                            ? 'badge-subtle-success'
-                                            : 'badge-subtle-warning'
-                                        ">
-                                        <i :class="data.status
-                                                ? 'fad fa-check-circle me-1'
-                                                : 'fad fa-circle me-1'
-                                            " style="font-size:10px;" />
-                                        {{ data.status ? "Habilitado" : "Deshabilitado" }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 10%;"
+                        v-if="can('conveyor_capacity.update') || can('conveyor_capacity.delete')">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.vehicle_type || 'capacidad transportadora'" />
+                        </template>
+                    </Column>
 
-                            <!-- Columna: Acciones -->
-                            <Column header="Acciones" class="text-center" style="min-width:100px; width: 100px;">
-                                <template #body="{ data }">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button v-if="can('conveyor_capacity.update')" class="btn btn-falcon-default"
-                                            type="button" title="Editar" :aria-label="`Editar ${data.vehicle_type}`" @click="goToEdit(data.uuid)">
-                                            <i class="fad fa-edit text-warning" style="font-size:14px;" />
-                                        </button>
-                                        <button v-if="can('conveyor_capacity.delete')" class="btn btn-falcon-default"
-                                            type="button" title="Eliminar" :aria-label="`Eliminar ${data.vehicle_type}`" @click="handleDelete(data)">
-                                            <i class="fad fa-trash text-danger" style="font-size:14px;" />
-                                        </button>
-                                    </div>
-                                </template>
-                            </Column>
-                            <!-- Loading state -->
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando datos..." />
-                            </template>
-                        </DataTable>
-                    </div>
-                </div>
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-truck-loading fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No se encontraron registros de capacidad</h6>
+                            <p class="text-muted small mb-3">Comienza asignando la primera capacidad de transporte.</p>
+                            <button v-if="can('conveyor_capacity.create')" class="btn btn-primary btn-sm" type="button" @click="goToCreate">
+                                <i class="fad fa-plus me-1" aria-hidden="true" />Nueva capacidad
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Loading state -->
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando datos..." />
+                    </template>
+                </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 </template>
@@ -186,117 +155,92 @@
 /**
  * @file ConveyorCapacityListView.vue
  * @description Vista de listado del módulo de Capacidad de Transporte.
- * Implementa DataTable con paginación server-side, búsqueda global y acciones CRUD.
+ * Implementa DataTable con paginación server-side, búsqueda global y acciones CRUD bajo el estándar Stitch.
  * @module conveyorCapacity/ListView
  */
 
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useConveyorCapacityStore } from '../store/conveyorCapacity.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
-/** @type {import('vue-router').Router} Instancia del router de Vue */
+const route = useRoute();
 const router = useRouter();
-
-/** @type {import('pinia').Store} Store del módulo de Capacidad de Transporte */
 const store = useConveyorCapacityStore();
-
-/** @type {import('pinia').Store} Store de permisos del usuario */
 const permissionsStore = usePermissionsStore();
 
-/** @type {import('vue').Ref<boolean>} Indicador de carga inicial de la vista */
-const isViewLoading = ref(true);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
-/** @type {import('vue').Ref<string>} Texto de búsqueda actual */
+const isViewLoading = ref(true);
 const searchQuery = ref('');
 
-/**
- * Hook que provee búsqueda con debounce.
- * @type {Object}
- * @property {Function} debouncedSearch - Función de búsqueda con debounce.
- */
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
-
-/**
- * Hook que provee acciones de tabla (confirmación de eliminación, tooltips).
- * @type {Object}
- * @property {Function} confirmDelete - Función para confirmar eliminación con SweetAlert2.
- * @property {Function} initTooltips - Inicializa tooltips de Bootstrap.
- * @property {Function} destroyTooltips - Destruye tooltips de Bootstrap.
- */
 const { confirmDelete, initTooltips, destroyTooltips } = useTableActions(store, router);
 
-/**
- * Verifica si el usuario tiene permiso para una acción específica.
- * @param {string} action - Nombre de la acción/permiso.
- * @returns {boolean} True si el usuario tiene el permiso.
- */
 const can = (action) => permissionsStore.can(action);
 
-/**
- * Limpia el campo de búsqueda y recarga el listado sin filtros.
- * @returns {Promise<void>}
- */
 const clearSearch = async () => { searchQuery.value = ''; await store.clearFilters(); };
-
-/**
- * Recarga el listado de capacidades.
- */
 const refreshTable = () => store.fetchItems();
 
-/**
- * Maneja el cambio de página en el DataTable.
- * Convierte el índice base 0 de PrimeVue al número de página base 1.
- * @param {Object} event - Evento de paginación de PrimeVue.
- * @param {number} event.first - Índice del primer registro de la página.
- * @param {number} event.rows - Cantidad de registros por página.
- * @returns {Promise<void>}
- */
-const onPageChange = async ({ first, rows }) => {
-    await store.setPage(Math.floor(first / rows) + 1);
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
-/**
- * Navega a la vista de creación de capacidad.
- */
 const goToCreate = () => router.push('/empresas/capacidad-transportadora/crear');
-
-/**
- * Navega a la vista de edición de una capacidad.
- * @param {string} uuid - UUID de la capacidad a editar.
- */
 const goToEdit = (uuid) => router.push(`/empresas/capacidad-transportadora/editar/${uuid}`);
 
-/**
- * Inicia el proceso de eliminación de una capacidad con confirmación.
- * @param {Object} item - Registro de capacidad a eliminar.
- */
 const handleDelete = (item) => confirmDelete(item, {
     title: '¿Eliminar registro de capacidad?',
     nameField: 'vehicle_type',
 });
 
-/**
- * Formatea un número entero con separadores de miles.
- * @param {number|string} value - Valor numérico.
- * @returns {string} Número formateado o '0'.
- */
+const accionesDe = (data) => [
+    {
+        key: 'editar',
+        label: 'Editar',
+        icon: 'far fa-pen',
+        tone: 'warning',
+        inline: true,
+        visible: can('conveyor_capacity.update'),
+        onClick: () => goToEdit(data.uuid),
+    },
+    {
+        key: 'eliminar',
+        label: 'Eliminar',
+        icon: 'far fa-trash-alt',
+        tone: 'danger',
+        visible: can('conveyor_capacity.delete'),
+        onClick: () => handleDelete(data),
+    },
+];
+
 const formatNumber = (value) => {
     if (value === null || value === undefined || value === '') return '0';
     return new Intl.NumberFormat('es-CO').format(value);
 };
 
-/**
- * Hook del ciclo de vida: carga el listado al montar el componente.
- */
 onMounted(async () => {
     try {
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            restore(sortParam, orderParam);
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? 'desc' : 'asc';
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {
@@ -305,9 +249,6 @@ onMounted(async () => {
     }
 });
 
-/**
- * Hook del ciclo de vida: limpia tooltips al desmontar.
- */
 onUnmounted(() => destroyTooltips());
 </script>
 
@@ -328,129 +269,7 @@ onUnmounted(() => destroyTooltips());
     }
 }
 
-/* Tabla Estilo Profesional Falcon */
-:deep(.professional-table .p-datatable-thead > tr > th) {
-    padding: 0.625rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    border-bottom: 2px solid #e9ecef !important;
-    background: #f8f9fa;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr > td) {
-    padding: 0.625rem 0.75rem !important;
-    vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 0.825rem !important;
-    color: #212529;
-    transition: background-color 150ms ease-in-out;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:hover) {
-    background: #f8f9fa !important;
-}
-
-:deep(.professional-table .p-datatable-tbody > tr:last-child > td) {
-    border-bottom: none;
-}
-
-/* Paginador */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: #f8f9fa !important;
-    border-top: 1px solid #e9ecef !important;
-    border-radius: 0 0 0.75rem 0.75rem !important;
-}
-
-:deep(.p-paginator .p-paginator-page) {
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 0.25rem !important;
-    margin: 0 0.125rem;
-    font-size: 0.75rem;
-    transition: all 150ms ease-in-out;
-}
-
-:deep(.p-paginator .p-paginator-page.p-highlight) {
-    background: #0d6efd !important;
-    border-color: #0d6efd !important;
-    color: #fff !important;
-}
-
-:deep(.p-paginator .p-paginator-page:not(.p-highlight):hover) {
-    background: #e9ecef !important;
-}
-
-:deep(.p-paginator .p-paginator-current) {
-    font-size: 0.75rem;
-    color: #6c757d;
-}
-
-:deep(.p-paginator .p-dropdown) {
-    min-height: auto !important;
-    height: 26px !important;
-    font-size: 0.75rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-label) {
-    font-size: 0.725rem !important;
-    padding: 0 0.25rem !important;
-}
-
-:deep(.p-paginator .p-dropdown .p-dropdown-trigger) {
-    width: 18px !important;
-}
-
-/* Badges */
-.badge-subtle {
-    font-weight: 500;
-    font-size: 0.75rem;
-    padding: 0.35em 0.6em;
-    transition: all 150ms ease-in-out;
-    white-space: nowrap;
-}
-
-.badge-subtle-success {
-    background: rgba(25, 135, 84, 0.1);
-    color: #198754;
-    border: 1px solid rgba(25, 135, 84, 0.2);
-}
-
-.badge-subtle-secondary {
-    background: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-    border: 1px solid rgba(108, 117, 125, 0.2);
-}
-
-.badge-subtle-info {
-    background: rgba(13, 202, 240, 0.1);
-    color: #0dcaf0;
-    border: 1px solid rgba(13, 202, 240, 0.2);
-}
-
-.badge-subtle-warning {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-    border: 1px solid rgba(255, 193, 7, 0.2);
-}
-
-.badge-subtle:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Botones Acciones */
-:deep(.btn-group .btn) {
-    padding: 0.25rem 0.45rem;
-    transition: all 150ms ease-in-out;
-}
-
-:deep(.btn-group .btn:hover) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    z-index: 1;
+.font-monospace {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 </style>

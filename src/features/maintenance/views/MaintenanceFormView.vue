@@ -32,7 +32,7 @@
                                 <label class="form-label required" for="vehicle_uuid">Vehículo</label>
                                 <PrimeSelect :input-id="'vehicle_uuid'" v-model="formData.vehicle_uuid"
                                     :options="store.catalogs.vehicles" option-value="uuid"
-                                    option-label="vehicle_license_plate" placeholder="Seleccione..." showClear filter
+                                    option-label="display_plate" placeholder="Seleccione..." showClear filter
                                     class="w-100" :invalid="!!validationErrors['vehicle_uuid']" />
                                 <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">{{
                                     validationErrors.vehicle_uuid }}</div>
@@ -126,8 +126,7 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label required" for="maintenance_date">Fecha del
                                     Mantenimiento</label>
-                                <input id="maintenance_date" v-model="formData.maintenance_date" class="form-control"
-                                    :class="{ 'is-invalid': validationErrors.maintenance_date }" type="date" placeholder="YYYY-MM-DD" />
+                                <DateInput id="maintenance_date" v-model="formData.maintenance_date" class="form-control" :class="{ 'is-invalid': validationErrors.maintenance_date }" placeholder="YYYY-MM-DD" />
                                 <div v-if="validationErrors.maintenance_date" class="invalid-feedback d-block" id="f-maintenance_date-error" role="alert">{{
                                     validationErrors.maintenance_date }}</div>
                             </div>
@@ -189,8 +188,7 @@
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                 <label class="form-label" for="next_maintenance_date">Próximo Mantenimiento</label>
-                                <input id="next_maintenance_date" v-model="formData.next_maintenance_date"
-                                    class="form-control" type="date" placeholder="YYYY-MM-DD" />
+                                <DateInput id="next_maintenance_date" v-model="formData.next_maintenance_date" class="form-control" placeholder="YYYY-MM-DD" />
                             </div>
 
                         <div class="row mt-3 g-2 g-md-3">
@@ -270,7 +268,7 @@
                                                     <PrimeSelect v-model="part.provider_uuid"
                                                         :input-id="`f-parts-${index}-provider_uuid`"
                                                         :options="store.catalogs.thirdParties" option-value="uuid"
-                                                        :option-label="(opt) => opt.first_name || opt.trade_name"
+                                                        option-label="company_name"
                                                         placeholder="Ninguno" showClear filter class="w-100" />
                                                 </td>
                                                 <td>
@@ -321,6 +319,7 @@ import { useMaintenanceStore } from '../store/maintenance.store.js';
 import { usePermissionsStore, useUserStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import Swal from 'sweetalert2';
 

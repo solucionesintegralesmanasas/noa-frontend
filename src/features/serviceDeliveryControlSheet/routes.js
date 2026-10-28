@@ -15,7 +15,7 @@ export const serviceDeliveryControlSheetRoutes = [
         name: 'serviceDeliveryControlSheet.create',
         component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
         meta: {
-            title: 'Crear',
+            title: 'Crear Planilla de Control',
             auth: true,
             layout: 'dashboard',
             permissions: ['service_delivery_control_sheets.create'],
@@ -26,7 +26,7 @@ export const serviceDeliveryControlSheetRoutes = [
         name: 'serviceDeliveryControlSheet.edit',
         component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
         meta: {
-            title: 'Editar',
+            title: 'Editar Planilla de Control',
             auth: true,
             layout: 'dashboard',
             permissions: ['service_delivery_control_sheets.update'],
@@ -37,7 +37,7 @@ export const serviceDeliveryControlSheetRoutes = [
         name: 'serviceDeliveryControlSheet.internal-control',
         component: () => import('./views/ServiceTemplateView.vue'),
         meta: {
-            title: 'Servicio Subcontratado',
+            title: 'Control en Ruta',
             auth: true,
             layout: 'dashboard',
             permissions: ['service_delivery_control_sheets.index'],

@@ -1,4 +1,5 @@
 import { BaseService } from '@services/api/base.service.js';
+import { formatVehicleList } from '@/utils/catalogFormatters.js';
 
 /**
  * Servicio para la gestión de documentos de vehículos.
@@ -112,7 +113,7 @@ class VehicleDocumentsService extends BaseService {
             fetchSafe('fleet-management/vehicles/list' + vehicleQuery)
         ]);
 
-        return { companies, vehicles };
+        return { companies, vehicles: formatVehicleList(vehicles) };
     }
 }
 

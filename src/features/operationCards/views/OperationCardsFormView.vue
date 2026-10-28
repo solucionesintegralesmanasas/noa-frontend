@@ -120,7 +120,7 @@
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                             <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-vehicle_uuid">Vehículo</label>
                             <PrimeSelect :input-id="'f-vehicle_uuid'" v-model="formData.vehicle_uuid"
-                                :options="uniqueVehicles" option-value="uuid" option-label="vehicle_license_plate"
+                                :options="uniqueVehicles" option-value="uuid" option-label="display_plate"
                                 placeholder="Seleccionar vehículo" showClear filter class="w-100" :disabled="!!wizardUuid"
                                 :invalid="!!validationErrors['vehicle_uuid']" />
                             <div v-if="validationErrors.vehicle_uuid" class="invalid-feedback d-block" id="f-vehicle_uuid-error" role="alert">{{

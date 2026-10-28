@@ -194,6 +194,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useUserStore, useAuthStore, usePermissionsStore } from '@store'
 import { useNotificationsStore } from '@/features/notifications/store/notifications.store.js'
 import { useConfigStore } from '@store/modules/config.js'
+import { logger } from '@/utils/logger.js'
 
 defineProps({
     hideSidebarToggle: {
@@ -405,7 +406,7 @@ async function handleLogout() {
     } catch (error) {
         isLoggingOut.value = false
         configStore.setLoading(false)
-        console.error('Error during logout:', error)
+        logger.error('Error during logout:', error)
     }
 }
 </script>

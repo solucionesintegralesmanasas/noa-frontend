@@ -4,145 +4,146 @@
         :loading="isViewLoading || store.loading" :compact="true" :canCreate="can('inspection_items.create')"
         :breadcrumbs="[{ label: 'Configuración' }, { label: 'Ítems de Inspección' }]" @refresh="refreshTable" @create="goToCreate" />
 
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-        <div class="card-body position-relative py-2">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
-                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" aria-hidden="true" />
-                        </span>
-                        <input v-model="searchQuery" class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search" placeholder="Buscar por categoría o nombre del ítem..."
-                            aria-label="Buscar ítem de inspección" @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0" type="button"
-                            title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
-                            <i class="fad fa-times" aria-hidden="true" />
-                        </button>
-                    </div>
-                </div>
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" aria-hidden="true" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
-                </div>
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-inspection-items-busqueda" v-model="searchQuery" class="noa-search__input"
+                    type="search" placeholder="Buscar por categoría o nombre del ítem..."
+                    aria-label="Buscar ítem de inspección" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
+
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
+
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['22%', '34%', '32%', '12%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td v-for="i in 3" :key="i">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon" style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <div class="row gx-3 fade-in-up" style="animation-delay: 0.2s;">
-        <div class="col-12 col-xxl-12">
-            <div class="card border-0 shadow-sm">
-                <div class="bg-holder d-none d-lg-block bg-card"
-                    style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-                <div class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
-                            :totalRecords="store.pagination.totalItems"
-                            :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                            :loading="store.loading" :rowsPerPageOptions="[10, 25, 50, 100]" responsiveLayout="scroll"
-                            tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
-                            emptyMessage="No se encontraron registros" @page="onPageChange">
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    :totalRecords="store.pagination.totalItems"
+                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                    :loading="store.loading" responsiveLayout="scroll"
+                    tableStyle="min-width: 50rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron registros"
+                    :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort @sort="onSort">
 
-                            <Column field="category" header="Categoría" sortable style="width: 180px;">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill badge-subtle badge-subtle-info"
-                                        style="font-size:0.8rem;padding:0.4em 0.75em;">
-                                        {{ formatCategory(data.category) }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Categoría -->
+                    <Column field="category" header="Categoría" sortable style="width: 22%;">
+                        <template #body="{ data }">
+                            <span class="noa-cell-strong text-primary">
+                                {{ formatCategory(data.category) }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <Column field="item_name" header="Nombre del ítem" sortable>
-                                <template #body="{ data }">
-                                    <span class="text-dark fw-medium" style="font-size:0.85rem;">
-                                        {{ data.item_name || '—' }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Nombre del ítem -->
+                    <Column field="item_name" header="Nombre del ítem" sortable style="width: 34%;">
+                        <template #body="{ data }">
+                            <span class="text-dark fw-medium">
+                                {{ data.item_name || '—' }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <Column field="description" header="Descripción">
-                                <template #body="{ data }">
-                                    <span class="text-muted text-break" style="font-size:0.85rem;">
-                                        {{ data.description || '—' }}
-                                    </span>
-                                </template>
-                            </Column>
+                    <!-- Descripción -->
+                    <Column field="description" header="Descripción" style="width: 32%;">
+                        <template #body="{ data }">
+                            <span class="text-muted text-break small">
+                                {{ data.description || '—' }}
+                            </span>
+                        </template>
+                    </Column>
 
-                            <Column header="Acciones" class="text-center" style="min-width:120px; width: 120px;" v-if="can('inspection_items.update') || can('inspection_items.delete')">
-                                <template #body="{ data }">
-                                    <div class="btn-group btn-group-sm" role="group" :aria-label="`Acciones para ${data.item_name}`">
-                                        <button v-if="can('inspection_items.update')" class="btn btn-falcon-default" type="button"
-                                            title="Editar" :aria-label="`Editar ${data.item_name}`" @click="goToEdit(data.uuid ?? data.id)">
-                                            <i class="fad fa-edit text-warning" style="font-size:14px;" aria-hidden="true" />
-                                        </button>
-                                        <button v-if="can('inspection_items.delete')" class="btn btn-falcon-default"
-                                            type="button" title="Eliminar" :aria-label="`Eliminar ${data.item_name}`" @click="handleDelete(data)">
-                                            <i class="fad fa-trash text-danger" style="font-size:14px;" aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                </template>
-                            </Column>
+                    <!-- Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 12%;"
+                        v-if="can('inspection_items.update') || can('inspection_items.delete')">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.item_name || 'ítem de inspección'" />
+                        </template>
+                    </Column>
 
-                            <template #empty>
-                                <div class="text-center py-5">
-                                    <i class="fad fa-clipboard-check fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
-                                    <h6 class="text-muted mb-1 fw-medium">No hay ítems registrados</h6>
-                                    <p class="text-muted small mb-3">Comienza agregando tu primer ítem de inspección</p>
-                                    <button v-if="can('inspection_items.create')" class="btn btn-primary btn-sm" @click="goToCreate">
-                                        <i class="fad fa-plus me-1" aria-hidden="true" />Agregar primer ítem
-                                    </button>
-                                </div>
-                            </template>
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-clipboard-check fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No hay ítems registrados</h6>
+                            <p class="text-muted small mb-3">Comienza agregando tu primer ítem de inspección.</p>
+                            <button v-if="can('inspection_items.create')" class="btn btn-primary btn-sm" type="button" @click="goToCreate">
+                                <i class="fad fa-plus me-1" aria-hidden="true" />Agregar primer ítem
+                            </button>
+                        </div>
+                    </template>
 
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando ítems de inspección..." />
-                            </template>
-
-                            <template #footer>
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-3 bg-light rounded-bottom">
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-list me-1" aria-hidden="true" />
-                                        Mostrando <strong>{{ store.items.length }}</strong> de
-                                        <strong>{{ store.pagination.totalItems }}</strong> registros
-                                    </small>
-                                    <small class="text-muted" style="font-size:0.85rem;">
-                                        <i class="fad fa-pages me-1" aria-hidden="true" />
-                                        Página <strong>{{ store.pagination.currentPage }}</strong> de
-                                        <strong>{{ store.pagination.totalPages }}</strong>
-                                    </small>
-                                </div>
-                            </template>
-                        </DataTable>
-                    </div>
-                </div>
+                    <!-- Loading state -->
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando ítems de inspección..." />
+                    </template>
+                </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useInspectionItemsStore } from '../store/inspectionItems.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
+const route = useRoute();
 const router = useRouter();
 const store = useInspectionItemsStore();
 const permissionsStore = usePermissionsStore();
+
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 const isViewLoading = ref(true);
 const searchQuery = ref('');
@@ -162,13 +163,16 @@ const clearSearch = async () => {
     await store.clearFilters();
 };
 
-const onPageChange = async ({ first, rows }) => {
-    await store.setPage(Math.floor(first / rows) + 1);
+const refreshTable = () => store.fetchItems();
+
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
 const goToCreate = () => router.push('/configuracion/items-inspeccion/crear');
 const goToEdit = (uuid) => uuid && router.push(`/configuracion/items-inspeccion/editar/${uuid}`);
-const refreshTable = () => store.fetchItems();
 
 const handleDelete = (item) => confirmDelete(item, {
     title: '¿Eliminar ítem de inspección?',
@@ -181,15 +185,40 @@ const handleDelete = (item) => confirmDelete(item, {
         </div>`,
 });
 
+const accionesDe = (data) => [
+    {
+        key: 'editar',
+        label: 'Editar',
+        icon: 'far fa-pen',
+        tone: 'warning',
+        inline: true,
+        visible: can('inspection_items.update'),
+        onClick: () => goToEdit(data.uuid ?? data.id),
+    },
+    {
+        key: 'eliminar',
+        label: 'Eliminar',
+        icon: 'far fa-trash-alt',
+        tone: 'danger',
+        visible: can('inspection_items.delete'),
+        onClick: () => handleDelete(data),
+    },
+];
+
 onMounted(async () => {
     try {
+        const sortParam = route.query.sort;
+        const orderParam = route.query.order;
+        if (typeof sortParam === 'string' && sortParam) {
+            restore(sortParam, orderParam);
+            store.sortField = sortParam;
+            store.sortOrder = orderParam === 'desc' ? 'desc' : 'asc';
+        }
         searchQuery.value = store.search;
         await store.fetchItems();
     } finally {
-        setTimeout(() => {
-            isViewLoading.value = false;
-            initTooltips();
-        }, 300);
+        isViewLoading.value = false;
+        initTooltips();
     }
 });
 
@@ -197,31 +226,26 @@ onUnmounted(() => destroyTooltips());
 </script>
 
 <style scoped>
-.badge-subtle {
-    font-weight: 500;
-    white-space: nowrap;
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
 }
-.badge-subtle-info {
-    background: rgba(13, 110, 253, .1);
-    color: #0d6efd;
-    border: 1px solid rgba(13, 110, 253, .2);
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
+
 .text-break {
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: normal;
     display: inline-block;
     max-width: 100%;
-}
-.fade-in-up {
-    animation: fadeInUp 0.4s ease-out forwards;
-}
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-:focus-visible {
-    outline: 2px solid #0d6efd !important;
-    outline-offset: 2px !important;
 }
 </style>

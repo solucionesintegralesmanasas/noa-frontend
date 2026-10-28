@@ -158,7 +158,8 @@ Reglas cerradas en las fases 1-3 (2026-09-15). Verificables con `npm run test:a1
 - **Plan de rendimiento:** `PLAN-ARQUITECTURA-RENDIMIENTO-NOA.md` fue retirado del backend (2026-10-15, `aea765c`); el backlog y las cifras viven en SPEC-004 y en el AGENTS del backend. Medir siempre en producción o `preview`, nunca contra `localhost:5173`.
 - **Perfil autenticado para Lighthouse (2026-10-05):** `--profile="C:\Users\trans_nn1on\lighthouse-profile"` NO retiene la sesión en las corridas headless del script (las privadas caen a `#/login?redirect=...` aunque el perfil tenga token): las páginas privadas se miden manual en DevTools (protocolo de `docs/metrics/lighthouse.md`, 3 corridas, guardar JSON). El script solo sirve para públicas (`login`, `conductor`). Perfil creado con `--user-data-dir` apuntando ahí; no navegar a otros sitios con él.
 - **No eliminar `lodash.min.js`:** `public/assets/js/theme.js` usa `window._` 11 veces.
-- **Deuda conocida:** `theme.min.css` 892 kB sin purga, `public/assets/js/theme.js` 438 kB, `bootstrap.min.js` global (Modal/Tooltip), Leaflet por CDN, Google Fonts con 5 familias (ahora no bloqueantes; recortar las no usadas), `tenantGuard` sin implementar, ~18 `type="date"` sin migrar a `DateInput`, `vue-tsc` con ~1740 errores de baseline y muy poca cobertura de tests.
+- **Deuda conocida:** `theme.min.css` 892 kB sin purga, `public/assets/js/theme.js` 438 kB, `bootstrap.min.js` global (Modal/Tooltip), Leaflet por CDN, Google Fonts con 5 familias (ahora no bloqueantes; recortar las no usadas), `tenantGuard` sin implementar, `vue-tsc` con ~1740 errores de baseline y muy poca cobertura de tests.
+- **Migración a `DateInput` completada (2026-10-26):** Todos los formularios del sistema migraron los inputs de fecha nativos a `DateInput.vue` (normalización ISO `YYYY-MM-DD`, soporte para pegado `DD/MM/AAAA` con `parsearFechaFlexible`, estilos y accesibilidad homogéneos). Se limpiaron además los `console.*` residuales por `logger`, imports directos de `sweetalert2` en vistas públicas y el enlace muerto de `RuesLookupPanel.vue`.
 - **Componentes de formulario compartidos:** `PrimeSelect`, `PrimeMultiSelect` y `DateInput` viven en `src/components/form/` (importar localmente). `PrimeSelect` fija `focusOnHover=false` y `autoFilterFocus=true`; `DateInput` acepta `dd/mm/aaaa` vía `parsearFechaFlexible` (`src/utils/date.js`). El estado de documentos se normaliza con `src/utils/documentStatus.js` (`SI`/`NO` → `VIGENTE`/`NO VIGENTE`). `PrimeMultiSelect` integra desde el 2026-10-19 un control propio "Seleccionar todos" en la cabecera del panel (PrimeVue 4 dibuja su casilla de marcar todo sin texto, un cuadro mudo): la casilla es el componente `Checkbox` real de PrimeVue (el MultiSelect ya lo importa, no añade bytes), el toggle delega en `onToggleAll` (marca o desmarca las opciones visibles, respetando el filtro; requiere `showToggleAll=false` + `selectAll=null`) y la fila usa los tokens del tema (`list.option.*`) con un divisor inferior, de modo que se ve como una opción más del panel. El `aria-label` de la casilla nativa se traduce en `src/components/app/primevue.js` (`aria.selectAll`/`aria.unselectAll`). Peso medido: sin cambio en JS (3139.1 kB) y +0.2 kB de CSS. Prueba: `PrimeMultiSelect.test.js`.
 - **Pruebas de componentes:** vitest con `jsdom` + `@vue/test-utils`; cada archivo declara `// @vitest-environment jsdom` en la primera línea (entorno por defecto: `node`).
 - **Ramas y releases (2026-10-19):** el trabajo va en `feature`; `main` es la rama de release (tag `v1.0.0` → `5531e3d`, merge del 2026-10-16). **Release v1.0.1:** `main` quedó con el squash de TODO el árbol de `feature` (commit `4ce46ac` "NOA v1.0.1", ya empujado a `origin/main`) y **tag `v1.0.1` (annotated) local, no publicado**. El squash reincluyó los heredados `src/hooks/useForm.js`, `src/hooks/useSelect2.js` y `src/router/guards.js` (residuos del reintegro del remoto, sin referencias usadas): se eliminaron en `feature` el 2026-10-20, después del release (salen en el próximo squash; no confundir con `src/router/guards/auth.js`, que sí está en uso). El siguiente release repite el procedimiento: squash de `feature` a `main` + tag local.
@@ -217,6 +218,7 @@ Abstracciones de lógica reutilizable para mantener los componentes `.vue` dedic
 - **`useTableActions.js`**: Manejo de eventos comunes en tablas como confirmación de eliminación con SweetAlert2.
 - **`useRealtimeChannel.js`**: Canal realtime unificado (SSE con polling de recuperación): ciclo `setTimeout`, `AbortController`, pausa con la pestaña oculta y backoff. Las vistas no deben crear temporizadores ni conexiones SSE propias.
 - **`usePlatform.js`**: Detección de plataforma (web / Android / iOS).
+- **`useServerSort.js`**: Hook para ordenamiento server-side en `DataTable` lazy. Traduce `@sort` (1/-1/0) a `sort_by`/`sort_order`, mantiene reactividad con `:sortField` y `:sortOrder`, y sincroniza bidireccionalmente los parámetros `?sort=` y `?order=` en la URL del navegador.
 - Otros: `useDocumentWizard.js`, `useGeolocation.js`, `useNitLookup.js`, `useNoAutocomplete.js`.
 
 ## Utilidades del Sistema (`src/utils/`)
@@ -248,14 +250,87 @@ Estructura de la persistencia de datos y estado global con Pinia:
   - `logger.js`: Logger del ciclo de vida de acciones en Pinia.
   - `persistence.js`: Sincronización encriptada reactiva con `secureStorage`.
 
+## Rediseño Stitch en Listados Genéricos (2026-10-23)
+
+Estandarización visual y funcional de las vistas de listado basada en la maqueta Stitch (*Listados - genérico*). Reemplaza la doble tarjeta desalineada y la barra de acciones sobrecargada por componentes y estilos centralizados.
+
+- **Componentes base:**
+  - `src/components/RowActions.vue`: Agrupación consistente de acciones de fila. Máximo 2 acciones en línea (`inline: true`, ej. Ver y Editar); el resto pasa a un menú flotante (`⋮`) accesible mediante PrimeVue `Menu`, con las acciones destructivas (`tone: 'danger'`) al final separadas. Reserva un espaciador visual si una fila no tiene acciones en menú para mantener la vertical alineada.
+  - `src/components/ListPagination.vue`: Paginador propio que reemplaza al paginador embebido de PrimeVue (`:paginator="false"` en `DataTable`). Muestra a la izquierda `Mostrando X a Y de Z registros | Filas: [N ▾]` y a la derecha los botones de páginas `« ‹ 1 2 3 … N › »` con elipsis inteligente y tamaño cuadrado de 28px. Emite `{ page, rows, first }` compatible con `@page`.
+  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida. **No se importa en `main.js`** (SPEC-008, historia 16: no debe entrar al arranque): la importan `ListPagination.vue` y `RowActions.vue`, así que viaja con el chunk de cada listado. Define el contenedor `.noa-list-card` (toolbar de búsqueda + tabla + paginador en una sola tarjeta), el buscador `.noa-search`, la píldora de conteo `.noa-results`, la píldora de estado con indicador circular `.noa-status` (`.noa-status--success`, `.noa-status--warning`, `.noa-status--muted`), y la clase `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos para eliminar disparidades entre columnas.
+- **Pendientes del rediseño y de las piezas compartidas:** el plan por pasos y módulos vive en `noa-backend/docs/specs/SPEC-008-listados-reutilizables-y-medidos.md` (sección "Avance y pendientes por pasos"). **Antes de migrar un listado o crear una pieza nueva de listado, léela y sigue su orden.**
+- **Todo buscador de listado lleva `id="f-<modulo>-busqueda"`** (accesibilidad); un buscador nuevo sin `id` incumple el estándar.
+
+- **Estado de migración de vistas:**
+  - **Migradas y verificadas (Bloques 1, 2, 3 + Terceros, Combustible, Convenios y Geocercas):**
+    - `ThirdPartiesListView.vue` (Terceros)
+    - `VehiclesListView.vue` (Vehículos)
+    - `VehicleDocumentsListView.vue` (Documentos vehiculares: SOAT, RTM y Pólizas RCC/RCE)
+    - `OperationCardsListView.vue` (Tarjetas de Operación)
+    - `RadicacionListView.vue` (Radicación TO)
+    - `VehicleInspectionListView.vue` (Inspecciones vehiculares — conserva métricas y vista móvil Capacitor)
+    - `MaintenanceListView.vue` (Mantenimiento vehicular)
+    - `FuecListView.vue` (FUEC — conserva vista móvil Capacitor)
+    - `ProjectsListView.vue` (Proyectos)
+    - `ControlSheetsListView.vue` (Planillas de control — conserva vista móvil Capacitor)
+    - `ServiceDeliveryControlSheetListView.vue` (Hojas de control de servicio PCP — conserva vista móvil Capacitor)
+    - `FuelLogListView.vue` (Control de combustible y kilometraje)
+    - `FuelRequestListView.vue` (Solicitudes de tanqueo)
+    - `BusinessCollaborationAgreementsListView.vue` (Convenios de colaboración)
+    - `GeofenceListView.vue` (Geocercas)
+    - `BillingListView.vue` (Facturación)
+    - `AffiliateAdminChargesListView.vue` (Cobros y cuotas de administración — conserva métricas de resumen y modal de historial)
+    - `EmploymentContractsListView.vue` (Contratos laborales)
+    - `FinancialStatementsListView.vue` (Estados financieros)
+    - `TaxDeclarationsListView.vue` (Declaraciones de renta)
+    - `TaxInformationListView.vue` (Información tributaria)
+    - `WithholdingsListView.vue` (Retenciones)
+    - `BankDetailsListView.vue` (Datos bancarios)
+    - `ExperiencesListView.vue` (Experiencias)
+    - `RupRecordsListView.vue` (Registros RUP)
+    - `NotificationsListView.vue` (Notificaciones / Alertas y vencimientos)
+    - `InspectionItemsListView.vue` (Ítems de inspección)
+    - `EconomicActivitiesListView.vue` (Actividades económicas)
+    - `EnablingResolutionsListView.vue` (Resoluciones de habilitación)
+    - `ConveyorCapacityListView.vue` (Capacidad transportadora)
+    - `ObjectsContractsListView.vue` (Objetos de contratos)
+    - `VehicleReportView.vue` (Reporte de vehículos)
+    - `UsersListView.vue` (Gestión de usuarios y asignación de roles)
+    - `CompaniesListView.vue` (Empresas)
+    - `BranchesListView.vue` (Sucursales)
+    - `BrandsListView.vue` (Marcas de vehículos)
+    - `VehicleClassesListView.vue` (Clases de vehículos)
+
+## Ordenamiento de listados server-side (2026-10-23)
+
+- **Comportamiento en `DataTable`:** En modo `lazy`, las columnas con `sortable` requieren `:sortField="sortField"` (o `store.sortField`), `:sortOrder="sortOrdenPrimeVue"` (o `store.sortOrder`) y `@sort="onSort"` (o `@sort="handleSort"`).
+- **Hook `useServerSort.js`:** Admite tanto el objeto de opciones `{ field, order, onChange }` como la función directa `useServerSort((field, order) => ..., options)`. Expone `{ sortField, sortOrder, sortOrdenPrimeVue, onSort, handleSort: onSort, restore, reset }`, traduce las direcciones de PrimeVue (`1` -> asc, `-1` -> desc, `0` -> null) y sincroniza los parámetros en la URL con `router.replace({ query: { ...route.query, sort, order } })`.
+- **Ciclo de vida en vistas:** antes de `store.fetchItems()` se recupera `route.query.sort`/`order` **sin doble petición**. Hay dos patrones válidos: (a) la vista enlaza `:sortField`/`:sortOrder` al **store** y en `onMounted` asigna `store.sortField`/`store.sortOrder` (p. ej. `UsersListView`); (b) la vista enlaza los refs del composable y llama `restore(sortParam, orderParam)`. No mezclar ambos en una misma vista: si el DataTable lee del composable, `restore()` es obligatorio.
+- **Pendientes de ordenamiento y búsqueda:** helper común de `sort_order` para los stores y otras mejoras en SPEC-008 (Pasos 4 y 5).
+- **Búsqueda (2026-10-24):** `useTable.debouncedSearch` ignora el `InputEvent` que Vue le pasa con `@input="debouncedSearch"` y espera 400 ms (antes caía a 0 ms y lanzaba una petición por tecla). `BaseService` cancela el `getAll` previo del mismo recurso (`AbortController`) y `runStoreAction` ignora las cancelaciones y mantiene `loading` hasta que termina la última petición en vuelo. Los catálogos de terceros y vehículos para selectores pasan por `src/utils/catalogFormatters.js` (`formatThirdPartyList`, `formatVehicleList`): el selector de placa usa `option-label="display_plate"` y `PrimeSelect` amplía solo el filtro (documento, apellido, razón social, móvil) cuando las opciones traen esos campos.
+- **Regla en Stores:** Las acciones `fetchItems()` envían `sort_by` y `sort_order` normalizando tanto valores numéricos (`1`/`-1`) como textuales (`asc`/`desc`). La acción `clearFilters()` limpia únicamente la búsqueda y resetea a página 1, **sin alterar** `sortField` ni `sortOrder`.
+- **Cobertura total implementada:** Todos los listados paginados de la aplicación (Bloques 1, 2, 3 y 4 completos) cuentan con ordenamiento server-side sincronizado en URL tanto en Backend (`$sortableFields`, `applySorting`, validación de dirección) como en Frontend (Pinia + PrimeVue DataTable + `useServerSort`).
+
+## Corrección de filtros y estabilidad visual en listados (2026-10-26)
+
+- **Estabilidad de toolbar y encabezado en Hojas de Control (`ServiceDeliveryControlSheetListView`):**
+  - Se desacopló el `:loading="isViewLoading || store.loading"` del `BasePageHeader` a `:loading="isViewLoading"`. Anteriormente, cada vez que el usuario escribía en el buscador o cambiaba un filtro, `store.loading` activaba el estado esqueleto del header, haciendo desaparecer los botones de acción e iconos ("Actualizar", "Reportes", "Nuevo", "Control en Ruta").
+  - El contador de resultados `.noa-results` ya no se destruye con `v-if="!isViewLoading && !store.loading"`. Ahora permanece visible en la toolbar y alterna un indicador de carga sutil cuando `store.loading` está activo, eliminando el parpadeo y la desaparición del icono `<i class="fas fa-filter">`.
+- **Filtros en Reporte de Vehículos (`VehicleReportView` y `vehicleReports.store`):**
+  - Se corrigió `currentParams` en el store para evaluar `hasActiveFilter` de forma segura: `filter_type` solo se envía a la API cuando el filtro dependiente tiene un valor asignado.
+  - Al cambiar de tipo de filtro (`onFilterTypeChange`), la tabla recarga los datos generales de inmediato en lugar de dejar filas huérfanas o provocar errores 422 en el backend.
+  - Se normalizó el manejo de opciones dependientes (afiliados, conductores, proyectos, tarjetas de operación, mantenimiento y convenios) y la limpieza total (`clearAll`).
+
 ## Credenciales de inicio de sesión
 
 Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo o usa el `UsuariosSeeder` / `DemoCompanySeeder` del backend en un entorno local.
 
-## Commits
+## Convención de Commits
 
-- Una sola línea, en español, formato `tipo(scope): descripción directa`.
-- Sin cuerpo ni bullets, salvo que el cambio lo exija para entenderse.
+- Mensajes directos en español, en una sola línea, formato `tipo(scope): descripción corta`.
+- Sin cuerpo ni bullets, salvo que el cambio lo exija para entenderse. Cuando lo exija: un cuerpo breve (una o dos frases, o tres puntos como máximo), nunca el listado de archivos o de cambios punto por punto.
+- **Cuándo commitear:** solo después de revisar el código, mediante una skill de revisión (`/code-review`) o una revisión propia contra los estándares de este archivo, o cuando el usuario lo solicite explícitamente. No commitear código sin revisar; si la revisión encuentra hallazgos, se corrigen antes de commitear y las métricas de rendimiento/a11y se miden antes y después.
+- **Sin commits de relleno:** los ajustes de `AGENTS.md` que documentan un cambio van en el mismo commit de ese cambio (nada de commits `docs` separados para este archivo ni correcciones sucesivas de la misma prosa), y la instalación o actualización de skills va en un único commit.
 - Tipos: feat, fix, refactor, perf, style, docs, test, build, ci, chore.
 
 ## Agent skills

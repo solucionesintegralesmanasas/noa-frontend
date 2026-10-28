@@ -45,14 +45,9 @@
                                     <div class="d-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-xs flex-grow-1 flex-lg-grow-0">
                                         <i class="far fa-calendar-alt text-primary fs-11" aria-hidden="true"></i>
                                         <label class="visually-hidden" for="f-periodo-conductor">Periodo</label>
-                                        <select id="f-periodo-conductor" v-model="selectedPeriod" class="form-select form-select-sm border-0 py-0 ps-1 pe-4 shadow-none fs-11 w-100"
-                                            style="cursor: pointer;" @change="loadData">
-                                            <option value="7">Últimos 7 días</option>
-                                            <option value="15">Últimos 15 días</option>
-                                            <option value="30">Últimos 30 días</option>
-                                            <option value="90">Últimos 3 meses</option>
-                                            <option value="365">Este año</option>
-                                        </select>
+                                        <PrimeSelect input-id="f-periodo-conductor" v-model="selectedPeriod" :options="periodoOpciones"
+                                            option-label="label" option-value="value" size="small"
+                                            style="cursor: pointer; min-width: 130px" class="w-100" @change="loadData" />
                                     </div>
 
                                     <button class="btn btn-primary btn-sm px-3 shadow-xs d-inline-flex align-items-center justify-content-center gap-1 flex-shrink-0"
@@ -266,6 +261,32 @@
                                 <router-link to="/planilla-de-control-de-prestacion-servicios" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2 py-2">
                                     <i class="fas fa-table"></i>
                                     <span>Listado de Planillas</span>
+                                </router-link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Solicitudes de Tanqueo -->
+                <div v-if="permissionsStore.can('fuel_requests.index')" class="col-12 col-sm-6 col-xl-3">
+                    <div class="card h-100 border-0 shadow-sm module-card card-action-blue">
+                        <div class="card-body p-3 p-lg-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-start justify-content-between mb-3">
+                                    <div class="module-avatar bg-subtle-primary text-primary">
+                                        <i class="fas fa-gas-pump fs-2" aria-hidden="true"></i>
+                                    </div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semi-bold fs-11">QR</span>
+                                </div>
+                                <h5 class="fw-bold text-900 mb-1 fs-16 fs-sm-18">Solicitudes de tanqueo</h5>
+                                <p class="text-600 fs-11 mb-3">
+                                    Solicita combustible y presenta el QR aprobado por la empresa en la estación.
+                                </p>
+                            </div>
+                            <div class="d-flex flex-column gap-2 mt-auto">
+                                <router-link to="/flota/solicitudes-tanqueo" class="btn btn-primary btn-sm w-100 shadow-xs d-flex align-items-center justify-content-center gap-2 py-2">
+                                    <i class="fas fa-qrcode" aria-hidden="true"></i>
+                                    <span>Solicitar / Ver QR</span>
                                 </router-link>
                             </div>
                         </div>
@@ -550,15 +571,25 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { useAuthStore, useUserStore } from '@store';
+import { useAuthStore, useUserStore, usePermissionsStore } from '@store';
 import { useDashboardStore } from '../store/dashboard.store';
 import DriverSelfMap from '@/features/tracking/components/DriverSelfMap.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const dashboardStore = useDashboardStore();
+const permissionsStore = usePermissionsStore();
 
 const selectedPeriod = ref('30');
+// Mismos valores (texto) que el <select> nativo que reemplazó.
+const periodoOpciones = [
+    { label: 'Últimos 7 días', value: '7' },
+    { label: 'Últimos 15 días', value: '15' },
+    { label: 'Últimos 30 días', value: '30' },
+    { label: 'Últimos 3 meses', value: '90' },
+    { label: 'Este año', value: '365' },
+];
 const vehicleSearch = ref('');
 const isLoading = computed(() => dashboardStore.isLoading);
 

@@ -32,6 +32,19 @@ class ServiceDeliveryControlSheetService extends BaseService {
     }
 
     /**
+     * Obtiene el resumen global de todos los proyectos activos con sus
+     * métricas de evidencia para el switcher de tarjetas.
+     * @param {string|null} companyUuid - UUID de la empresa.
+     * @param {string|null} thirdPartyUuid - UUID del conductor (opcional).
+     */
+    projectsOverview(companyUuid = null, thirdPartyUuid = null) {
+        const params = { all: 1 };
+        if (companyUuid) params.company_uuid = companyUuid;
+        if (thirdPartyUuid) params.third_party_uuid = thirdPartyUuid;
+        return this._request('GET', '/project-summary', { params });
+    }
+
+    /**
      * Obtiene un registro específico por su UUID.
      * @param {string} uuid - Identificador único del registro.
      * @returns {Promise<Object>} Datos del registro.

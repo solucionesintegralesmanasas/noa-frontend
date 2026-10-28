@@ -2,11 +2,44 @@
 // Se usa `import()` para no sumar SweetAlert2 al arranque de la aplicación.
 let SwalPromise = null;
 
-function getSwal() {
+/**
+ * Obtiene la instancia de SweetAlert2 cargada de forma diferida.
+ * @returns {Promise<any>}
+ */
+export async function getSwal() {
     if (!SwalPromise) {
         SwalPromise = import('sweetalert2').then(({ default: Swal }) => Swal);
     }
     return SwalPromise;
+}
+
+/**
+ * Cierra cualquier modal de SweetAlert2 abierto actualmente.
+ */
+export async function closeSwal() {
+    try {
+        const Swal = await getSwal();
+        Swal.close();
+    } catch {
+        // Ignorar si no está abierto
+    }
+}
+
+/**
+ * Muestra un modal de carga con spinner y sin cierre al hacer clic fuera.
+ * @param {{title?: string, text?: string}} options
+ * @returns {Promise<any>}
+ */
+export async function showLoadingModal({ title = 'Cargando...', text = 'Por favor espera...' } = {}) {
+    const Swal = await getSwal();
+    return Swal.fire({
+        title,
+        text,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 }
 
 /**
@@ -92,3 +125,12 @@ export async function confirmLogout() {
     }
 }
 
+/**
+ * Muestra un modal de diálogo de SweetAlert2 importado de forma diferida.
+ * @param {object} options
+ * @returns {Promise<any>}
+ */
+export async function showSwalModal(options) {
+    const Swal = await getSwal();
+    return Swal.fire(options);
+}

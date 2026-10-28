@@ -833,7 +833,7 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '@store/modules/auth.js';
 import loboHeroImg from '@/assets/images/lobo-express-hero.png';
-import Swal from 'sweetalert2';
+import { toast } from '@/utils/toast.js';
 
 const authStore = useAuthStore();
 
@@ -920,15 +920,7 @@ const handleContactSubmit = () => {
   setTimeout(() => {
     isSubmittingContact.value = false;
     
-    Swal.fire({
-      icon: 'success',
-      title: '¡Mensaje Enviado!',
-      text: 'Nos pondremos en contacto contigo lo antes posible.',
-      confirmButtonColor: '#F0B800',
-      customClass: {
-        popup: 'custom-swal-popup'
-      }
-    });
+    toast('¡Mensaje Enviado!', 'Nos pondremos en contacto contigo lo antes posible.', 'success');
     // Reset form
     contactForm.nombre = '';
     contactForm.empresa = '';

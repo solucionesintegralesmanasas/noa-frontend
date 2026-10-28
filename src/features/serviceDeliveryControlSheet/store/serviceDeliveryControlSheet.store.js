@@ -22,13 +22,21 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
         projectDetail: null,
         projectFilter: '',
         soloCerradas: false,
+        agruparPorProyecto: true,
+        viewMode: 'projects',
+        projectsOverview: [],
+        statusFilter: 'todas',
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
         filteredItems: (state) => state.items,
         paginatedItems: (state) => state.items,
+        projectsSummary: (state) => state.projectsOverview,
+        statusTab: (state) => state.statusFilter,
     },
 
     actions: {
@@ -62,6 +70,10 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
                     search: this.search || undefined,
                     project_uuid: this.projectFilter || undefined,
                     solo_cerradas: this.soloCerradas ? true : undefined,
+                    estado_filtro: this.statusFilter !== 'todas' ? this.statusFilter : undefined,
+                    agrupar_proyecto: this.agruparPorProyecto ? true : undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -70,6 +82,13 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
                 this.pagination.totalPages = p.last_page ?? 1;
                 this.pagination.itemsPerPage = p.per_page ?? this.pagination.itemsPerPage;
             }, 'Error al cargar los datos');
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
         },
 
         /**
@@ -286,10 +305,44 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
             }, 'Error al cargar el registro');
         },
 
+        setItemsPerPage(filas) {
+            const cantidad = Number(filas);
+            if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad === this.pagination.itemsPerPage) return Promise.resolve();
+            this.pagination.itemsPerPage = cantidad;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
         setPage(page) { this.pagination.currentPage = page; return this.fetchItems(); },
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
+        setAgruparPorProyecto(value) { this.agruparPorProyecto = !!value; this.pagination.currentPage = 1; return this.fetchItems(); },
         setSoloCerradas(value) { this.soloCerradas = !!value; this.pagination.currentPage = 1; return this.fetchItems(); },
+        async loadProjectsOverview(companyUuid, thirdPartyUuid = null) {
+            try {
+                const response = await serviceDeliveryControlSheetService.projectsOverview(companyUuid, thirdPartyUuid);
+                const list = response?.data ?? response ?? [];
+                this.projectsOverview = Array.isArray(list) ? list : [];
+                return this.projectsOverview;
+            } catch {
+                return [];
+            }
+        },
+        setViewMode(mode) {
+            this.viewMode = mode;
+            if (mode === 'flat') {
+                this.projectFilter = '';
+            } else if (!this.projectFilter && this.projectsOverview.length > 0) {
+                this.projectFilter = this.projectsOverview[0].uuid;
+            }
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
+        setStatusFilter(filter) {
+            this.statusFilter = filter || 'todas';
+            this.soloCerradas = this.statusFilter === 'cerradas';
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
+        },
 
         /**
          * Descarga y abre el PDF diario de un registro en una pestaña nueva.

@@ -117,6 +117,91 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Datos de nacimiento y cédula (solo personas naturales) -->
+                            <div class="row g-2 g-md-3 mt-1">
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-birth_place_uuid">Lugar de Nacimiento</label>
+                                    <PrimeSelect input-id="f-birth_place_uuid" v-model="formData.birth_place_uuid"
+                                        :options="store.catalogs.cities" option-value="uuid" option-label="name"
+                                        placeholder="Ciudad de nacimiento" showClear filter class="w-100"
+                                        :invalid="!!validationErrors['birth_place_uuid']"
+                                        :aria-invalid="!!validationErrors['birth_place_uuid']"
+                                        :aria-describedby="validationErrors['birth_place_uuid'] ? 'f-birth_place_uuid-error' : undefined" />
+                                    <div v-if="validationErrors.birth_place_uuid" class="invalid-feedback d-block" id="f-birth_place_uuid-error" role="alert">
+                                        {{ validationErrors.birth_place_uuid }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-birth_date">Fecha de Nacimiento</label>
+                                    <DateInput id="f-birth_date" v-model="formData.birth_date"
+                                        class="form-control" :class="{ 'is-invalid': !!validationErrors['birth_date'] }"
+                                        :invalid="!!validationErrors['birth_date']"
+                                        :aria-invalid="!!validationErrors['birth_date']"
+                                        :aria-describedby="validationErrors['birth_date'] ? 'f-birth_date-error' : undefined" />
+                                    <div v-if="validationErrors.birth_date" class="invalid-feedback d-block" id="f-birth_date-error" role="alert">
+                                        {{ validationErrors.birth_date }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-id_card_issue_place_uuid">Lugar de Expedición</label>
+                                    <PrimeSelect input-id="f-id_card_issue_place_uuid" v-model="formData.id_card_issue_place_uuid"
+                                        :options="store.catalogs.cities" option-value="uuid" option-label="name"
+                                        placeholder="Ciudad de expedición" showClear filter class="w-100"
+                                        :invalid="!!validationErrors['id_card_issue_place_uuid']"
+                                        :aria-invalid="!!validationErrors['id_card_issue_place_uuid']"
+                                        :aria-describedby="validationErrors['id_card_issue_place_uuid'] ? 'f-id_card_issue_place_uuid-error' : undefined" />
+                                    <div v-if="validationErrors.id_card_issue_place_uuid" class="invalid-feedback d-block" id="f-id_card_issue_place_uuid-error" role="alert">
+                                        {{ validationErrors.id_card_issue_place_uuid }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-3">
+                                    <label class="form-label required" for="f-id_card_issue_date">Fecha de Expedición</label>
+                                    <DateInput id="f-id_card_issue_date" v-model="formData.id_card_issue_date"
+                                        class="form-control" :class="{ 'is-invalid': !!validationErrors['id_card_issue_date'] }"
+                                        :invalid="!!validationErrors['id_card_issue_date']"
+                                        :aria-invalid="!!validationErrors['id_card_issue_date']"
+                                        :aria-describedby="validationErrors['id_card_issue_date'] ? 'f-id_card_issue_date-error' : undefined" />
+                                    <div v-if="validationErrors.id_card_issue_date" class="invalid-feedback d-block" id="f-id_card_issue_date-error" role="alert">
+                                        {{ validationErrors.id_card_issue_date }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label required" for="f-sex">Sexo</label>
+                                    <PrimeSelect input-id="f-sex" v-model="formData.sex"
+                                        :options="SEXOS" option-label="label" option-value="value"
+                                        placeholder="Seleccione..." class="w-100"
+                                        :invalid="!!validationErrors['sex']"
+                                        :aria-invalid="!!validationErrors['sex']"
+                                        :aria-describedby="validationErrors['sex'] ? 'f-sex-error' : undefined" />
+                                    <div v-if="validationErrors.sex" class="invalid-feedback d-block" id="f-sex-error" role="alert">
+                                        {{ validationErrors.sex }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label required" for="f-marital_status">Estado Civil</label>
+                                    <PrimeSelect input-id="f-marital_status" v-model="formData.marital_status"
+                                        :options="ESTADOS_CIVILES" option-label="label" option-value="value"
+                                        placeholder="Seleccione..." class="w-100"
+                                        :invalid="!!validationErrors['marital_status']"
+                                        :aria-invalid="!!validationErrors['marital_status']"
+                                        :aria-describedby="validationErrors['marital_status'] ? 'f-marital_status-error' : undefined" />
+                                    <div v-if="validationErrors.marital_status" class="invalid-feedback d-block" id="f-marital_status-error" role="alert">
+                                        {{ validationErrors.marital_status }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label required" for="f-blood_type">Grupo Sanguíneo</label>
+                                    <PrimeSelect input-id="f-blood_type" v-model="formData.blood_type"
+                                        :options="GRUPOS_SANGUINEOS" option-label="label" option-value="value"
+                                        placeholder="Seleccione..." class="w-100"
+                                        :invalid="!!validationErrors['blood_type']"
+                                        :aria-invalid="!!validationErrors['blood_type']"
+                                        :aria-describedby="validationErrors['blood_type'] ? 'f-blood_type-error' : undefined" />
+                                    <div v-if="validationErrors.blood_type" class="invalid-feedback d-block" id="f-blood_type-error" role="alert">
+                                        {{ validationErrors.blood_type }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-12" v-if="formData.person_type === 'JURIDICA'">
@@ -451,6 +536,7 @@
 
 <script setup>
 import { toast } from '@/utils/toast.js';
+import { SEXOS, ESTADOS_CIVILES, GRUPOS_SANGUINEOS } from '../utils/personData.js';
 /**
  * @author Darwin Montes
  * @version 1.0.0
@@ -543,6 +629,13 @@ const formData = reactive({
     is_driver: '0',
     is_others: '0',
     person_type: '',
+    birth_place_uuid: '',
+    birth_date: '',
+    id_card_issue_place_uuid: '',
+    id_card_issue_date: '',
+    sex: '',
+    marital_status: '',
+    blood_type: '',
     document_type_uuid: '',
     document_number: '',
     nit_check_digit: '',
@@ -579,6 +672,7 @@ const filePreviews = reactive({});
 const esSucursal = computed(() => permissionsStore.hasRole('SUCURSAL')
     && !permissionsStore.hasRole('SUPERADMIN')
     && !permissionsStore.hasRole('ADMIN_EMPRESA'));
+
 
 /**
  * Sedes activas de la empresa elegida, con la principal primero. Para un
@@ -742,12 +836,20 @@ watch(() => formData.company_uuid, async (nueva, anterior) => {
 
 const focusFirstError = async (fieldKey) => {
     await nextTick();
-    const byId = fieldKey ? document.getElementById(`f-${String(fieldKey).replace(/\./g, '-')}`) : null;
-    const target = byId || document.querySelector('[aria-invalid="true"], .is-invalid');
+    const normalizedKey = String(fieldKey || '').replace(/\./g, '-');
+    const byId = fieldKey
+        ? (document.getElementById(`f-${normalizedKey}`) || document.getElementById(normalizedKey))
+        : null;
+    const target = byId || document.querySelector('[aria-invalid="true"], .is-invalid, .p-invalid');
     if (target) {
-        if (!/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(target.tagName)) target.setAttribute('tabindex', '-1');
-        target.focus({ preventScroll: true });
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusable = target.matches('input, select, textarea, button')
+            ? target
+            : (target.querySelector('input, select, textarea, button') || target);
+        if (!/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(focusable.tagName)) {
+            focusable.setAttribute('tabindex', '-1');
+        }
+        focusable.focus({ preventScroll: true });
+        if (typeof focusable.scrollIntoView === 'function') { focusable.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }
 };
 
@@ -767,9 +869,31 @@ const validateForm = () => {
         formData.first_name = null;
         formData.last_name = null;
         formData.trade_name = null;
+        formData.birth_place_uuid = null;
+        formData.birth_date = null;
+        formData.id_card_issue_place_uuid = null;
+        formData.id_card_issue_date = null;
+        formData.sex = null;
+        formData.marital_status = null;
+        formData.blood_type = null;
     } else {
         if (isEmpty(formData.first_name)) validationErrors.first_name = 'Este campo es obligatorio';
         if (isEmpty(formData.last_name)) validationErrors.last_name = 'Este campo es obligatorio';
+
+        // Datos de nacimiento y cédula: obligatorios para personas naturales.
+        const hoyLocal = new Date().toLocaleDateString('en-CA');
+        const fechaNac = formData.birth_date ? String(formData.birth_date).slice(0, 10) : '';
+        const fechaExp = formData.id_card_issue_date ? String(formData.id_card_issue_date).slice(0, 10) : '';
+
+        if (isEmpty(formData.birth_place_uuid)) validationErrors.birth_place_uuid = 'Este campo es obligatorio';
+        if (isEmpty(formData.birth_date)) validationErrors.birth_date = 'Este campo es obligatorio';
+        else if (fechaNac >= hoyLocal) validationErrors.birth_date = 'La fecha de nacimiento debe ser anterior a hoy';
+        if (isEmpty(formData.id_card_issue_place_uuid)) validationErrors.id_card_issue_place_uuid = 'Este campo es obligatorio';
+        if (isEmpty(formData.id_card_issue_date)) validationErrors.id_card_issue_date = 'Este campo es obligatorio';
+        else if (fechaExp > hoyLocal) validationErrors.id_card_issue_date = 'La fecha de expedición no puede ser posterior a hoy';
+        if (isEmpty(formData.sex)) validationErrors.sex = 'Este campo es obligatorio';
+        if (isEmpty(formData.marital_status)) validationErrors.marital_status = 'Este campo es obligatorio';
+        if (isEmpty(formData.blood_type)) validationErrors.blood_type = 'Este campo es obligatorio';
 
         // Limpiar campos que no aplican
         formData.company_name = null;
@@ -970,6 +1094,14 @@ onMounted(async () => {
                 if (!formData.branch_uuid && item.branch?.uuid) {
                     formData.branch_uuid = item.branch.uuid;
                 }
+                // Las fechas llegan serializadas con hora ('2005-06-15 00:00:00'):
+                // el DateInput acepta formato ISO corto YYYY-MM-DD.
+                if (formData.birth_date) {
+                    formData.birth_date = String(formData.birth_date).slice(0, 10);
+                }
+                if (formData.id_card_issue_date) {
+                    formData.id_card_issue_date = String(formData.id_card_issue_date).slice(0, 10);
+                }
 
                 // El SUPERADMIN puede editar un tercero de otra empresa: las sedes
                 // del catálogo inicial son las de su empresa activa, no las del
@@ -1012,6 +1144,17 @@ onMounted(async () => {
                             formData.license_expiration_date = licencia.expiration_date ? String(licencia.expiration_date).slice(0, 10) : null;
                             formData.license_restrictions = licencia.restrictions ?? null;
                             formData.license_status = licencia.status ?? 'ACTIVA';
+
+                            // El afiliado propietario no es columna del tercero: viaja en
+                            // owners_drivers, serializado en la licencia como
+                            // owner_driver.third_party_uuid. Sin él el campo «Afiliado
+                            // Asignado» queda vacío al editar y guardar lo sobrescribe.
+                            const afiliadoPrevio = licencia.owner_driver?.third_party_uuid
+                                ?? licencia.ownerDriver?.third_party_uuid
+                                ?? null;
+                            if (afiliadoPrevio && !formData.partyTypes.includes('is_affiliate')) {
+                                formData.affiliate_uuid = afiliadoPrevio;
+                            }
                         }
                     } catch {
                         // Sin licencia previa: el formulario queda listo para registrarla.

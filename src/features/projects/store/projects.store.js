@@ -15,6 +15,8 @@ export const useProjectsStore = defineStore('projects', {
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
         search: '',
         thirdPartyFilter: '',
+        sortField: null,
+        sortOrder: null,
     }),
 
     getters: {
@@ -52,6 +54,8 @@ export const useProjectsStore = defineStore('projects', {
                     per_page: this.pagination.itemsPerPage,
                     search: this.search || undefined,
                     third_party_uuid: this.thirdPartyFilter || undefined,
+                    sort_by: this.sortField || undefined,
+                    sort_order: (this.sortOrder === 1 || this.sortOrder === 'asc') ? 'asc' : (this.sortOrder === -1 || this.sortOrder === 'desc') ? 'desc' : undefined,
                 });
                 const p = response?.data ?? response;
                 this.items = p.data ?? [];
@@ -60,6 +64,13 @@ export const useProjectsStore = defineStore('projects', {
                 this.pagination.totalPages = p.last_page ?? 1;
                 this.pagination.itemsPerPage = p.per_page ?? this.pagination.itemsPerPage;
             }, 'Error al cargar los proyectos');
+        },
+
+        setSort(field, order) {
+            this.sortField = field;
+            this.sortOrder = order === 'desc' || order === -1 ? -1 : order === 'asc' || order === 1 ? 1 : null;
+            this.pagination.currentPage = 1;
+            return this.fetchItems();
         },
 
         /**

@@ -23,20 +23,15 @@
                     placeholder="Placa o número interno"
                     aria-label="Buscar vehículo en el estado de combustible" />
             </div>
-            <select v-model="statusFilter" class="form-select form-select-sm fuel-status-toolbar__select"
-                aria-label="Filtrar vehículos del estado de combustible">
-                <option value="todos">Todos los vehículos</option>
-                <option value="con_datos">Con tanqueo</option>
-                <option value="alertas">Solo alertas</option>
-            </select>
-            <select v-model="projectFilter" class="form-select form-select-sm fuel-status-toolbar__select fuel-status-toolbar__select--project"
-                aria-label="Filtrar por proyecto">
-                <option value="">Todos los proyectos</option>
-                <option value="sin_proyecto">Sin proyecto</option>
-                <option v-for="proyecto in store.statusProjects" :key="proyecto.uuid" :value="proyecto.uuid">
-                    {{ proyecto.name }}
-                </option>
-            </select>
+            <label class="visually-hidden" for="f-fuel-status-filter">Filtrar vehículos del estado de combustible</label>
+            <PrimeSelect input-id="f-fuel-status-filter" v-model="statusFilter" :options="filtroVehiculos"
+                option-label="label" option-value="value" size="small"
+                style="min-width: 170px;" class="fuel-status-toolbar__select" />
+
+            <label class="visually-hidden" for="f-fuel-status-project">Filtrar por proyecto</label>
+            <PrimeSelect input-id="f-fuel-status-project" v-model="projectFilter" :options="opcionesProyecto"
+                option-label="label" option-value="value" size="small"
+                style="min-width: 190px;" class="fuel-status-toolbar__select fuel-status-toolbar__select--project" />
         </div>
 
         <div v-if="store.statusSummary.total" class="fuel-summary mb-3">
@@ -239,7 +234,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import { useFuelManagementStore } from '../store/fuelManagement.store.js';
+import { usePermissionsStore } from '@store';
 import dateUtils from '@/utils/date.js';
 
 const props = defineProps({
@@ -249,11 +246,25 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'create']);
 
 const store = useFuelManagementStore();
+const permissionsStore = usePermissionsStore();
 
 const statusSearch = ref('');
 const statusFilter = ref('todos');
 const projectFilter = ref('');
 const statusVisible = ref(12);
+
+// Mismos valores que los <select> nativos que reemplazó; los «Todos…» de valor
+// vacío los renderiza el centinela del wrapper PrimeSelect.
+const filtroVehiculos = [
+    { label: 'Todos los vehículos', value: 'todos' },
+    { label: 'Con tanqueo', value: 'con_datos' },
+    { label: 'Solo alertas', value: 'alertas' },
+];
+const opcionesProyecto = computed(() => [
+    { label: 'Todos los proyectos', value: '' },
+    { label: 'Sin proyecto', value: 'sin_proyecto' },
+    ...(store.statusProjects ?? []).map((proyecto) => ({ label: proyecto.name, value: proyecto.uuid })),
+]);
 
 const STATUS_META = {
     EXCEDIDO: { label: 'Excedido', color: 'danger', icon: 'fa-triangle-exclamation' },
@@ -322,7 +333,11 @@ watch(
         statusFilter.value = 'todos';
         projectFilter.value = '';
         statusVisible.value = 12;
-        store.fetchStatus();
+        // El endpoint /status exige `fuel_logs.index` (issue #8): sin el
+        // permiso no se hace la llamada (el 403 en consola sería un error).
+        if (permissionsStore.can('fuel_logs.index')) {
+            store.fetchStatus();
+        }
     }
 );
 

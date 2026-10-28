@@ -19,13 +19,10 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <label class="form-label text-muted small">Seleccione un vehículo de la flota *</label>
-                        <select v-model="selectedVehicleUuid" class="form-select form-select-lg mb-3" @change="loadForecast">
-                            <option value="" disabled>-- Elija un vehículo --</option>
-                            <option v-for="veh in vehicles" :key="veh.uuid" :value="veh.uuid">
-                                {{ veh.vehicle_license_plate }}
-                            </option>
-                        </select>
+                        <label class="form-label text-muted small" for="f-pronostico-vehiculo">Seleccione un vehículo de la flota *</label>
+                        <PrimeSelect input-id="f-pronostico-vehiculo" v-model="selectedVehicleUuid" :options="opcionesVehiculos"
+                            option-label="label" option-value="value" size="large" class="mb-3"
+                            placeholder="-- Elija un vehículo --" @change="loadForecast" />
                         <button class="btn btn-primary w-100" :disabled="!selectedVehicleUuid || isLoading" @click="loadForecast">
                             <i class="fas" :class="isLoading ? 'fa-spinner fa-spin' : 'fa-search'"></i>
                             {{ isLoading ? 'Analizando datos...' : 'Proyectar Mantenimientos' }}
@@ -168,8 +165,9 @@
  * @resource PreventiveForecast
  */
 
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import { useAuthStore, useUserStore, usePermissionsStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import apiClient from '@/services/api/client.js';
@@ -179,6 +177,12 @@ const route = useRoute();
 const router = useRouter();
 const vehicles = ref([]);
 const selectedVehicleUuid = ref('');
+// Placas del <select> nativo que reemplazó; sin opción de valor vacío: el
+// placeholder del wrapper muestra «Elija un vehículo» mientras no se elija.
+const opcionesVehiculos = computed(() => vehicles.value.map((veh) => ({
+    label: veh.vehicle_license_plate,
+    value: veh.uuid,
+})));
 const isLoading = ref(false);
 const forecastData = ref(null);
 
@@ -196,9 +200,7 @@ onMounted(async () => {
         const validRoles = roles
             .filter(role => typeof role === 'string')
             .map(role => role.toUpperCase());
-        const isAfiliado = validRoles.some(role => 
-            ['AFILIADO', 'EMPLEADO', 'CONDUCTOR'].includes(role)
-        );
+        const isAfiliado = validRoles.includes('AFILIADO');
         const thirdPartyUuid = userStore.third_party_uuid;
 
         let params = {};

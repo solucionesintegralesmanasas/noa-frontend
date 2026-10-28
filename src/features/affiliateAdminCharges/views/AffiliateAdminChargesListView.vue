@@ -4,14 +4,14 @@
         :loading="isViewLoading || store.loading" :compact="true"
         :breadcrumbs="[{ label: 'Financiero' }, { label: 'Cobros' }]" @refresh="refreshTable" @create="goToCreate" />
 
-    <!-- SUMMARY SECTION -->
+    <!-- RESUMEN / MÉTRICAS -->
     <div class="row g-3 mb-3 fade-in-up" style="animation-delay: 0.05s;">
         <div class="col-12 col-sm-6 col-md-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="bg-primary bg-opacity-10 rounded-circle p-2">
-                            <i class="fad fa-file-invoice-dollar text-primary"></i>
+                            <i class="fad fa-file-invoice-dollar text-primary" aria-hidden="true"></i>
                         </div>
                         <span class="badge badge-subtle-primary">Total</span>
                     </div>
@@ -25,7 +25,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="bg-warning bg-opacity-10 rounded-circle p-2">
-                            <i class="fad fa-hourglass-half text-warning"></i>
+                            <i class="fad fa-hourglass-half text-warning" aria-hidden="true"></i>
                         </div>
                         <span class="badge badge-subtle-warning">Pendiente</span>
                     </div>
@@ -39,7 +39,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="bg-success bg-opacity-10 rounded-circle p-2">
-                            <i class="fad fa-check-circle text-success"></i>
+                            <i class="fad fa-check-circle text-success" aria-hidden="true"></i>
                         </div>
                         <span class="badge badge-subtle-success">Pagado</span>
                     </div>
@@ -53,7 +53,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="bg-danger bg-opacity-10 rounded-circle p-2">
-                            <i class="fad fa-exclamation-triangle text-danger"></i>
+                            <i class="fad fa-exclamation-triangle text-danger" aria-hidden="true"></i>
                         </div>
                         <span class="badge badge-subtle-danger">Mora / Vencido</span>
                     </div>
@@ -64,267 +64,169 @@
         </div>
     </div>
 
-    <!-- SEARCH BAR -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="bg-holder d-none d-lg-block bg-card"
-            style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-charges-busqueda" v-model="searchQuery" class="noa-search__input" type="search"
+                    placeholder="Buscar por concepto, vehículo o referencia..."
+                    aria-label="Buscar cobro" @input="debouncedSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
 
-        <div class="card-body position-relative py-2">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 g-2 g-md-3">
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
+        </div>
 
-                <!-- Izquierda: título + input -->
-                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-grow-1 g-2 g-md-3">
-                    <h6 class="mb-0 fw-medium text-nowrap">Búsqueda</h6>
-                    <div class="input-group input-group-sm w-100" style="max-width: 420px;">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="fad fa-search text-muted" />
-                        </span>
-                        <input v-model="searchQuery"
-                            class="form-control form-control-sm border-start-0 shadow-none"
-                            type="search"
-                            placeholder="Buscar por concepto, vehículo o referencia..."
-                            aria-label="Buscar cobro"
-                            @input="debouncedSearch" />
-                        <button v-if="searchQuery" class="btn btn-outline-secondary border-start-0"
-                            type="button" title="Limpiar búsqueda" @click="clearSearch">
-                            <i class="fad fa-times" />
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Derecha: contador -->
-                <div v-if="!isViewLoading && !store.loading" class="text-muted text-lg-end text-nowrap">
-                    <small>
-                        <i class="fad fa-filter me-1" />
-                        {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                        <span v-if="store.search"> para "{{ store.search }}"</span>
-                    </small>
-                </div>
-
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['18%', '16%', '14%', '13%', '13%', '12%', '14%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in store.pagination.itemsPerPage" :key="`sk-${n}`">
+                            <td v-for="j in 6" :key="j">
+                                <div class="skeleton-text" style="height:18px;width:75%;" />
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="k in 2" :key="k" class="skeleton-icon" style="height:28px;width:28px;" />
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
 
-    <!-- DATATABLE SECTION -->
-    <div class="row fade-in-up g-2 g-md-3" style="animation-delay: 0.2s;">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <!-- SKELETON -->
-                <div v-if="isViewLoading" class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <table class="table table-sm mb-0 fs-10 table-view-tickets professional-table unifont-table"
-                            style="min-width: 60rem; table-layout: fixed;">
-                            <colgroup>
-                                <col style="width: 25%">
-                                <col style="width: 15%">
-                                <col style="width: 15%">
-                                <col style="width: 12%">
-                                <col style="width: 12%">
-                                <col style="width: 10%">
-                                <col style="width: 11%">
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th v-for="w in 7" :key="w" style="padding: 12px 16px;">
-                                        <div class="skeleton-el" style="height:16px; width:80%;"></div>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="n in 7" :key="n">
-                                    <td class="align-middle">
-                                        <div class="d-flex align-items-center">
-                                            <div class="skeleton-el flex-shrink-0"
-                                                style="height:32px; width:32px; border-radius:50%; margin-right:8px;">
-                                            </div>
-                                            <div class="skeleton-el" style="height:18px; width:80%;"></div>
-                                        </div>
-                                    </td>
-                                    <td v-for="i in 4" :key="i" class="align-middle">
-                                        <div class="skeleton-el" style="height:18px; width:80%;"></div>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <div class="skeleton-el mx-auto"
-                                            style="height:22px; width:64px; border-radius:999px;"></div>
-                                    </td>
-                                    <td class="align-middle">
-                                        <div class="d-flex justify-content-center align-items-center gap-1">
-                                            <div class="skeleton-el" style="height:30px; width:30px; border-radius:6px;"></div>
-                                            <div class="skeleton-el" style="height:30px; width:30px; border-radius:6px;"></div>
-                                            <div class="skeleton-el" style="height:30px; width:30px; border-radius:6px;"></div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- DATATABLE (Paginación Server-Side) -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="store.items" lazy :paginator="false" :rows="store.pagination.itemsPerPage"
+                    :totalRecords="store.pagination.totalItems"
+                    :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
+                    :loading="store.loading" responsiveLayout="scroll"
+                    tableStyle="min-width: 60rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron registros"
+                    :sortField="sortField" :sortOrder="sortOrdenPrimeVue" removableSort @sort="onSort">
 
-                <!-- TABLE -->
-                <div v-else class="card-body p-0">
-                    <div class="table-responsive scrollbar">
-                        <DataTable :value="store.items" lazy :paginator="true" :rows="store.pagination.itemsPerPage"
-                            :totalRecords="store.pagination.totalItems" :first="(store.pagination.currentPage - 1) * store.pagination.itemsPerPage"
-                            @page="onPageChange" responsiveLayout="scroll" :loading="store.loading"
-                            class="table table-sm mb-0 professional-table unifont-table"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="{first} a {last} de {totalRecords}"
-                            :rowsPerPageOptions="[10, 25, 50, 100]">
-
-                            <Column field="vehicle" header="Vehículo" style="min-width: 120px">
-                                <template #body="{ data }">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded p-1 me-2">
-                                            <i class="fad fa-steering-wheel text-primary" style="font-size: 12px;"></i>
-                                        </div>
-                                        <div>
-                                            <span class="fw-bold text-dark">{{ getVehiclePlate(data.vehicle_uuid) || 'Vehículo' }}</span>
-                                            <div class="text-muted small d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-primary border shadow-none"
-                                                    style="font-weight: 500;">Ref: {{ data.payment_reference || '-' }}</span>
-                                                <span v-if="data.bank_reference"
-                                                    class="badge bg-light text-success border shadow-none"
-                                                    style="font-weight: 500;">Banco: {{ data.bank_reference }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column field="charge_type" header="Tipo de Cobro" style="width: 15%;">
-                                <template #body="{ data }">
-                                    <span class="text-muted">{{ formatChargeType(data.charge_type) }}</span>
-                                    <div class="text-muted small">{{ data.concept || '-' }}</div>
-                                </template>
-                            </Column>
-
-                            <Column field="amount" header="Monto" style="width: 12%;">
-                                <template #body="{ data }">
-                                    <div class="d-flex flex-column">
-                                        <span class="fw-bold text-success">{{ formatCurrency(data.amount) }}</span>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column field="period_date" header="Período" style="width: 12%;">
-                                <template #body="{ data }">
-                                    <div class="d-flex align-items-center text-muted">
-                                        <i class="fad fa-calendar-alt me-1 opacity-50"></i>
-                                        {{ formatDate(data.period_date) }}
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column field="due_date" header="Vencimiento" style="width: 12%;">
-                                <template #body="{ data }">
-                                    <div class="d-flex align-items-center"
-                                        :class="isPastDue(data.due_date, data.status) ? 'text-danger fw-semibold' : 'text-muted'">
-                                        <i class="fad fa-calendar-times me-1 opacity-50"></i>
-                                        {{ formatDate(data.due_date) }}
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <Column field="status" header="Estado" style="width: 10%;" class="text-center">
-                                <template #body="{ data }">
-                                    <span class="badge badge-subtle rounded-pill"
-                                        :class="getStatusBadgeClass(data.status)"
-                                        style="font-size: 0.75rem; padding: 0.35em 0.7em;">
-                                        {{ formatStatus(data.status) }}
+                    <!-- Vehículo -->
+                    <Column field="vehicle.vehicle_license_plate" header="Vehículo" sortable style="width: 18%;">
+                        <template #body="{ data }">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 rounded p-1 me-2 flex-shrink-0">
+                                    <i class="fad fa-steering-wheel text-primary" style="font-size: 12px;" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="noa-cell-strong d-block text-truncate">
+                                        {{ data.vehicle?.vehicle_license_plate || getVehiclePlate(data.vehicle_uuid) || '—' }}
                                     </span>
-                                </template>
-                            </Column>
-
-                            <Column header="Acciones" style="width: 12%; text-align:center;">
-                                <template #body="{ data }">
-                                    <div class="d-flex justify-content-center align-items-center gap-1">
-                                        <button v-if="can('affiliate_admin_charges.update') && !['PAGADO', 'ANULADO'].includes(data.status)"
-                                            class="btn btn-falcon-default btn-action" @click="handlePay(data)"
-                                            title="Pagar Mensualidad" :aria-label="`Pagar mensualidad de ${data.payment_reference}`" data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-hand-holding-usd text-success"></i>
-                                        </button>
-                                        <button v-if="['PAGADO', 'PENDIENTE'].includes(data.status)" class="btn btn-falcon-default btn-action" @click="handleDownloadReceipt(data.uuid)"
-                                            title="Descargar Recibo" :aria-label="`Descargar recibo de ${data.payment_reference}`" data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-file-pdf text-danger"></i>
-                                        </button>
-                                        <button v-if="can('affiliate_admin_charges.profile')" class="btn btn-falcon-default btn-action"
-                                            @click="viewVehicleHistory(data)" title="Historial de Vehículo" :aria-label="`Historial del vehículo ${data.payment_reference}`"
-                                            data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-history text-info"></i>
-                                        </button>
-                                        <button v-if="can('affiliate_admin_charges.profile')" class="btn btn-falcon-default btn-action" @click="goToDetail(data.uuid)"
-                                            title="Visualizar" :aria-label="`Ver detalle de ${data.payment_reference}`" data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-eye text-primary"></i>
-                                        </button>
-                                        <button v-if="can('affiliate_admin_charges.update')" class="btn btn-falcon-default btn-action" @click="goToEdit(data.uuid)"
-                                            title="Editar" :aria-label="`Editar ${data.payment_reference}`" data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-edit text-warning"></i>
-                                        </button>
-                                        <button v-if="can('affiliate_admin_charges.delete')" class="btn btn-falcon-default btn-action" @click="handleDelete(data)"
-                                            title="Eliminar" :aria-label="`Eliminar ${data.payment_reference}`" data-bs-toggle="tooltip" data-bs-placement="top">
-                                            <i class="fad fa-trash text-danger"></i>
-                                        </button>
-                                    </div>
-                                </template>
-                            </Column>
-
-                            <template #empty>
-                                <div class="text-center py-5">
-                                    <div v-if="searchQuery">
-                                        <div class="mb-3">
-                                            <i class="fad fa-search-minus fs-1 text-warning opacity-50"></i>
-                                        </div>
-                                        <h6 class="text-muted mb-1 fw-medium">Sin coincidencias para "{{ searchQuery }}"</h6>
-                                        <p class="text-muted small mb-3">Intenta con otros términos o limpia el filtro de búsqueda</p>
-                                        <button class="btn btn-outline-secondary btn-sm rounded-pill px-4" @click="clearSearch">
-                                            <i class="fad fa-eraser me-1"></i>Limpiar búsqueda
-                                        </button>
-                                    </div>
-                                    <div v-else>
-                                        <div class="mb-3">
-                                            <i class="fad fa-file-invoice-dollar fs-1 text-muted opacity-50"></i>
-                                        </div>
-                                        <h6 class="text-muted mb-1 fw-medium">No hay cobros registrados</h6>
-                                        <p class="text-muted small mb-3">Comienza agregando el primer cobro al sistema</p>
-                                        <button class="btn btn-primary btn-sm rounded-pill px-4" @click="goToCreate">
-                                            <i class="fad fa-plus me-1"></i>Registrar Cobro
-                                        </button>
-                                    </div>
+                                    <span class="noa-cell-sub">
+                                        Ref: {{ data.payment_reference || '—' }}
+                                        <template v-if="data.bank_reference"> | {{ data.bank_reference }}</template>
+                                    </span>
                                 </div>
-                            </template>
+                            </div>
+                        </template>
+                    </Column>
 
-                            <template #footer>
-                                <div class="d-flex justify-content-between align-items-center py-2 px-3 bg-light rounded-bottom">
-                                    <small class="text-muted" style="font-size: 0.85rem;">
-                                        <i class="fad fa-list me-1"></i>
-                                        Mostrando <strong>{{ store.items.length || 0 }}</strong> de
-                                        <strong>{{ store.pagination.totalItems || 0 }}</strong> registros
-                                    </small>
-                                    <small class="text-muted" style="font-size: 0.85rem;">
-                                        <i class="fad fa-pages me-1"></i>
-                                        Página <strong>{{ store.pagination.currentPage }}</strong> de
-                                        <strong>{{ store.pagination.totalPages || 1 }}</strong>
-                                    </small>
-                                </div>
-                            </template>
-                            <!-- Loading state -->
-                            <template #loading>
-                                <NoaTableSpinner message="Cargando datos..." />
-                            </template>
-                        </DataTable>
-                    </div>
-                </div>
+                    <!-- Tipo de Cobro -->
+                    <Column field="charge_type" header="Tipo de Cobro" sortable style="width: 16%;">
+                        <template #body="{ data }">
+                            <span class="noa-cell-strong">{{ formatChargeType(data.charge_type) }}</span>
+                            <span class="noa-cell-sub text-truncate">{{ data.concept || '—' }}</span>
+                        </template>
+                    </Column>
+
+                    <!-- Monto -->
+                    <Column field="amount" header="Monto" sortable style="width: 14%;">
+                        <template #body="{ data }">
+                            <span class="fw-bold text-success">{{ formatCurrency(data.amount) }}</span>
+                        </template>
+                    </Column>
+
+                    <!-- Período -->
+                    <Column field="period_date" header="Período" sortable style="width: 13%;">
+                        <template #body="{ data }">
+                            <span class="text-muted">
+                                <i class="fad fa-calendar-alt me-1 opacity-50" aria-hidden="true"></i>
+                                {{ formatDate(data.period_date) }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Vencimiento -->
+                    <Column field="due_date" header="Vencimiento" sortable style="width: 13%;">
+                        <template #body="{ data }">
+                            <span :class="isPastDue(data.due_date, data.status) ? 'text-danger fw-semibold' : 'text-muted'">
+                                <i class="fad fa-calendar-times me-1 opacity-50" aria-hidden="true"></i>
+                                {{ formatDate(data.due_date) }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Estado -->
+                    <Column field="status" header="Estado" sortable style="width: 12%;" class="text-center" header-class="text-center">
+                        <template #body="{ data }">
+                            <span class="noa-status" :class="statusModifier(data.status)">
+                                {{ formatStatus(data.status) }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 14%;">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.payment_reference || 'cobro'" />
+                        </template>
+                    </Column>
+
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-file-invoice-dollar fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true"></i>
+                            <h6 class="text-muted mb-1 fw-medium">No hay cobros registrados</h6>
+                            <p class="text-muted small mb-3">
+                                {{ searchQuery ? 'Sin coincidencias para "' + searchQuery + '"' : 'Comienza agregando el primer cobro al sistema' }}
+                            </p>
+                            <button v-if="!searchQuery && can('affiliate_admin_charges.create')" class="btn btn-primary btn-sm" @click="goToCreate">
+                                <i class="fad fa-plus me-1" aria-hidden="true"></i>Registrar Cobro
+                            </button>
+                            <button v-else-if="searchQuery" class="btn btn-outline-secondary btn-sm" @click="clearSearch">
+                                <i class="fad fa-eraser me-1" aria-hidden="true"></i>Limpiar búsqueda
+                            </button>
+                        </div>
+                    </template>
+
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando cobros..." />
+                    </template>
+                </DataTable>
             </div>
+            <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
+                :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
 
     <!-- MODAL DE HISTORIAL -->
-    <div class="modal fade unifont-table" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-light py-2">
                     <h5 class="modal-title fw-bold fs-9 text-dark">
-                        <i class="fad fa-history text-info me-2"></i>Historial de Pagos: {{ historyVehicle }}
+                        <i class="fad fa-history text-info me-2" aria-hidden="true"></i>Historial de Pagos: {{ historyVehicle }}
                     </h5>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
                         aria-label="Cerrar"></button>
@@ -351,7 +253,7 @@
                                     </td>
                                     <td class="fw-bold text-success">{{ formatCurrency(item.amount) }}</td>
                                     <td class="text-center">
-                                        <span class="badge badge-subtle rounded-pill px-2 py-1" :class="getStatusBadgeClass(item.status)">
+                                        <span class="noa-status" :class="statusModifier(item.status)">
                                             {{ formatStatus(item.status) }}
                                         </span>
                                     </td>
@@ -361,21 +263,21 @@
                                             class="btn btn-falcon-success btn-sm py-0 px-2 rounded me-1"
                                             @click="handlePayFromHistory(item)"
                                             title="Pagar Mensualidad">
-                                            <i class="fad fa-hand-holding-usd text-success me-1"></i> Pagar
+                                            <i class="fad fa-hand-holding-usd text-success me-1" aria-hidden="true"></i> Pagar
                                         </button>
 
                                         <button v-if="['PAGADO', 'PENDIENTE'].includes(item.status)" class="btn btn-falcon-default btn-sm py-0 px-2 rounded" @click="handleDownloadReceipt(item.uuid)" title="Descargar Recibo">
-                                            <i class="fad fa-file-pdf text-danger me-1"></i>Recibo
+                                            <i class="fad fa-file-pdf text-danger me-1" aria-hidden="true"></i>Recibo
                                         </button>
 
                                         <span v-if="item.status === 'PAGADO'" class="badge bg-light text-success border shadow-none ms-1" style="font-weight: 500;">
-                                            <i class="fad fa-check-double me-1"></i>Ref: {{ item.bank_reference || 'N/A' }}
+                                            <i class="fad fa-check-double me-1" aria-hidden="true"></i>Ref: {{ item.bank_reference || 'N/A' }}
                                         </span>
                                         <span v-if="!['PAGADO', 'PENDIENTE'].includes(item.status) && !can('affiliate_admin_charges.update')" class="text-muted small">-</span>
                                     </td>
                                 </tr>
                                 <tr v-if="historyItems.length === 0">
-                                    <td colspan="6" class="text-center py-4 text-muted italic">
+                                    <td colspan="6" class="text-center py-4 text-muted fst-italic">
                                         No hay cobros registrados para este vehículo.
                                     </td>
                                 </tr>
@@ -393,20 +295,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { useAffiliateAdminChargesStore } from '../store/affiliateCharges.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
+const route = useRoute();
 const store = useAffiliateAdminChargesStore();
 const permissionsStore = usePermissionsStore();
 
@@ -415,20 +321,25 @@ const searchQuery = ref('');
 
 const { debouncedSearch } = useTable({}, () => store.setGlobalFilter(searchQuery.value));
 const { confirmDelete } = useTableActions(store, router);
+const { sortField, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    onChange: ({ field, order }) => store.setSort(field, order),
+});
 
 const can = (action) => permissionsStore.can(action);
 
-const clearSearch = async () => { searchQuery.value = ''; await store.setGlobalFilter(''); };
+const clearSearch = async () => {
+    searchQuery.value = '';
+    await store.setGlobalFilter('');
+};
 
 const refreshTable = async () => {
     await store.fetchItems();
 };
 
-const onPageChange = async ({ first, rows }) => {
-    if (rows && rows !== store.pagination.itemsPerPage) {
-        store.pagination.itemsPerPage = rows;
-    }
-    await store.setPage(Math.floor(first / rows) + 1);
+const onPageChange = async ({ page, first, rows }) => {
+    store.pagination.itemsPerPage = rows;
+    const targetPage = page !== undefined ? page : Math.floor(first / rows) + 1;
+    await store.setPage(targetPage);
 };
 
 // Navegación
@@ -454,7 +365,7 @@ const viewVehicleHistory = async (item) => {
     if (!reference) return;
 
     activeHistoryRef = reference;
-    historyVehicle.value = getVehiclePlate(item.vehicle_uuid) || 'Vehículo';
+    historyVehicle.value = item.vehicle?.vehicle_license_plate || getVehiclePlate(item.vehicle_uuid) || '-';
     const data = await store.fetchPaymentHistory(reference);
     historyItems.value = data;
 
@@ -532,13 +443,11 @@ const handlePay = async (item, fromHistory = false) => {
     if (formValues) {
         await store.applyMonthlyPayment(item.uuid, formValues);
         
-        // Auto-filtrar la tabla para mostrar el registro pagado y el nuevo generado
         if (item.payment_reference) {
             searchQuery.value = item.payment_reference;
             await store.setGlobalFilter(item.payment_reference);
         }
 
-        // Descargar el recibo de pago automáticamente
         await handleDownloadReceipt(item.uuid);
 
         if (fromHistory && activeHistoryRef) {
@@ -563,15 +472,12 @@ const handlePay = async (item, fromHistory = false) => {
     }
 };
 
-// Helper de Vehículos desde el catálogo cargado
 const getVehiclePlate = (uuid) => {
     if (!uuid || !store.catalogs?.vehicles) return '';
     const vehicle = store.catalogs.vehicles.find(v => v.uuid === uuid);
     return vehicle ? vehicle.vehicle_license_plate : '';
 };
 
-// Computed property para simular el resumen basado en los datos actuales
-// Nota: Para datos reales de toda la BD, se requiere un endpoint fetchSummary en el backend.
 const summary = computed(() => {
     const items = store.items || [];
     let general = 0, pending = 0, paid = 0, overdue = 0;
@@ -589,7 +495,6 @@ const summary = computed(() => {
     };
 });
 
-// UTILIDADES VISUALES
 const formatChargeType = (value) => {
     const map = {
         'CUOTA_ADMINISTRACION': 'Administración',
@@ -615,15 +520,19 @@ const formatStatus = (value) => {
     return map[value] || value;
 };
 
-const getStatusBadgeClass = (status) => {
-    const map = {
-        'PENDIENTE': 'badge-subtle-warning',
-        'PAGADO': 'badge-subtle-success',
-        'VENCIDO': 'badge-subtle-danger',
-        'EN_MORA': 'badge-subtle-danger',
-        'ANULADO': 'badge-subtle-secondary'
-    };
-    return map[status] || 'badge-subtle-secondary';
+const statusModifier = (status) => {
+    switch (status) {
+        case 'PAGADO':
+            return 'noa-status--success';
+        case 'PENDIENTE':
+            return 'noa-status--warning';
+        case 'VENCIDO':
+        case 'EN_MORA':
+        case 'ANULADO':
+            return 'noa-status--danger';
+        default:
+            return 'noa-status--muted';
+    }
 };
 
 const formatCurrency = (value) => {
@@ -647,35 +556,102 @@ const isPastDue = (dueDate, status) => {
     return dateToCompare.isBefore(today);
 };
 
-const initTooltips = () => {
-    if (typeof window?.bootstrap?.Tooltip !== 'undefined') {
-        setTimeout(() => {
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                try {
-                    const instance = window.bootstrap.Tooltip.getInstance(el);
-                    if (instance) instance.dispose();
-                    new window.bootstrap.Tooltip(el, { trigger: 'hover', delay: { show: 150, hide: 80 } });
-                } catch (e) { /* Ignorar */ }
-            });
-        }, 100);
+const accionesDe = (data) => [
+    {
+        key: 'pagar',
+        label: 'Pagar mensualidad',
+        icon: 'far fa-hand-holding-usd',
+        tone: 'success',
+        inline: true,
+        visible: can('affiliate_admin_charges.update') && !['PAGADO', 'ANULADO'].includes(data.status),
+        onClick: () => handlePay(data),
+    },
+    {
+        key: 'recibo',
+        label: 'Descargar recibo',
+        icon: 'far fa-file-pdf',
+        tone: 'danger',
+        inline: true,
+        visible: ['PAGADO', 'PENDIENTE'].includes(data.status),
+        onClick: () => handleDownloadReceipt(data.uuid),
+    },
+    {
+        key: 'historial',
+        label: 'Historial de vehículo',
+        icon: 'far fa-history',
+        tone: 'info',
+        visible: can('affiliate_admin_charges.profile'),
+        onClick: () => viewVehicleHistory(data),
+    },
+    {
+        key: 'ver',
+        label: 'Ver detalle',
+        icon: 'far fa-eye',
+        tone: 'primary',
+        visible: can('affiliate_admin_charges.profile'),
+        onClick: () => goToDetail(data.uuid),
+    },
+    {
+        key: 'editar',
+        label: 'Editar',
+        icon: 'far fa-pen',
+        tone: 'warning',
+        visible: can('affiliate_admin_charges.update'),
+        onClick: () => goToEdit(data.uuid),
+    },
+    {
+        key: 'eliminar',
+        label: 'Eliminar',
+        icon: 'far fa-trash-alt',
+        tone: 'danger',
+        visible: can('affiliate_admin_charges.delete'),
+        onClick: () => handleDelete(data),
+    },
+];
+
+watch(
+    () => [store.search, store.pagination.currentPage, store.pagination.itemsPerPage, store.sortField, store.sortOrder],
+    ([newSearch, newPage, newPerPage, newSort, newOrder]) => {
+        router.replace({
+            query: {
+                ...route.query,
+                search: newSearch || undefined,
+                page: newPage > 1 ? newPage : undefined,
+                per_page: newPerPage !== 10 ? newPerPage : undefined,
+                sort: newSort || undefined,
+                order: newSort ? (newOrder || 'asc') : undefined,
+            },
+        });
     }
-};
+);
 
 onMounted(async () => {
     isViewLoading.value = true;
     try {
+        const queryPage = route.query.page ? parseInt(route.query.page, 10) : 1;
+        const queryPerPage = route.query.per_page ? parseInt(route.query.per_page, 10) : 10;
+        const querySearch = route.query.search || '';
+        const querySort = typeof route.query.sort === 'string' && route.query.sort ? route.query.sort : null;
+        const queryOrder = route.query.order === 'desc' ? 'desc' : 'asc';
+
+        store.search = querySearch;
+        store.pagination.currentPage = queryPage;
+        store.pagination.itemsPerPage = queryPerPage;
+        store.sortField = querySort;
+        store.sortOrder = querySort ? queryOrder : null;
+        restore(querySort, querySort ? queryOrder : null);
+
+        searchQuery.value = querySearch;
         await Promise.all([store.loadCatalogs(), store.fetchItems()]);
     } catch (error) {
         console.error("Error al cargar cobros:", error);
     } finally {
         isViewLoading.value = false;
-        initTooltips();
     }
 });
 </script>
 
 <style scoped>
-/* ===== ANIMACIONES ===== */
 .fade-in-up {
     animation: fadeInUp 0.4s ease-out forwards;
 }
@@ -691,115 +667,7 @@ onMounted(async () => {
     }
 }
 
-/* ===== SKELETON ===== */
-
-@keyframes skeleton-pulse {
-    0%,
-    100% {
-        background-position: 200% 0;
-        opacity: 1;
-    }
-    50% {
-        background-position: -200% 0;
-        opacity: 0.45;
-    }
-}
-
-/* ===== TABLA PROFESIONAL ===== */
-:deep(.professional-table.unifont-table .p-datatable-tbody > tr > td) {
-    font-size: 0.88rem !important;
-    color: #2c3e50;
-    padding: 0.8rem 1rem !important;
-    vertical-align: middle;
-    white-space: normal !important;
-    word-wrap: break-word;
-}
-
-:deep(.professional-table.unifont-table .p-datatable-thead > tr > th) {
-    background: #f8f9fa;
-    font-size: 0.78rem !important;
-    text-transform: uppercase;
-    font-weight: 700;
-    padding: 0.75rem 1rem !important;
-    border-bottom: 2px solid #edf2f9 !important;
-    color: #495057;
-    white-space: nowrap;
-}
-
-:deep(.professional-table.unifont-table .p-datatable-tbody > tr:hover) {
-    background-color: #f8f9fa !important;
-}
-
-/* ===== BADGES FALCON ===== */
-.badge-subtle {
-    font-weight: 500;
-    transition: transform 150ms;
-}
-
-.badge-subtle:hover {
-    transform: translateY(-1px);
-}
-
-.badge-subtle-success {
-    background-color: rgba(0, 210, 106, 0.1);
-    color: #008644;
-    border: 1px solid rgba(0, 210, 106, 0.2);
-}
-
-.badge-subtle-warning {
-    background-color: rgba(255, 174, 0, 0.1);
-    color: #9c6b00;
-    border: 1px solid rgba(255, 174, 0, 0.2);
-}
-
-.badge-subtle-danger {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-    border: 1px solid rgba(220, 53, 69, 0.2);
-}
-
-/* ===== BOTONES DE ACCIÓN ===== */
-.btn-action {
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    transition: all 150ms;
-}
-
-.btn-action:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.btn-falcon-default {
-    background: #f8f9fa;
-    border-color: #e9ecef;
-    color: #212529;
-    transition: all 150ms;
-}
-
-.btn-falcon-default:hover:not(:disabled) {
-    background: #e9ecef;
-    border-color: #dee2e6;
-}
-
-/* ===== INPUT DE BÚSQUEDA ===== */
-.input-group:focus-within {
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-    border-radius: 0.25rem;
-}
-
-.input-group .form-control:focus {
-    box-shadow: none;
-}
-
-/* ===== PAGINADOR ===== */
-:deep(.p-paginator) {
-    padding: 0.5rem 1rem !important;
-    background: #f8f9fa !important;
+.min-w-0 {
+    min-width: 0;
 }
 </style>

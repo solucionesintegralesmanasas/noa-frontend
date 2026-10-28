@@ -12,11 +12,26 @@ const ROLES = Object.freeze({
     AFILIADO: 'AFILIADO',
     EMPLEADO: 'EMPLEADO',
 });
+
+/**
+ * Determina si un error corresponde a una petición HTTP cancelada por AbortController / Axios.
+ */
+export function isCanceledError(error) {
+    return Boolean(
+        error &&
+        (error.__isCanceled === true ||
+            error.code === 'ERR_CANCELED' ||
+            error.name === 'CanceledError' ||
+            error.name === 'AbortError')
+    );
+}
+
 export class BaseService {
     constructor({ resourcePath, tenantId = null, metadata = {} }) {
         this.resourcePath = resourcePath.replace(/^\/+/, '').replace(/\/+$/, '');
         this.tenantId = tenantId;
         this.metadata = { module: "api", resource: resourcePath, ...metadata };
+        this._listAbortController = null;
     }
 
     _getInstance() {
@@ -42,10 +57,10 @@ export class BaseService {
         const isSuperAdmin = hasRole(ROLES.SUPERADMIN);
         const isConductor = hasRole(ROLES.CONDUCTOR);
         const hasAfiliadoRole = hasRole(ROLES.AFILIADO);
-        const hasEmpleadoRole = hasRole(ROLES.EMPLEADO);
 
-        // "isAfiliado" = tiene acceso de tipo afiliado (afiliado, empleado o conductor)
-        const isAfiliado = hasAfiliadoRole || hasEmpleadoRole || isConductor;
+        // Solo el rol AFILIADO filtra por su propio third_party_uuid en cliente;
+        // para CONDUCTOR y EMPLEADO el backend aplica su propio alcance sin pisar catálogos.
+        const isAfiliado = hasAfiliadoRole;
 
         // Con el nuevo ajuste del backend:
         // - userStore.third_party_uuid = UUID del Afiliado (dueño de los vehículos)
@@ -77,17 +92,42 @@ export class BaseService {
     }
 
     async _request(method, url, { data, params, config = {} } = {}) {
+        const upperMethod = method.toUpperCase();
         const fullUrl = url.startsWith("http") ? url : `${this.resourcePath}${url}`;
 
         // Inyectar filtro automáticamente si es AFILIADO y es una petición GET
-        const requestParams = method.toUpperCase() === 'GET' ? this.parametrosDeLectura(params) : { ...params };
+        const requestParams = upperMethod === 'GET' ? this.parametrosDeLectura(params) : { ...params };
+        const requestConfig = { ...config };
+
+        // Cancelar petición previa en vuelo cuando es el listado principal paginado del recurso.
+        // Las peticiones que NO son el listado (p. ej. historial por vehículo) deben excluirse
+        // con `config.listAbort = false`, o se cancelarían entre sí al compartir el AbortController.
+        let listController = null;
+        const esListadoCancelable = requestConfig.listAbort !== false;
+        delete requestConfig.listAbort;
+        if (esListadoCancelable && upperMethod === 'GET' && (url === '' || url === '/') && !requestConfig.signal && typeof AbortController !== 'undefined') {
+            if (this._listAbortController) {
+                this._listAbortController.abort();
+            }
+            listController = new AbortController();
+            this._listAbortController = listController;
+            requestConfig.signal = listController.signal;
+        }
 
         try {
-            const response = await this._getInstance()({ method, url: fullUrl, data, params: requestParams, ...config });
+            const response = await this._getInstance()({ method, url: fullUrl, data, params: requestParams, ...requestConfig });
             return response.data;
         } catch (error) {
+            if (listController?.signal?.aborted || isCanceledError(error)) {
+                error.__isCanceled = true;
+                throw error;
+            }
             logger.error(`💥 ${method} Failed`, { url: fullUrl, message: error.message });
             throw error;
+        } finally {
+            if (listController && this._listAbortController === listController) {
+                this._listAbortController = null;
+            }
         }
     }
 

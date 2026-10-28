@@ -3,13 +3,13 @@
         <!-- ══════════════════════════════════════════════
         BOTÓN FLOTANTE TRIGGER (DISEÑO PREMIUM)
     ══════════════════════════════════════════════ -->
-        <a class="rues-lookup-toggle shadow-sm d-flex align-items-center gap-2" href="#" @click.prevent="abrir"
+        <button type="button" class="rues-lookup-toggle shadow-sm d-flex align-items-center gap-2 border-0" @click="abrir"
             title="Consultar NIT en el RUES">
             <div class="rues-icon-wrapper d-flex align-items-center justify-content-center">
                 <i class="fas fa-search search-icon"></i>
             </div>
             <span class="rues-label-text">RUES</span>
-        </a>
+        </button>
 
         <!-- ══════════════════════════════════════════════
         PANEL OFFCANVAS
@@ -41,11 +41,11 @@
 
                     <!-- Buscador -->
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">
+                        <label for="f-rues-nit" class="form-label fw-semibold">
                             <i class="fas fa-id-card me-1 text-primary"></i>NIT a consultar
                         </label>
                         <div class="input-group">
-                            <input v-model="nitInput" type="text" class="form-control" placeholder="Ej: 123456789"
+                            <input id="f-rues-nit" v-model="nitInput" type="text" class="form-control" placeholder="Ej: 123456789"
                                 @keydown.enter.prevent="buscar" :disabled="loading" inputmode="numeric" maxlength="15"
                                 autocomplete="off" />
                             <button class="btn btn-primary px-2 px-sm-3" type="button"

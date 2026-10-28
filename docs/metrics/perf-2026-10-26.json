@@ -1,0 +1,211 @@
+{
+  "fecha": "2026-10-26",
+  "origen": "local",
+  "buildId": "DHPzFvHn",
+  "dist": true,
+  "metricas": {
+    "totalJS": 3288.8,
+    "inicialJS": 429.5,
+    "diferidoJS": 2859.3,
+    "totalCSS": 262,
+    "vendorPrimevue": 225.4,
+    "vendorUI": null,
+    "vendorFeedback": 76.3,
+    "vendorHttp": 40.1,
+    "vendorVue": 209.5,
+    "indexJS": 128.4,
+    "publicInicialJS": 634.2,
+    "publicInicialCSS": 1066.4,
+    "numChunksJS": 206,
+    "numChunksInicial": 13,
+    "numChunksDiferidos": 193,
+    "numChunksCSS": 112,
+    "numPublicos": 12
+  },
+  "rutas": [
+    {
+      "archivo": "ThirdPartiesFormView-CznldgJV.js",
+      "kb": 109.7,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceTemplateView-DgBLszRV.js",
+      "kb": 96.6,
+      "inicial": false
+    },
+    {
+      "archivo": "DashboardView-DfsG8tws.js",
+      "kb": 63.5,
+      "inicial": false
+    },
+    {
+      "archivo": "SystemConfigurationView-Bk-Teef_.js",
+      "kb": 58.9,
+      "inicial": false
+    },
+    {
+      "archivo": "FuecFormView-CSICbErk.js",
+      "kb": 54.2,
+      "inicial": false
+    },
+    {
+      "archivo": "VehicleDocumentsFormView-Bjzllzo3.js",
+      "kb": 40.4,
+      "inicial": false
+    },
+    {
+      "archivo": "VehiclesDetailView-BFYTlMJX.js",
+      "kb": 38.6,
+      "inicial": false
+    },
+    {
+      "archivo": "RadicacionWizardView-CZ4ibFwH.js",
+      "kb": 38.4,
+      "inicial": false
+    },
+    {
+      "archivo": "FuecValidationView-CPTbGdGc.js",
+      "kb": 36.5,
+      "inicial": false
+    },
+    {
+      "archivo": "VehiclesFormView-BBg_JdqE.js",
+      "kb": 36.5,
+      "inicial": false
+    },
+    {
+      "archivo": "ThirdPartiesListView-DzQbrU60.js",
+      "kb": 35.7,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceDeliveryControlSheetFormView-BTUey1Oq.js",
+      "kb": 30.8,
+      "inicial": false
+    },
+    {
+      "archivo": "BillingProviderConfigView-BsO5YqYT.js",
+      "kb": 30.6,
+      "inicial": false
+    },
+    {
+      "archivo": "VehicleInspectionListView-BwBYQdLE.js",
+      "kb": 30.5,
+      "inicial": false
+    },
+    {
+      "archivo": "ServiceDeliveryControlSheetListView-B72Xua2P.js",
+      "kb": 27.6,
+      "inicial": false
+    }
+  ],
+  "html": {
+    "scriptsSinDefer": [],
+    "hojasGoogleFonts": 1,
+    "cssMuertoJqueryToast": 0
+  },
+  "topChunks": [
+    {
+      "archivo": "column-BE9r-ASb.js",
+      "kb": 253.8,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "vendor-primevue-B5hNvFIl.js",
+      "kb": 225.4,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "vendor-vue-CjnMiF7S.js",
+      "kb": 209.5,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "html2canvas-B9Ed0YNC.js",
+      "kb": 194.9,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "index-DHPzFvHn.js",
+      "kb": 128.4,
+      "tipo": "js-inicial"
+    },
+    {
+      "archivo": "ThirdPartiesFormView-CznldgJV.js",
+      "kb": 109.7,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "select-DB_jY475.js",
+      "kb": 106.3,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "ServiceTemplateView-DgBLszRV.js",
+      "kb": 96.6,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "vendor-feedback-BJdTFUUF.js",
+      "kb": 76.3,
+      "tipo": "js-diferido"
+    },
+    {
+      "archivo": "DashboardView-DfsG8tws.js",
+      "kb": 63.5,
+      "tipo": "js-diferido"
+    }
+  ],
+  "topPublicos": [
+    {
+      "archivo": "theme.min.css",
+      "kb": 892.7,
+      "tipo": "css-publico"
+    },
+    {
+      "archivo": "theme.js",
+      "kb": 437.7,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "all.min.css",
+      "kb": 170.2,
+      "tipo": "css-publico"
+    },
+    {
+      "archivo": "lodash.min.js",
+      "kb": 71.4,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "bootstrap.min.js",
+      "kb": 59.1,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "simplebar.min.js",
+      "kb": 26.6,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "popper.min.js",
+      "kb": 19.7,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "is.min.js",
+      "kb": 12.9,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "anchor.min.js",
+      "kb": 5.8,
+      "tipo": "js-publico"
+    },
+    {
+      "archivo": "simplebar.min.css",
+      "kb": 3.2,
+      "tipo": "css-publico"
+    }
+  ]
+}

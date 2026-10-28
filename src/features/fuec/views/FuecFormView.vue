@@ -1225,6 +1225,11 @@ const consultarContratista = async () => {
             });
             formData.contract_number_display = found.contract_number;
 
+            // El objeto del contrato viene del último FUEC del contratante (backend lo adjunta)
+            if (found.object_contract_uuid) {
+                formData.object_contract_uuid = found.object_contract_uuid;
+            }
+
             Toast.fire({
                 title: `Datos de ${found.company_name} cargados`,
                 icon: 'success'
