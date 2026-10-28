@@ -14,10 +14,19 @@ function aNombre(rol) {
     return rol?.name ?? rol?.internalName ?? rol?.value ?? rol?.label ?? '';
 }
 
-/** Normaliza el nombre ('admin-empresa', 'super admin' → 'ADMIN_EMPRESA' / 'SUPER_ADMIN'). */
+/** Normaliza el nombre ('admin-empresa', 'super admin', 'administrador', 'admin' → 'ADMIN_EMPRESA' / 'SUPERADMIN'). */
 export function nombreRolNormalizado(rol) {
     const nombre = aNombre(rol);
-    return typeof nombre === 'string' ? nombre.trim().toUpperCase().replace(/[\s-]+/g, '_') : '';
+    if (typeof nombre !== 'string') return '';
+    const clean = nombre.trim().toUpperCase().replace(/[\s-]+/g, '_');
+    const sinSeparadores = clean.replace(/_/g, '');
+    if (sinSeparadores === 'ADMINISTRADOR' || sinSeparadores === 'ADMIN' || sinSeparadores === 'ADMINEMPRESA') {
+        return 'ADMIN_EMPRESA';
+    }
+    if (sinSeparadores === 'SUPERADMIN' || sinSeparadores === 'SUPER') {
+        return 'SUPERADMIN';
+    }
+    return clean;
 }
 
 /** Indica si el rol es de los reservados al SUPERADMIN. */
