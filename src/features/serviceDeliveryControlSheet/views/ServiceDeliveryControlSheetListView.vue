@@ -30,8 +30,8 @@
                     title="Nuevo registro de planilla"
                     @click="goToCreate"
                 >
-                    <i class="fad fa-plus me-1" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">+ Nueva Planilla</span>
+                    <i class="fas fa-plus me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">Nueva Planilla</span>
                 </button>
 
                 <!-- CUSTOM: Control de Servicios (En Ruta) -->
