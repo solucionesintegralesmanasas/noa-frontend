@@ -12,11 +12,25 @@ export const serviceDeliveryControlSheetRoutes = [
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/crear',
-        redirect: '/planilla-de-control-de-prestacion-servicios/control-de-servicios',
+        name: 'serviceDeliveryControlSheet.create',
+        component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
+        meta: {
+            title: 'Crear Planilla de Control',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['service_delivery_control_sheets.create'],
+        },
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/editar/:id',
-        redirect: '/planilla-de-control-de-prestacion-servicios',
+        name: 'serviceDeliveryControlSheet.edit',
+        component: () => import('./views/ServiceDeliveryControlSheetFormView.vue'),
+        meta: {
+            title: 'Editar Planilla de Control',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['service_delivery_control_sheets.update'],
+        },
     },
     {
         path: '/planilla-de-control-de-prestacion-servicios/control-de-servicios',

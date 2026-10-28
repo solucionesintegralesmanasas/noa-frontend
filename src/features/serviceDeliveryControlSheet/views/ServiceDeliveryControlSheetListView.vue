@@ -22,7 +22,17 @@
                     <i class="fad fa-sync" aria-hidden="true" />
                 </button>
 
-
+                <!-- CREATE -->
+                <button
+                    v-if="permissions.create && !permissionsStore.hasRole('CONDUCTOR')"
+                    class="btn btn-primary btn-sm px-3 me-2"
+                    type="button"
+                    title="Nuevo registro de planilla"
+                    @click="goToCreate"
+                >
+                    <i class="fad fa-plus me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">+ Nueva Planilla</span>
+                </button>
 
                 <!-- CUSTOM: Control de Servicios (En Ruta) -->
                 <button
@@ -791,6 +801,8 @@ const tipoLabel = (type) => {
 };
 
 const goToInternalControl = () => router.push('/planilla-de-control-de-prestacion-servicios/control-de-servicios');
+const goToCreate = () => router.push('/planilla-de-control-de-prestacion-servicios/crear');
+const goToEdit = (uuid) => router.push(`/planilla-de-control-de-prestacion-servicios/editar/${uuid}`);
 const goToControl = (uuid) => router.push(`/planilla-de-control-de-prestacion-servicios/control-de-servicios?id=${uuid}`);
 
 const downloadParentPdf = async (data) => {
@@ -869,6 +881,14 @@ const accionesDe = (data) => {
             inline: true,
             visible: canShareCoordinatorLink.value && !cerrado && !data.has_coordinator_signature,
             onClick: () => shareCoordinatorLink(data.uuid)
+        },
+        {
+            key: 'editar',
+            label: 'Editar',
+            icon: 'far fa-pen',
+            tone: 'warning',
+            visible: permissions.edit && !cerrado,
+            onClick: () => goToEdit(data.uuid)
         }
     ];
 };
