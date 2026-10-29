@@ -5,7 +5,7 @@ const props = defineProps({
     driver: { type: Object, required: true },
 });
 
-const emit = defineEmits(['open-history', 'show-location']);
+const emit = defineEmits(['open-history', 'show-location', 'open-follow']);
 
 const driverName = computed(() => {
     const d = props.driver;
@@ -123,10 +123,19 @@ const rutaText = computed(() => {
             <span class="status-dot" :class="isMoving ? 'status-dot--moving' : 'status-dot--stopped'"></span>
             <button
                 class="driver-card__history-btn"
+                title="Seguir en vivo"
+                aria-label="Seguir en vivo"
+                @click.stop="emit('open-follow', driver)"
+            >
+                <i class="fad fa-location-arrow" style="font-size:12px; color:#0d6efd;" aria-hidden="true"></i>
+            </button>
+            <button
+                class="driver-card__history-btn"
                 title="Ver historial"
+                aria-label="Ver historial"
                 @click.stop="emit('open-history', driver)"
             >
-                <i class="fad fa-route" style="font-size:12px; color:#0d6efd;"></i>
+                <i class="fad fa-route" style="font-size:12px; color:#0d6efd;" aria-hidden="true"></i>
             </button>
         </div>
     </div>

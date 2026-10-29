@@ -56,6 +56,13 @@ function openHistory(driver) {
     }
 }
 
+function openFollow(driver) {
+    const uuid = driver.third_party_uuid || driver.driver?.uuid;
+    if (uuid) {
+        router.push({ name: 'tracking.follow', params: { uuid } });
+    }
+}
+
 function showLocation(driver) {
     store.selectDriver(driver);
 }
@@ -191,7 +198,8 @@ onBeforeUnmount(() => {
                         </div>
                         <div class="scrollbar" style="max-height: 620px; overflow-y: auto;">
                             <DriverMarker v-for="driver in filteredDrivers" :key="driver.third_party_uuid"
-                                :driver="driver" @open-history="openHistory" @show-location="showLocation" />
+                                :driver="driver" @open-history="openHistory" @show-location="showLocation"
+                                @open-follow="openFollow" />
 
                             <div v-if="!filteredDrivers.length && !loadingDrivers"
                                 class="text-center py-5 text-muted">
@@ -241,7 +249,7 @@ onBeforeUnmount(() => {
                 <div class="card border-0 shadow-sm h-100">
                     <div class="bg-holder d-none d-lg-block bg-card"
                         style="background-image:url(/assets/img/icons/spot-illustrations/corner-4.png);" />
-                    <div class="card-body p-0 position-relative" style="min-height: 560px;">
+                    <div class="card-body p-0 position-relative" style="height: 620px;">
                         <DriverMap @driver-selected="showLocation" />
                     </div>
                 </div>

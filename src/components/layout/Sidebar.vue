@@ -266,6 +266,7 @@ const MENU_SECTIONS = [
         label: 'Geolocalización',
         items: [
             { id: 'mapa-vivo', label: 'Mapa en Vivo', icon: 'fa-map-marked-alt', to: '/rastreo/mapa-en-vivo', permissions: ['locations.view'], activeWhen: (path) => path === '/rastreo/mapa-en-vivo' },
+            { id: 'seguimiento-conductor', label: 'Seguimiento de Conductor', icon: 'fa-location-arrow', to: '/rastreo/seguimiento', permissions: ['locations.view'], activeWhen: (path) => path.startsWith('/rastreo/seguimiento') },
             { id: 'rastreo-conductores', label: 'Rastreo de Conductores', icon: 'fa-satellite-dish', to: '/rastreo', permissions: ['locations.view'], activeWhen: (path) => path === '/rastreo' || path.startsWith('/rastreo/historial') },
             { id: 'geocercas', label: 'Geocercas', icon: 'fa-draw-polygon', to: '/rastreo/geocercas', permissions: ['locations.geofences'], activeWhen: (path) => path.startsWith('/rastreo/geocercas') },
         ],
