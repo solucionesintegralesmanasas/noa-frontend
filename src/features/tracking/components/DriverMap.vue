@@ -3,12 +3,28 @@ import { onMounted, onBeforeUnmount, watch } from 'vue';
 import { useTrackingStore } from '../store/tracking.store';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { conductoresVigentes, textoUltimoReporte } from '../utils/conductoresVigentes';
+import {
+    debeAnimarSalto,
+    duracionDeTransicion,
+    posicionInterpolada,
+    puntoDeConductor,
+    rumboEntrePuntos,
+} from '../utils/movimientoDeConductor';
+import { logger } from '@/utils/logger.js';
 
 const props = defineProps({
     showGeofences: { type: Boolean, default: true },
     interactive: { type: Boolean, default: true },
     showLegend: { type: Boolean, default: true },
     fullscreen: { type: Boolean, default: false },
+    /** Estela del viaje actual que va dibujando cada conductor. */
+    showTrails: { type: Boolean, default: true },
+    /** Conductor bajo seguimiento: su estela marca el punto de arranque. */
+    focusUuid: { type: String, default: null },
+    /** La cámara acompaña al conductor foco en cada reporte. */
+    follow: { type: Boolean, default: false },
+    /** Texto del botón de recentrado (flota completa o un conductor). */
+    centerLabel: { type: String, default: 'Centrar flota' },
 });
 
 const emit = defineEmits(['driver-selected']);
@@ -20,22 +36,40 @@ let map = null;
 let markers = {};
 let geofenceLayers = [];
 let polylineLayer = null;
+let trailLayers = {};
+let trailStartLayers = {};
 
 const DEFAULT_CENTER = [4.710993, -74.072068];
 const DEFAULT_ZOOM = 12;
 
-const driverIcon = (isMoving, initials = '?') => `
-    <div style="
-        width:38px;height:38px;min-width:38px;
-        border-radius:50%;
-        background:${isMoving ? '#22c55e' : '#f59e0b'};
-        border:3px solid white;
-        box-shadow:0 2px 10px rgba(0,0,0,.25);
-        display:flex;align-items:center;justify-content:center;
-        color:white;font-size:12px;font-weight:700;letter-spacing:.5px;
-        box-sizing:border-box;
-    ">${initials}</div>
-`;
+const COLOR_RUTA = '#3b82f6';
+
+const driverIcon = (isMoving, initials = '?', heading = null) => {
+    const color = isMoving ? '#22c55e' : '#f59e0b';
+    const colorPunta = isMoving ? '#16a34a' : '#b45309';
+    const rotacion = heading == null ? '' : `transform:rotate(${heading}deg);`;
+    const contrarrotacion = heading == null ? '' : `transform:rotate(${-heading}deg);`;
+    const punta = heading == null
+        ? ''
+        : `<div style="position:absolute;left:50%;top:-5px;transform:translateX(-50%);width:0;height:0;
+              border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid ${colorPunta};"></div>`;
+
+    return `
+        <div style="width:38px;height:38px;position:relative;${rotacion}">
+            ${punta}
+            <div style="
+                width:38px;height:38px;${contrarrotacion}
+                border-radius:50%;
+                background:${color};
+                border:3px solid white;
+                box-shadow:0 2px 10px rgba(0,0,0,.25);
+                display:flex;align-items:center;justify-content:center;
+                color:white;font-size:12px;font-weight:700;letter-spacing:.5px;
+                box-sizing:border-box;
+            ">${initials}</div>
+        </div>
+    `;
+};
 
 function setupMap(L) {
     map = L.map('trackingMap', {
@@ -100,6 +134,35 @@ watch(
     }
 );
 
+// Las estelas se redibujan cuando el store cambia una estela (sello escalar,
+// sin sondeo ni temporizador propio: ARQ-009).
+watch(
+    () => store.trailRevision,
+    () => {
+        sincronizarEstelas();
+    }
+);
+
+watch(
+    () => props.showTrails,
+    (show) => {
+        if (!map) return;
+        if (show) {
+            sincronizarEstelas();
+        } else {
+            limpiarEstelas();
+        }
+    }
+);
+
+watch(
+    () => props.focusUuid,
+    (uuid) => {
+        const marker = uuid ? markers[uuid] : null;
+        if (map && marker) map.panTo(marker.getLatLng(), { animate: true });
+    }
+);
+
 watch(
     () => props.fullscreen,
     () => {
@@ -122,6 +185,68 @@ function driverUuid(driver) {
     return driver?.third_party_uuid || driver?.driver?.uuid || null;
 }
 
+/* ─── Movimiento del marcador ─────────────────────────────────────────────
+   El teléfono manda un punto cada ~10 s. Para que el vehículo se vea
+   desplazarse y no saltar, cada transición se interpola con requestAnimationFrame
+   (un solo bucle para todos los marcadores) y los saltos antinaturales se
+   "snapean" en vez de animarse. */
+
+const transiciones = new Map();
+let rafId = null;
+
+function pasoDeAnimacion(ts) {
+    rafId = null;
+    let pendientes = false;
+
+    transiciones.forEach((tr, uuid) => {
+        const avance = Math.min(1, (ts - tr.inicio) / tr.duracion);
+        const [lat, lng] = posicionInterpolada(tr.desde, tr.hasta, avance);
+        tr.marca.setLatLng([lat, lng]);
+        if (avance < 1) {
+            pendientes = true;
+        } else {
+            transiciones.delete(uuid);
+        }
+    });
+
+    if (pendientes) rafId = requestAnimationFrame(pasoDeAnimacion);
+}
+
+function iniciarTransicion(uuid, marca, hasta) {
+    const actual = marca.getLatLng();
+    const desde = { latitude: actual.lat, longitude: actual.lng };
+    if (!debeAnimarSalto(desde, hasta)) {
+        marca.setLatLng([hasta.latitude, hasta.longitude]);
+        return false;
+    }
+    transiciones.set(uuid, {
+        marca,
+        desde,
+        hasta,
+        duracion: duracionDeTransicion(desde, hasta),
+        inicio: (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+    });
+    if (rafId === null) rafId = requestAnimationFrame(pasoDeAnimacion);
+    return true;
+}
+
+function cancelarAnimaciones() {
+    transiciones.clear();
+    if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
+}
+
+/** Rumbo del vehículo: el del GPS si llega; si no, el del desplazamiento. */
+function rumboDe(driver, desde, hasta) {
+    const delGps = Number(driver?.heading ?? driver?.last_location?.heading);
+    if (Number.isFinite(delGps) && delGps >= 0) return delGps;
+    if (!desde || !hasta) return null;
+    if (!debeAnimarSalto(desde, hasta)) return null;
+    return Math.round(rumboEntrePuntos(desde, hasta));
+}
+
 function drawDriver(L, driver) {
     if (!driver?.latitude && !driver?.last_location?.latitude) {
         return;
@@ -135,24 +260,43 @@ function drawDriver(L, driver) {
     const isMoving = driver.is_moving ?? driver.last_location?.is_moving ?? false;
     const initials = getDriverInitials(driver);
 
+    let seMovio;
+
     if (markers[uuid]) {
-        markers[uuid].setLatLng([lat, lng]);
-        markers[uuid].setIcon(L.divIcon({ html: driverIcon(isMoving, initials), className: '' }));
-        markers[uuid].bindPopup(buildPopup(driver));
-        return;
+        const marca = markers[uuid];
+        const actual = marca.getLatLng();
+        const desde = { latitude: actual.lat, longitude: actual.lng };
+        const hasta = { latitude: Number(lat), longitude: Number(lng) };
+        const heading = rumboDe(driver, desde, hasta);
+
+        seMovio = iniciarTransicion(uuid, marca, hasta);
+        marca.setIcon(L.divIcon({ html: driverIcon(isMoving, initials, heading), className: '' }));
+        marca.bindPopup(buildPopup(driver));
+    } else {
+        const marker = L.marker([lat, lng], {
+            icon: L.divIcon({
+                html: driverIcon(isMoving, initials, rumboDe(driver, null, null)),
+                className: '',
+            }),
+        }).addTo(map);
+
+        marker.bindPopup(buildPopup(driver));
+        marker.on('click', () => {
+            store.selectDriver(driver);
+            emit('driver-selected', driver);
+        });
+
+        markers[uuid] = marker;
+        seMovio = true;
     }
 
-    const marker = L.marker([lat, lng], {
-        icon: L.divIcon({ html: driverIcon(isMoving, initials), className: '' }),
-    }).addTo(map);
+    if (props.showTrails) {
+        store.appendTrailPoint(uuid, puntoDeConductor(driver));
+    }
 
-    marker.bindPopup(buildPopup(driver));
-    marker.on('click', () => {
-        store.selectDriver(driver);
-        emit('driver-selected', driver);
-    });
-
-    markers[uuid] = marker;
+    if (seMovio && props.follow && props.focusUuid === uuid) {
+        map.panTo([Number(lat), Number(lng)], { animate: true });
+    }
 }
 
 function buildPopup(driver) {
@@ -286,17 +430,91 @@ function drawHistory(L, history) {
 
     const points = history.map((point) => [point.latitude, point.longitude]);
     polylineLayer = L.polyline(points, {
-        color: '#3b82f6',
+        color: COLOR_RUTA,
         weight: 4,
         opacity: 0.7,
     }).addTo(map);
 
-    const first = points[0];
-    const last = points[points.length - 1];
-    L.marker(first, { icon: L.divIcon({ html: '🟢', className: '', iconSize: [20, 20] }) }).addTo(map);
-    L.marker(last, { icon: L.divIcon({ html: '🔴', className: '', iconSize: [20, 20] }) }).addTo(map);
+    const punto = (posicion, color) => L.marker(posicion, {
+        icon: L.divIcon({
+            className: '',
+            iconSize: [14, 14],
+            html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 1px 6px rgba(0,0,0,.3);box-sizing:border-box;"></div>`,
+        }),
+    }).addTo(map);
+
+    punto(points[0], '#16a34a');
+    punto(points[points.length - 1], '#dc2626');
 
     map.fitBounds(L.latLngBounds(points).pad(0.1));
+}
+
+/* ─── Estela del viaje actual ─────────────────────────────────────────────
+   Polilínea por conductor que crece con cada reporte. Los datos viven en el
+   store (se siembran con el historial del día y se acumulan en vivo); aquí
+   solo se sincronizan las capas de Leaflet. */
+
+function limpiarEstelas() {
+    if (!map) return;
+    Object.values(trailLayers).forEach((layer) => map.removeLayer(layer));
+    Object.values(trailStartLayers).forEach((layer) => map.removeLayer(layer));
+    trailLayers = {};
+    trailStartLayers = {};
+}
+
+function sincronizarEstelas() {
+    if (!map || !window.L || !props.showTrails) return;
+    const L = window.L;
+
+    Object.entries(store.trailByDriver).forEach(([uuid, puntos]) => {
+        // Solo se dibuja la estela de los conductores con marcador visible y,
+        // en el seguimiento, únicamente la del conductor elegido.
+        if (!markers[uuid]) return;
+        if (props.focusUuid && uuid !== props.focusUuid) return;
+
+        const coords = (puntos || [])
+            .map((p) => [p.latitude, p.longitude])
+            .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+
+        if (coords.length < 2) return;
+
+        if (!trailLayers[uuid]) {
+            trailLayers[uuid] = L.polyline(coords, {
+                color: COLOR_RUTA,
+                weight: 4,
+                opacity: 0.7,
+            }).addTo(map);
+        } else {
+            trailLayers[uuid].setLatLngs(coords);
+        }
+
+        if (props.focusUuid === uuid && coords.length) {
+            if (!trailStartLayers[uuid]) {
+                trailStartLayers[uuid] = L.marker(coords[0], {
+                    icon: L.divIcon({
+                        className: '',
+                        iconSize: [16, 16],
+                        html: '<div style="width:16px;height:16px;border-radius:50%;background:#0d6efd;border:3px solid white;box-shadow:0 1px 6px rgba(0,0,0,.3);box-sizing:border-box;"></div>',
+                    }),
+                }).addTo(map);
+                trailStartLayers[uuid].bindPopup('Inicio del viaje actual');
+            } else {
+                trailStartLayers[uuid].setLatLng(coords[0]);
+            }
+        }
+    });
+
+    // Reconciliar capas huérfanas: el conductor ya no está visible en el mapa.
+    Object.keys(trailLayers).forEach((uuid) => {
+        if (markers[uuid] && store.trailByDriver[uuid]) return;
+        map.removeLayer(trailLayers[uuid]);
+        delete trailLayers[uuid];
+    });
+    Object.keys(trailStartLayers).forEach((uuid) => {
+        if (markers[uuid] && store.trailByDriver[uuid] && props.focusUuid === uuid) return;
+        map.removeLayer(trailStartLayers[uuid]);
+        delete trailStartLayers[uuid];
+    });
 }
 
 let hasFittedDrivers = false;
@@ -325,6 +543,8 @@ function centrarFlota() {
     fitDrivers();
 }
 
+defineExpose({ centrarFlota });
+
 function updateMap() {
     if (!map) return;
     const L = window.L;
@@ -351,9 +571,9 @@ function updateMap() {
     if (store.selectedDriver?.history) {
         drawHistory(L, store.selectedDriver.history);
     }
-}
 
-let intervalId = null;
+    sincronizarEstelas();
+}
 
 onMounted(async () => {
     try {
@@ -361,22 +581,19 @@ onMounted(async () => {
         setupMap(L);
         updateMap();
 
-        intervalId = setInterval(updateMap, 10000);
-
         setTimeout(() => {
             if (map) {
                 map.invalidateSize();
             }
         }, 300);
     } catch (err) {
-        console.error('Error inicializando mapa:', err);
+        logger.error('Error inicializando mapa:', err);
     }
 });
 
 onBeforeUnmount(() => {
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
+    cancelarAnimaciones();
+    limpiarEstelas();
     if (map) {
         map.remove();
         map = null;
@@ -385,24 +602,119 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-gray-200">
-        <div id="trackingMap" class="w-full h-full" style="min-height: 400px;"></div>
+    <div class="noa-map-wrap">
+        <div id="trackingMap" class="noa-map"></div>
 
-        <div v-if="showLegend" class="absolute top-3 left-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm">
-            <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+        <div v-if="showLegend" class="noa-map-legend">
+            <span class="noa-map-dot noa-map-dot--moving"></span>
             En movimiento
-            <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1 ml-3"></span>
+            <span class="noa-map-dot noa-map-dot--stopped ms-3"></span>
             Detenido
+            <span v-if="showTrails" class="noa-map-trail-line ms-3"></span>
+            <span v-if="showTrails">Recorrido</span>
         </div>
 
         <button
             type="button"
-            class="absolute top-3 right-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            title="Centrar la vista en todos los vehículos visibles"
+            class="noa-map-center-btn"
+            :title="centerLabel"
+            :aria-label="centerLabel"
             @click="centrarFlota"
         >
-            <i class="fad fa-crosshairs mr-1" aria-hidden="true"></i>
-            Centrar flota
+            <i class="fad fa-crosshairs me-1" aria-hidden="true"></i>
+            {{ centerLabel }}
         </button>
     </div>
 </template>
+
+<style scoped>
+.noa-map-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.noa-map {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+}
+
+.noa-map-legend {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: #1e293b;
+}
+
+.noa-map-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.noa-map-dot--moving {
+    background: #22c55e;
+}
+
+.noa-map-dot--stopped {
+    background: #f59e0b;
+}
+
+.noa-map-trail-line {
+    width: 18px;
+    height: 4px;
+    border-radius: 2px;
+    background: #3b82f6;
+    display: inline-block;
+}
+
+.noa-map-center-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.noa-map-center-btn:hover {
+    background: #f8fafc;
+}
+
+.noa-map-center-btn:focus-visible {
+    outline: 2px solid #2c7be5;
+    outline-offset: 2px;
+}
+
+/* En pantallas estrechas la leyenda baja para no competir con el botón. */
+@media (max-width: 576px) {
+    .noa-map-legend {
+        top: auto;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        flex-wrap: wrap;
+    }
+}
+</style>
