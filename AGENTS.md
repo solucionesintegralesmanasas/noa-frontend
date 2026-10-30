@@ -321,6 +321,14 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
   - Al cambiar de tipo de filtro (`onFilterTypeChange`), la tabla recarga los datos generales de inmediato en lugar de dejar filas huérfanas o provocar errores 422 en el backend.
   - Se normalizó el manejo de opciones dependientes (afiliados, conductores, proyectos, tarjetas de operación, mantenimiento y convenios) y la limpieza total (`clearAll`).
 
+## Edición de hojas de control de servicio (2026-10-29)
+
+- Un solo `ServiceDeliveryControlSheetFormView.vue` atiende crear y editar (`isEditMode`): mismo marcado, diferencias por computados y `v-if`.
+- En edición: tipo de hoja deshabilitado (inmutable; el backend responde 422 si se cambia), bloque «Estado» oculto e `is_active` fuera del payload (reservado al cierre, SPEC-002 §7.2), fecha de servicio sincronizada con `start_date`, selects individuales de vehículo/conductor (la tabla masiva por proyecto es solo de creación) y `buildPayload` con lista explícita de campos (nunca `children` ni `internal_control` del show).
+- Multi-día: al cambiar proyecto, fechas, tipo o pareja se propaga a las hojas hijas abiertas y se conservan las cerradas; extender el rango crea planillas diarias faltantes y recortarlo elimina solo días abiertos sin evidencia (422 si el día tiene km, horas, recorridos o firmas).
+- Listado: acciones en línea **Continuar servicio + Editar**; PDF y Firma del coordinador pasan al menú ⋮; en móvil «Editar» solo aparece con `service_delivery_control_sheets.update` y hoja abierta.
+- Pruebas: `formularioEdicion.test.js` (3) y `listadoEdicion.test.js` (2); backend `EdicionHojaControlTest` (13 casos, 154 aserciones).
+
 ## Credenciales de inicio de sesión
 
 Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo o usa el `UsuariosSeeder` / `DemoCompanySeeder` del backend en un entorno local.

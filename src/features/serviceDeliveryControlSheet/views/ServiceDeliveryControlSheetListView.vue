@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <!-- VISTA ESCRITORIO / TABLET -->
     <div class="d-none d-md-block">
         <BasePageHeader
@@ -108,8 +108,10 @@
             :selected-project-uuid="store.projectFilter"
             :loading="store.loading"
             :can-create-project="permissionsStore.can('projects.create')"
+            :can-edit-sheets="permissions.edit"
             @select="onProjectCardSelect"
             @create-project="goToCreateProject"
+            @edit-project-sheets="openBulkUpdateModal"
         />
 
         <!-- LISTADO: cabecera contextual del proyecto + toolbar + tabla + paginador en una sola tarjeta -->
@@ -135,6 +137,16 @@
 
                 <!-- Acciones contextuales del proyecto -->
                 <div class="d-flex align-items-center gap-2">
+                    <button
+                        v-if="permissions.edit && selectedProject.uuid"
+                        type="button"
+                        class="btn btn-primary btn-project-action shadow-xs"
+                        title="Actualizar fechas o ruta de todas las hojas de control abiertas del proyecto"
+                        @click="openBulkUpdateModal(selectedProject)"
+                    >
+                        <i class="fad fa-calendar-edit" aria-hidden="true" />
+                        <span>Actualizar General</span>
+                    </button>
                     <button
                         v-if="permissions.pdf"
                         type="button"
@@ -231,6 +243,16 @@
 
                 <!-- Contador de resultados y Reporte Consolidado en modo plano -->
                 <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button
+                        v-if="permissions.edit && !(store.viewMode === 'projects' && selectedProject)"
+                        type="button"
+                        class="btn btn-primary btn-project-action shadow-xs"
+                        title="Actualizar fechas o ruta de todas las hojas de control abiertas de un proyecto"
+                        @click="openBulkUpdateModal(selectedProject)"
+                    >
+                        <i class="fad fa-calendar-edit" aria-hidden="true" />
+                        <span>Actualizar General</span>
+                    </button>
                     <button
                         v-if="permissions.pdf && !(store.viewMode === 'projects' && selectedProject)"
                         type="button"
@@ -602,6 +624,11 @@
                         <i class="fad fa-file-pdf text-danger" aria-hidden="true"></i>
                         <span>PDF</span>
                     </button>
+                    <button v-if="permissions.edit && !isServicioCerrado(item)" class="mc-btn-secondary" type="button"
+                        @click="goToEdit(item.uuid)">
+                        <i class="far fa-pen text-warning" aria-hidden="true"></i>
+                        <span>Editar</span>
+                    </button>
                 </template>
             </MobileCard>
         </div>
@@ -645,6 +672,98 @@
         :drivers="reportDrivers"
         :project="selectedProject"
     />
+
+    <!-- DIÁLOGO DE ACTUALIZACIÓN GENERAL DE HOJAS DEL PROYECTO -->
+    <Dialog
+        v-model:visible="showBulkUpdateDialog"
+        :modal="true"
+        :closable="true"
+        :draggable="false"
+        :style="{ width: '540px' }"
+        class="p-fluid"
+    >
+        <template #header>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fad fa-calendar-edit text-primary fs-4" aria-hidden="true"></i>
+                <h5 class="mb-0 fw-bold">Actualización General de Hojas de Control</h5>
+            </div>
+        </template>
+        <div class="p-1">
+            <div class="alert alert-info py-2 px-3 mb-3 small d-flex align-items-start gap-2" style="border-radius: 6px;">
+                <i class="fad fa-info-circle text-primary mt-1" aria-hidden="true"></i>
+                <span>
+                    Extiende o modifica las fechas de vigencia para <strong>todas las hojas de control del proyecto</strong> (incluyendo las que ya se habían cerrado al finalizar su periodo anterior) y genera automáticamente los nuevos días de servicio, conservando intacta la evidencia de los días ya cerrados.
+                </span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label required fw-medium" for="bulk-project">Proyecto</label>
+                <select
+                    id="bulk-project"
+                    v-model="bulkUpdateForm.project_uuid"
+                    class="form-select form-select-sm"
+                    @change="onBulkProjectChange"
+                >
+                    <option value="">Seleccione un proyecto...</option>
+                    <option v-for="p in store.projectsOverview" :key="p.uuid" :value="p.uuid">
+                        {{ p.project_name }} ({{ p.assignments_count || 0 }} vehículos)
+                    </option>
+                </select>
+            </div>
+
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label fw-medium" for="bulk-start-date">Fecha de inicio</label>
+                    <DateInput
+                        id="bulk-start-date"
+                        v-model="bulkUpdateForm.start_date"
+                        class="form-control form-control-sm"
+                        :max="bulkUpdateForm.end_date || undefined"
+                    />
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-medium" for="bulk-end-date">Nueva fecha de fin / extensión</label>
+                    <DateInput
+                        id="bulk-end-date"
+                        v-model="bulkUpdateForm.end_date"
+                        class="form-control form-control-sm"
+                        :min="bulkUpdateForm.start_date || undefined"
+                    />
+                </div>
+                <div class="col-12 mt-2">
+                    <label class="form-label fw-medium" for="bulk-daily-route">Ruta diaria general (opcional)</label>
+                    <input
+                        id="bulk-daily-route"
+                        v-model="bulkUpdateForm.daily_route"
+                        type="text"
+                        class="form-control form-control-sm"
+                        placeholder="Dejar en blanco para conservar la ruta actual de cada hoja"
+                        maxlength="255"
+                    />
+                </div>
+            </div>
+
+            <div v-if="bulkUpdateError" class="alert alert-warning py-2 px-3 mt-3 mb-0 small" role="alert">
+                {{ bulkUpdateError }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                <button type="button" class="btn btn-falcon-default btn-sm" :disabled="bulkUpdating" @click="showBulkUpdateDialog = false">
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    :disabled="bulkUpdating || !bulkUpdateForm.project_uuid || (!bulkUpdateForm.start_date && !bulkUpdateForm.end_date && !bulkUpdateForm.daily_route)"
+                    @click="submitBulkUpdate"
+                >
+                    <span v-if="bulkUpdating" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="fad fa-save me-1" aria-hidden="true"></i>
+                    <span>Actualizar todas las hojas del proyecto</span>
+                </button>
+            </div>
+        </div>
+    </Dialog>
 </template>
 
 <script setup>
@@ -662,6 +781,8 @@ import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import RowActions from '@/components/RowActions.vue';
 import ListPagination from '@/components/ListPagination.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import DateInput from '@/components/form/DateInput.vue';
+import Dialog from 'primevue/dialog';
 import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
 import ProjectSwitcherCards from '../components/ProjectSwitcherCards.vue';
 import {
@@ -703,6 +824,15 @@ const selectedProject = computed(() => {
 });
 
 const showReportsDialog = ref(false);
+const showBulkUpdateDialog = ref(false);
+const bulkUpdating = ref(false);
+const bulkUpdateError = ref('');
+const bulkUpdateForm = reactive({
+    project_uuid: '',
+    start_date: '',
+    end_date: '',
+    daily_route: '',
+});
 const reportVehicles = computed(() => store.catalogs.vehicles ?? []);
 const reportDrivers = computed(() => store.catalogs.drivers ?? []);
 const downloadingDaily = ref(null);
@@ -750,6 +880,56 @@ const goToProjectEdit = (uuid) => router.push(`/proyectos/editar/${uuid}`);
 
 const openProjectReport = () => {
     showReportsDialog.value = true;
+};
+
+const normalizarFechaInput = (fecha) => (fecha ? String(fecha).slice(0, 10) : '');
+
+const openBulkUpdateModal = (proj = null) => {
+    bulkUpdateError.value = '';
+    const targetProject = proj || selectedProject.value || store.projectsOverview[0] || null;
+    bulkUpdateForm.project_uuid = targetProject?.uuid || '';
+    bulkUpdateForm.start_date = normalizarFechaInput(targetProject?.start_date);
+    bulkUpdateForm.end_date = normalizarFechaInput(targetProject?.completion_date);
+    bulkUpdateForm.daily_route = '';
+    showBulkUpdateDialog.value = true;
+};
+
+const onBulkProjectChange = () => {
+    bulkUpdateError.value = '';
+    const targetProject = store.projectsOverview.find((p) => p.uuid === bulkUpdateForm.project_uuid) || null;
+    bulkUpdateForm.start_date = normalizarFechaInput(targetProject?.start_date);
+    bulkUpdateForm.end_date = normalizarFechaInput(targetProject?.completion_date);
+};
+
+const submitBulkUpdate = async () => {
+    if (!bulkUpdateForm.project_uuid) {
+        bulkUpdateError.value = 'Selecciona un proyecto para actualizar sus hojas de control.';
+        return;
+    }
+    if (bulkUpdateForm.start_date && bulkUpdateForm.end_date && bulkUpdateForm.end_date < bulkUpdateForm.start_date) {
+        bulkUpdateError.value = 'La fecha de fin debe ser igual o posterior a la fecha de inicio.';
+        return;
+    }
+    bulkUpdating.value = true;
+    bulkUpdateError.value = '';
+    try {
+        const payload = {
+            company_uuid: userStore.company_uuid,
+            project_uuid: bulkUpdateForm.project_uuid,
+        };
+        if (bulkUpdateForm.start_date) payload.start_date = bulkUpdateForm.start_date;
+        if (bulkUpdateForm.end_date) payload.end_date = bulkUpdateForm.end_date;
+        if (bulkUpdateForm.daily_route && bulkUpdateForm.daily_route.trim() !== '') {
+            payload.daily_route = bulkUpdateForm.daily_route.trim();
+        }
+        await store.updateBulk(payload);
+        await store.loadProjectsOverview(userStore.company_uuid);
+        showBulkUpdateDialog.value = false;
+    } catch (error) {
+        bulkUpdateError.value = error?.response?.data?.message || error?.message || 'No fue posible actualizar las hojas de control del proyecto.';
+    } finally {
+        bulkUpdating.value = false;
+    }
 };
 
 const onPageChange = async ({ page, first, rows }) => {
@@ -869,7 +1049,6 @@ const accionesDe = (data) => {
             label: 'Descargar PDF',
             icon: 'far fa-file-pdf',
             tone: 'neutral',
-            inline: true,
             visible: permissions.pdf,
             onClick: () => downloadParentPdf(data)
         },
@@ -878,7 +1057,6 @@ const accionesDe = (data) => {
             label: 'Firma Coordinador',
             icon: 'far fa-share-alt',
             tone: 'primary',
-            inline: true,
             visible: canShareCoordinatorLink.value && !cerrado && !data.has_coordinator_signature,
             onClick: () => shareCoordinatorLink(data.uuid)
         },
@@ -887,6 +1065,7 @@ const accionesDe = (data) => {
             label: 'Editar',
             icon: 'far fa-pen',
             tone: 'warning',
+            inline: true,
             visible: permissions.edit && !cerrado,
             onClick: () => goToEdit(data.uuid)
         }
