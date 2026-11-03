@@ -497,6 +497,7 @@
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFuecStore } from '../store/fuec.store.js';
+import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
 import { useAuthStore } from '@store';
 import { useSystemConfigurationStore } from '@/features/systemConfiguration/store/systemConfiguration.store.js';
 import { useThirdPartiesStore } from '@/features/thirdParties/store/thirdParties.store.js';
@@ -1482,11 +1483,12 @@ const handleSubmit = async () => {
             passengers: formData.passengers
         };
 
+        let creado = null;
         if (isEditMode.value) {
             await store.updateItem(uuid, payload);
         } else {
-            const newItem = await store.createItem(payload);
-            uuid = newItem?.uuid || newItem?.id;
+            creado = await store.createItem(payload);
+            uuid = creado?.uuid || creado?.id;
         }
 
         if (uuid) {
@@ -1500,7 +1502,14 @@ const handleSubmit = async () => {
             });
 
             try {
-                await store.downloadPdf(uuid);
+                // Nombre de respaldo por si el navegador no expone
+                // `Content-Disposition` en la descarga cross-origin.
+                const nombrePdf = nombreArchivoFuec({
+                    vehicle: creado?.vehicle || { vehicle_license_plate: selectedVehiclePlate.value },
+                    origin_route: creado?.origin_route || formData.origin,
+                    destination_route: creado?.destination_route || formData.destination,
+                }, uuid);
+                await store.downloadPdf(uuid, nombrePdf);
 
                 Swal.close();
                 await Swal.fire({

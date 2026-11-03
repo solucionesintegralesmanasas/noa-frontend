@@ -66,6 +66,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFuecStore } from '../store/fuec.store.js';
+import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import Swal from 'sweetalert2';
 
@@ -82,22 +83,8 @@ let rawBlob = null;
 const goBack = () => router.push('/extracto-de-contrato');
 
 const construirNombreArchivo = (detalle) => {
-    const placa = (detalle?.vehicle?.vehicle_license_plate || detalle?.vehicle_license_plate || detalle?.placa || '').trim();
-    const origen = (detalle?.origin_route || detalle?.origin || '').trim();
-    const destino = (detalle?.destination_route || detalle?.destination || '').trim();
-    const recorrido = [origen, destino].filter(Boolean).join(' - ');
-
     // Misma fórmula que el backend (PdfService::nombreArchivo): "FUEC - placa - recorrido".
-    let base = ['FUEC', placa || 'SINPLACA', recorrido]
-        .filter(Boolean)
-        .join(' - ')
-        .replace(/[/\\:*?"<>|]/g, '-')
-        .replace(/\s+/g, ' ')
-        .trim();
-    if (base.length > 180) base = base.slice(0, 180);
-    base = base.replace(/[-.\s]+$/, '');
-
-    fileName.value = base ? `${base}.pdf` : `FUEC-${route.params.id}.pdf`;
+    fileName.value = nombreArchivoFuec(detalle, route.params.id);
 };
 
 const loadPdf = async () => {

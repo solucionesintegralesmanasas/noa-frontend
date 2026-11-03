@@ -244,6 +244,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import { useFuecStore } from '../store/fuec.store.js';
+import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
@@ -308,7 +309,7 @@ const downloadPdfServer = async (item) => {
     });
 
     try {
-        await store.downloadPdf(item.uuid);
+        await store.downloadPdf(item.uuid, nombreArchivoFuec(item, item.uuid));
 
         Swal.close();
         Swal.fire({
