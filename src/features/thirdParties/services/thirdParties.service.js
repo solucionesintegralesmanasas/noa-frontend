@@ -31,6 +31,35 @@ class ThirdPartiesService extends BaseService {
     }
 
     /**
+     * Busca un conductor existente por documento para vincularlo al afiliado.
+     * Devuelve solo identidad y licencia (sin datos sensibles).
+     * @param {string} documentNumber - Número de documento.
+     * @param {string|null} documentTypeUuid - Tipo de documento.
+     * @returns {Promise<Object>} { encontrado, es_conductor, vinculado_al_afiliado, ... }
+     */
+    driverLookup(documentNumber, documentTypeUuid = null) {
+        return this._request('GET', '/driver-lookup', {
+            params: {
+                document_number: documentNumber,
+                ...(documentTypeUuid ? { document_type_uuid: documentTypeUuid } : {}),
+            },
+        });
+    }
+
+    /**
+     * Vincula un conductor existente al afiliado del usuario autenticado.
+     * No crea tercero, licencia ni usuario.
+     * @param {string} uuid - UUID del conductor existente.
+     * @param {string|null} affiliateUuid - Afiliado destino (solo administración).
+     * @returns {Promise<Object>} Vínculo creado o existente.
+     */
+    linkDriver(uuid, affiliateUuid = null) {
+        return this._request('POST', `/${uuid}/affiliates`, {
+            data: affiliateUuid ? { affiliate_uuid: affiliateUuid } : {},
+        });
+    }
+
+    /**
      * Obtiene un tercero específico por su UUID.
      * @param {string} uuid - UUID del tercero.
      * @returns {Promise<Object>} Datos del tercero.

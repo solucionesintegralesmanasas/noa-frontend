@@ -329,6 +329,10 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
 - Listado: acciones en línea **Continuar servicio + Editar**; PDF y Firma del coordinador pasan al menú ⋮; en móvil «Editar» solo aparece con `service_delivery_control_sheets.update` y hoja abierta.
 - Pruebas: `formularioEdicion.test.js` (3) y `listadoEdicion.test.js` (2); backend `EdicionHojaControlTest` (13 casos, 154 aserciones).
 
+## Vinculación de conductores existentes (2026-11-01)
+
+Al crear un conductor, `ThirdPartiesFormView` consulta `GET /third-parties/driver-lookup` al salir del documento. Si el documento ya corresponde a un conductor de la empresa, el formulario normal se oculta y aparece un panel de **vínculo** con identidad y licencia en solo lectura; al guardar se llama `POST /third-parties/{uuid}/affiliates` y **no** se crea tercero, licencia ni usuario. Un afiliado solo puede vincularse a sí mismo; administración elige el afiliado destino en el panel. Si el conductor ya está vinculado, el botón queda deshabilitado. El lookup no expone correo, teléfono, dirección, banco ni seguridad social. Prueba: `vinculacionConductor.test.js`.
+
 ## Credenciales de inicio de sesión
 
 Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo o usa el `UsuariosSeeder` / `DemoCompanySeeder` del backend en un entorno local.

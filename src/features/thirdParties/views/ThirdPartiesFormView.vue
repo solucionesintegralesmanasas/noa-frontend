@@ -22,7 +22,7 @@
                 </div>
 
                 <div class="card-body p-2 p-md-3 p-lg-4">
-                    <form @submit.prevent="handleSubmit" class="row g-2 g-md-3" novalidate>
+                    <form v-if="!esVinculoExistente" @submit.prevent="handleSubmit" class="row g-2 g-md-3" novalidate>
 
                         <!-- IDENTIDAD: foto + documento -->
                         <div class="col-12">
@@ -58,7 +58,7 @@
                                             <label class="form-label required" for="document_number">Número de Documento</label>
                                             <input id="document_number" v-model="formData.document_number" class="form-control"
                                                 :class="{ 'is-invalid': validationErrors.document_number }" type="text" autocomplete="off"
-                                                placeholder="Ingresa el número de documento" />
+                                                placeholder="Ingresa el número de documento" @blur="verificarConductorExistente" />
                                             <div v-if="validationErrors.document_number" class="invalid-feedback d-block" id="f-document_number-error" role="alert">
                                                 {{ validationErrors.document_number }}
                                             </div>
@@ -498,6 +498,84 @@
                             <BaseFormActions :submitting="submitting" :is-edit-mode="isEditMode" @cancel="goBack" />
                         </div>
                     </form>
+
+                    <form v-else @submit.prevent="handleSubmit" class="row g-2 g-md-3" novalidate>
+                        <div class="col-12">
+                            <div class="alert alert-info d-flex align-items-start gap-2 mb-0" role="status">
+                                <i class="fad fa-user-check fs-5 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <strong>Este conductor ya está registrado en la empresa.</strong>
+                                    Se vinculará a tu afiliado sin crear un tercero, una licencia ni un usuario nuevos.
+                                    Los datos se muestran solo para confirmar la identidad.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12" v-if="conductorExistente.vinculado_al_afiliado">
+                            <div class="alert alert-warning mb-0" role="alert">
+                                Este conductor ya está vinculado a tu afiliado. No es necesario volver a vincularlo.
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="row g-2 g-md-3">
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Documento</label>
+                                    <input class="form-control" :value="conductorExistente.document_number" readonly />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Nombre</label>
+                                    <input class="form-control text-uppercase" :value="nombreConductorExistente" readonly />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Estado</label>
+                                    <input class="form-control" :value="conductorExistente.is_active ? 'Activo' : 'Inactivo'" readonly />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Número de licencia</label>
+                                    <input class="form-control" :value="conductorExistente.licencia?.number || '—'" readonly />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Categoría</label>
+                                    <input class="form-control" :value="conductorExistente.licencia?.category || '—'" readonly />
+                                </div>
+                                <div class="col-12 col-sm-6 col-md-4">
+                                    <label class="form-label">Vencimiento de licencia</label>
+                                    <input class="form-control" :value="conductorExistente.licencia?.expiration_date || '—'" readonly />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 col-md-4" v-if="!esAfiliado">
+                            <label class="form-label required" for="link_affiliate_uuid">Afiliado que recibe</label>
+                            <PrimeSelect :input-id="'link_affiliate_uuid'" v-model="formData.affiliate_uuid"
+                                :options="store.catalogs.affiliate" option-value="uuid"
+                                :option-label="(opt) => `${opt.document_number || ''} - ${opt.trade_name || opt.company_name || `${opt.first_name || ''} ${opt.last_name || ''}`.trim()}`"
+                                placeholder="Seleccione afiliado..." showClear filter class="w-100" />
+                        </div>
+                        <div class="col-12" v-else>
+                            <div class="alert alert-light border mb-0 py-2" role="status">
+                                Se vinculará a tu afiliado.
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <BaseFormActions
+                                :submitting="submitting"
+                                :is-edit-mode="false"
+                                submit-label="Vincular conductor"
+                                cancel-label="Cancelar"
+                                :disabled="conductorExistente.vinculado_al_afiliado || verificandoConductor"
+                                @cancel="goBack"
+                            />
+                            <div class="text-center mt-2">
+                                <button type="button" class="btn btn-link btn-sm text-secondary"
+                                    @click="descartarConductorExistente">
+                                    No es este conductor, continuar con el registro
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -569,6 +647,7 @@ const store = useThirdPartiesStore();
 const permissionsStore = usePermissionsStore();
 const userStore = useUserStore();
 const isSuperAdmin = computed(() => permissionsStore.roles?.includes('SUPERADMIN'));
+const esAfiliado = computed(() => permissionsStore.hasRole('AFILIADO'));
 
 const isEditMode = computed(() => route.params.id !== undefined);
 
@@ -696,6 +775,18 @@ const isOwnerDriver = computed(() => formData.partyTypes && formData.partyTypes.
 // documento; y si la licencia ya se tecleó distinta, se respeta.
 const esDriverSeleccionado = computed(() => Boolean(formData.partyTypes?.includes('is_driver')));
 
+// Conductor ya registrado en la empresa: solo se vincula, no se crea de nuevo.
+const conductorExistente = ref(null);
+const verificandoConductor = ref(false);
+const esVinculoExistente = computed(() => !isEditMode.value && Boolean(conductorExistente.value));
+
+const nombreConductorExistente = computed(() => {
+    const c = conductorExistente.value;
+    if (!c) return '—';
+    const nombre = `${c.first_name || ''} ${c.last_name || ''}`.trim();
+    return nombre || c.company_name || c.trade_name || '—';
+});
+
 // Bandera de carga del registro (crear o editar): mientras el formulario se
 // puebla programáticamente NO se autollena la licencia, para no activar la
 // validación dura (categoría, fechas, afiliado) de un conductor que todavía no
@@ -719,6 +810,62 @@ watch(esDriverSeleccionado, (esDriver) => {
     const licencia = licenciaDesdeDocumento({ documento: formData.document_number, licenciaActual: formData.license_number, documentoAnterior: formData.document_number });
     if (licencia !== null) formData.license_number = licencia;
 }, { flush: 'sync' });
+
+/**
+ * Si cambia el documento o su tipo después de encontrar un conductor
+ * existente, se descarta la coincidencia y se vuelve al registro normal.
+ */
+watch([() => formData.document_number, () => formData.document_type_uuid], () => {
+    if (conductorExistente.value) conductorExistente.value = null;
+});
+
+/**
+ * Consulta si el documento ya corresponde a un conductor de la empresa.
+ * Solo se usa al crear: en edición se está modificando un registro existente.
+ */
+let verificacionEnCurso = null;
+
+async function verificarConductorExistente() {
+    if (isEditMode.value || !esDriverSeleccionado.value) return;
+
+    // Evita dos consultas simultáneas si el blur y el submit ocurren seguidos.
+    if (verificacionEnCurso) return verificacionEnCurso;
+
+    const documento = String(formData.document_number || '').trim();
+    if (!documento) {
+        conductorExistente.value = null;
+        return;
+    }
+
+    verificacionEnCurso = (async () => {
+        verificandoConductor.value = true;
+        try {
+            const respuesta = await thirdPartiesService.driverLookup(documento, formData.document_type_uuid || null);
+            const info = respuesta?.data ?? respuesta;
+
+            if (info?.encontrado && info?.es_conductor) {
+                conductorExistente.value = info;
+                return;
+            }
+
+            conductorExistente.value = null;
+        } catch (error) {
+            // La verificación es informativa: si falla, se intenta el registro normal.
+            logger.warn('[terceros] no se pudo verificar si el conductor ya existe', error);
+            conductorExistente.value = null;
+        } finally {
+            verificandoConductor.value = false;
+            verificacionEnCurso = null;
+        }
+    })();
+
+    return verificacionEnCurso;
+}
+
+/** Descarta la coincidencia y devuelve al formulario de registro normal. */
+function descartarConductorExistente() {
+    conductorExistente.value = null;
+}
 
 /**
  * Opciones del selector "Tipo de Tercero".
@@ -856,6 +1003,9 @@ const focusFirstError = async (fieldKey) => {
 const validateForm = () => {
     Object.keys(validationErrors).forEach(key => delete validationErrors[key]);
 
+    // En modo vínculo no se crea ni edita el tercero: no hay campos que validar.
+    if (esVinculoExistente.value) return true;
+
     // Validar requeridos según el JSON
     if (isEmpty(formData.company_uuid)) validationErrors.company_uuid = 'Este campo es obligatorio';
     if (isEmpty(formData.person_type)) validationErrors.person_type = 'Este campo es obligatorio';
@@ -979,6 +1129,41 @@ const onPhotoRemoved = () => {
 };
 
 const handleSubmit = async () => {
+    // Antes de crear, verifica si el conductor ya existe. Si existe, el
+    // formulario pasa a modo vínculo y no se envía una creación duplicada.
+    if (!isEditMode.value && esDriverSeleccionado.value && !conductorExistente.value) {
+        await verificarConductorExistente();
+        if (conductorExistente.value) {
+            await toast('Conductor encontrado', 'Revisa los datos y confirma la vinculación.', 'info');
+            return;
+        }
+    }
+
+    if (esVinculoExistente.value) {
+        if (conductorExistente.value?.vinculado_al_afiliado) {
+            return toast('Atención', 'Este conductor ya está vinculado a tu afiliado.', 'warning');
+        }
+
+        if (!esAfiliado.value && !formData.affiliate_uuid) {
+            return toast('Atención', 'Selecciona el afiliado que recibirá al conductor.', 'warning');
+        }
+
+        try {
+            submitting.value = true;
+            await store.linkDriver(
+                conductorExistente.value.uuid,
+                esAfiliado.value ? null : formData.affiliate_uuid
+            );
+            goBack();
+        } catch (error) {
+            const mensaje = error?.response?.data?.message || error?.response?.data?.error?.message;
+            if (mensaje) await toast('Atención', mensaje, 'warning');
+        } finally {
+            submitting.value = false;
+        }
+        return;
+    }
+
     const activePartyTypes = formData.partyTypes || [];
 
     // Los flags de tipo de tercero se derivan del selector "Tipo de Tercero".

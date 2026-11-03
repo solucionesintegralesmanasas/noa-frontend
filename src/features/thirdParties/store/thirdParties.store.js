@@ -166,6 +166,23 @@ export const useThirdPartiesStore = defineStore('thirdParties', {
         },
 
         /**
+         * Vincula un conductor existente al afiliado del usuario. No crea un
+         * tercero nuevo: solo agrega el vínculo en la pivote del backend.
+         * @param {string} uuid - UUID del conductor.
+         * @param {string|null} affiliateUuid - Afiliado destino (solo administración).
+         * @returns {Promise<Object>} Vínculo creado o existente.
+         */
+        linkDriver(uuid, affiliateUuid = null) {
+            return this._run(async () => {
+                const response = await thirdPartiesService.linkDriver(uuid, affiliateUuid);
+                const message = response?.data?.message || response?.message || 'Conductor vinculado correctamente';
+                await toast('¡Éxito!', message, 'success');
+                try { await this.fetchItems(); } catch (_e) { /* silencioso: no bloquear el redirect */ }
+                return response?.data?.data ?? response?.data ?? response;
+            }, 'Error al vincular el conductor');
+        },
+
+        /**
          * Actualiza un tercero existente.
          * @param {string} uuid - UUID del tercero.
          * @param {Object} data - Datos actualizados.
