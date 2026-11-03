@@ -149,18 +149,18 @@ Reglas cerradas en las fases 1-3 (2026-09-15). Verificables con `npm run test:a1
 - **Iconos decorativos:** `aria-hidden="true"`. Botones icon-only: `aria-label` en español.
 - **Prohibido:** `role="button"` en `router-link`, `<a>` sin `href`, `href="#"`, `javascript:void(0)`, `aria-label` en inglés, `console.*` directo (usar `logger`), imports directos de `sweetalert2` (usar `utils/toast.js`).
 
-## Estado del Proyecto y Medición (2026-09-15, actualizado 2026-09-29)
+## Estado del Proyecto y Medición (2026-09-15, actualizado 2026-11-03)
 
 - **Fases 1-3 cerradas:** a11y estructural global, los 25 `*FormView` migrados, dashboard con accesibilidad 100.
 - **Rendimiento P0-P2 cerrado:** primeicons y SweetAlert2 fuera del arranque, FontAwesome JS eliminado (−1.2 MB), jQuery/Select2 eliminados (−148 kB) y 28 vistas migradas al wrapper `PrimeSelect`.
-- **Medición (2026-09-29):** `totalJS` 2854 kB · `inicialJS` 748 kB · `totalCSS` 277 kB · `vendor-primevue` 228 kB. El presupuesto mide también el `public/` que carga `index.html` (`publicInicialJS` 634 kB + `publicInicialCSS` 1066 kB). Reportes en `docs/metrics/` (`a11y-*`, `perf-*`, `lighthouse-<env>-<device>-*` y `lighthouse.md`).
+- **Medición vigente (2026-11-03):** `totalJS` ~2854 kB · `inicialJS` **429.8 kB** (límite 750 kB) · `totalCSS` **266.9 kB** (límite 350 kB) · `vendor-primevue` **225.4 kB** (límite 250 kB) · `indexJS` **128.4 kB** (límite 150 kB). Todas las vistas diferidas < 150 kB. Presupuesto de peso estricto validado con `npm run test:perf` y compilación Vite en ~2.18 s. Reportes en `docs/metrics/` (`a11y-*`, `perf-*`, `lighthouse-<env>-<device>-*` y `lighthouse.md`).
 - **Lighthouse producción (2026-09-23, tarde):** Perf 69–85, LCP 2,4–3,1 s, TBT 0 ms. El cuello son bytes y latencia de API, no JS bloqueante. Local (`vite preview`, 2026-09-29): login desktop 95; conductor móvil 65 con LCP 6 s.
 - **Plan de rendimiento:** `PLAN-ARQUITECTURA-RENDIMIENTO-NOA.md` fue retirado del backend (2026-10-15, `aea765c`); el backlog y las cifras viven en SPEC-004 y en el AGENTS del backend. Medir siempre en producción o `preview`, nunca contra `localhost:5173`.
 - **Perfil autenticado para Lighthouse (2026-10-05):** `--profile="C:\Users\trans_nn1on\lighthouse-profile"` NO retiene la sesión en las corridas headless del script (las privadas caen a `#/login?redirect=...` aunque el perfil tenga token): las páginas privadas se miden manual en DevTools (protocolo de `docs/metrics/lighthouse.md`, 3 corridas, guardar JSON). El script solo sirve para públicas (`login`, `conductor`). Perfil creado con `--user-data-dir` apuntando ahí; no navegar a otros sitios con él.
 - **No eliminar `lodash.min.js`:** `public/assets/js/theme.js` usa `window._` 11 veces.
 - **Deuda conocida:** `theme.min.css` 892 kB sin purga, `public/assets/js/theme.js` 438 kB, `bootstrap.min.js` global (Modal/Tooltip), Leaflet por CDN, Google Fonts con 5 familias (ahora no bloqueantes; recortar las no usadas), `tenantGuard` sin implementar, `vue-tsc` con ~1740 errores de baseline y muy poca cobertura de tests.
-- **Migración a `DateInput` completada (2026-10-26):** Todos los formularios del sistema migraron los inputs de fecha nativos a `DateInput.vue` (normalización ISO `YYYY-MM-DD`, soporte para pegado `DD/MM/AAAA` con `parsearFechaFlexible`, estilos y accesibilidad homogéneos). Se limpiaron además los `console.*` residuales por `logger`, imports directos de `sweetalert2` en vistas públicas y el enlace muerto de `RuesLookupPanel.vue`.
-- **Componentes de formulario compartidos:** `PrimeSelect`, `PrimeMultiSelect` y `DateInput` viven en `src/components/form/` (importar localmente). `PrimeSelect` fija `focusOnHover=false` y `autoFilterFocus=true`; `DateInput` acepta `dd/mm/aaaa` vía `parsearFechaFlexible` (`src/utils/date.js`). El estado de documentos se normaliza con `src/utils/documentStatus.js` (`SI`/`NO` → `VIGENTE`/`NO VIGENTE`). `PrimeMultiSelect` integra desde el 2026-10-19 un control propio "Seleccionar todos" en la cabecera del panel (PrimeVue 4 dibuja su casilla de marcar todo sin texto, un cuadro mudo): la casilla es el componente `Checkbox` real de PrimeVue (el MultiSelect ya lo importa, no añade bytes), el toggle delega en `onToggleAll` (marca o desmarca las opciones visibles, respetando el filtro; requiere `showToggleAll=false` + `selectAll=null`) y la fila usa los tokens del tema (`list.option.*`) con un divisor inferior, de modo que se ve como una opción más del panel. El `aria-label` de la casilla nativa se traduce en `src/components/app/primevue.js` (`aria.selectAll`/`aria.unselectAll`). Peso medido: sin cambio en JS (3139.1 kB) y +0.2 kB de CSS. Prueba: `PrimeMultiSelect.test.js`.
+- **Migración a `DateInput` completada (2026-10-26):** Todos los formularios del sistema migraron los inputs de fecha nativos a `DateInput.vue` (normalización ISO `YYYY-MM-DD`, soporte para pegado `DD/MM/AAAA` con `parsearFechaFlexible`, estilos y accesibilidad homogéneos, propagación de clases `.is-invalid` y bordes de validación del sistema). Se limpiaron además los `console.*` residuales por `logger`, imports directos de `sweetalert2` en vistas públicas y el enlace muerto de `RuesLookupPanel.vue`.
+- **Componentes de formulario compartidos:** `PrimeSelect`, `PrimeMultiSelect` y `DateInput` viven en `src/components/form/` (importar localmente). `PrimeSelect` fija `focusOnHover=false` y `autoFilterFocus=true`, e incorpora el centinela interno `__noa_opcion_vacia__` para traducir opciones vacías `'Todas…'` sin que PrimeVue pinte `p-select-label-empty` ni deje el lector en blanco. `DateInput` acepta `dd/mm/aaaa` vía `parsearFechaFlexible` (`src/utils/date.js`). El estado de documentos se normaliza con `src/utils/documentStatus.js` (`SI`/`NO` → `VIGENTE`/`NO VIGENTE`). `PrimeMultiSelect` integra control propio "Seleccionar todos" en la cabecera del panel (PrimeVue 4 `Checkbox` real delegando en `onToggleAll`). `ListPagination.vue` calcula `opcionesEfectivas` para anteponer el `perPage` activo si difiere del estándar `[10, 25, 50, 100]`. Peso medido: sin cambio en JS (3139.1 kB) y +0.2 kB de CSS. Pruebas: `PrimeMultiSelect.test.js`, `PrimeSelect.test.js`, `DateInput.test.js`, `ListPagination.test.js`.
 - **Pruebas de componentes:** vitest con `jsdom` + `@vue/test-utils`; cada archivo declara `// @vitest-environment jsdom` en la primera línea (entorno por defecto: `node`).
 - **Ramas y releases (2026-10-19):** el trabajo va en `feature`; `main` es la rama de release (tag `v1.0.0` → `5531e3d`, merge del 2026-10-16). **Release v1.0.1:** `main` quedó con el squash de TODO el árbol de `feature` (commit `4ce46ac` "NOA v1.0.1", ya empujado a `origin/main`) y **tag `v1.0.1` (annotated) local, no publicado**. El squash reincluyó los heredados `src/hooks/useForm.js`, `src/hooks/useSelect2.js` y `src/router/guards.js` (residuos del reintegro del remoto, sin referencias usadas): se eliminaron en `feature` el 2026-10-20, después del release (salen en el próximo squash; no confundir con `src/router/guards/auth.js`, que sí está en uso). El siguiente release repite el procedimiento: squash de `feature` a `main` + tag local.
 - **Novedades 2026-10-30:**
@@ -262,7 +262,13 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
 - **Componentes base:**
   - `src/components/RowActions.vue`: Agrupación consistente de acciones de fila. Máximo 2 acciones en línea (`inline: true`, ej. Ver y Editar); el resto pasa a un menú flotante (`⋮`) accesible mediante PrimeVue `Menu`, con las acciones destructivas (`tone: 'danger'`) al final separadas. Reserva un espaciador visual si una fila no tiene acciones en menú para mantener la vertical alineada.
   - `src/components/ListPagination.vue`: Paginador propio que reemplaza al paginador embebido de PrimeVue (`:paginator="false"` en `DataTable`). Muestra a la izquierda `Mostrando X a Y de Z registros | Filas: [N ▾]` y a la derecha los botones de páginas `« ‹ 1 2 3 … N › »` con elipsis inteligente y tamaño cuadrado de 28px. Emite `{ page, rows, first }` compatible con `@page`.
-  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida. **No se importa en `main.js`** (SPEC-008, historia 16: no debe entrar al arranque): la importan `ListPagination.vue` y `RowActions.vue`, así que viaja con el chunk de cada listado. Define el contenedor `.noa-list-card` (toolbar de búsqueda + tabla + paginador en una sola tarjeta), el buscador `.noa-search`, la píldora de conteo `.noa-results`, la píldora de estado con indicador circular `.noa-status` (`.noa-status--success`, `.noa-status--warning`, `.noa-status--muted`), y la clase `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos para eliminar disparidades entre columnas.
+  - `src/assets/styles/components/_data-list.css`: Hoja de estilos compartida. **No se importa en `main.js`** (SPEC-008, historia 16: no debe entrar al arranque): la importan `ListPagination.vue` y `RowActions.vue`, así que viaja con el chunk de cada listado.
+    - **Tokens de diseño (`:root`):** `--noa-list-border: #e5e9f0`, `--noa-list-head-bg: #f8fafc`, `--noa-list-head-text: #64748b`, `--noa-list-row-hover: #f8fafc`, `--noa-list-text: #1e293b`, `--noa-list-muted: #64748b`, `--noa-list-radius: 0.5rem`, `--noa-row-action-size: 34px`.
+    - **Estructura y layout:** contenedor `.noa-list-card` (toolbar + tabla + paginador en una tarjeta integrada con border-radius `0.75rem`), `.noa-table-fixed` (`table-layout: fixed`) con anchos porcentuales explícitos y scroll horizontal (`min-width`) en tablas extensas.
+    - **Buscador `.noa-search`:** input con lupa izquierda, botón limpiar derecho (`.noa-search__clear`), foco accesible (anillo azul `rgba(44, 123, 229, 0.15)`) y supresión del botón nativo de cancelar del navegador (`::-webkit-search-cancel-button`, `::-ms-clear`) para evitar duplicidad de controles.
+    - **Jerarquía tipográfica en celdas:** `.noa-cell-strong` (font-weight 600, dato principal como placa, documento o código) y `.noa-cell-sub` (tamaño `0.75rem` color muted, subtexto informativo bajo el dato principal).
+    - **Píldoras de estado y Badges:** indicador circular con punto `.noa-status` (`success`, `warning`, `danger`, `muted`) y catálogo completo de `.badge-subtle-*` (`primary`, `secondary`, `success`, `info`, `warning`, `danger`).
+    - **Acciones de fila `.noa-row-actions`:** botones cuadrados de 34px (`.noa-row-action`) en reposo neutral con tono sutil activado en hover/foco (`primary`, `warning`, `success`, `danger`) con contraste AA garantizado, más placeholder espaciador (`.noa-row-action--placeholder`) para alinear filas sin menú. Menú flotante `.noa-row-menu` montado en body con ítems tipados y separadores de peligro.
 - **Pendientes del rediseño y de las piezas compartidas:** el plan por pasos y módulos vive en `noa-backend/docs/specs/SPEC-008-listados-reutilizables-y-medidos.md` (sección "Avance y pendientes por pasos"). **Antes de migrar un listado o crear una pieza nueva de listado, léela y sigue su orden.**
 - **Todo buscador de listado lleva `id="f-<modulo>-busqueda"`** (accesibilidad); un buscador nuevo sin `id` incumple el estándar.
 
@@ -329,13 +335,62 @@ Estandarización visual y funcional de las vistas de listado basada en la maquet
   - Paridad de columnas Propiedad y Sede en tabla, Excel y PDF; en vehículos particulares, las pólizas RCC/RCE y Tarjeta de Operación muestran la pastilla "Exento · Particular" (Decreto 1079/2015).
   - Eliminación de métodos redundantes `getBranches()` y `loadBranches()` (el catálogo de sedes se integra en `getFilterOptions("branch")`).
 
-## Edición de hojas de control de servicio (2026-10-29)
+## Portal Conductor y Componentes Móviles (2026-10-20 / 2026-10-25)
 
-- Un solo `ServiceDeliveryControlSheetFormView.vue` atiende crear y editar (`isEditMode`): mismo marcado, diferencias por computados y `v-if`.
-- En edición: tipo de hoja deshabilitado (inmutable; el backend responde 422 si se cambia), bloque «Estado» oculto e `is_active` fuera del payload (reservado al cierre, SPEC-002 §7.2), fecha de servicio sincronizada con `start_date`, selects individuales de vehículo/conductor (la tabla masiva por proyecto es solo de creación) y `buildPayload` con lista explícita de campos (nunca `children` ni `internal_control` del show).
-- Multi-día: al cambiar proyecto, fechas, tipo o pareja se propaga a las hojas hijas abiertas y se conservan las cerradas; extender el rango crea planillas diarias faltantes y recortarlo elimina solo días abiertos sin evidencia (422 si el día tiene km, horas, recorridos o firmas).
-- Listado: acciones en línea **Continuar servicio + Editar**; PDF y Firma del coordinador pasan al menú ⋮; en móvil «Editar» solo aparece con `service_delivery_control_sheets.update` y hoja abierta.
-- Pruebas: `formularioEdicion.test.js` (3) y `listadoEdicion.test.js` (2); backend `EdicionHojaControlTest` (13 casos, 154 aserciones).
+Estandarización de la experiencia móvil nativa y web para el rol conductor (`src/components/mobile/` y `src/components/layout/MobileConductorLayout.vue`):
+
+- **Layout Móvil Dedicado (`MobileConductorLayout.vue`):**
+  - Shell exclusivo para móvil/conductor que aplica la clase `mobile-conductor-active` en `body` y expande el ancho completo (`mobile-full-width`).
+  - Barra superior compacta (`mobile-topnav`): en inicio (`/dashboard` o `/dashboard/conductor`) muestra el logo institucional y subtítulo; en subpáginas operativas muestra botón atrás con icono `fas fa-arrow-left`, título dinámico y subtexto "Portal Conductor". Acciones a la derecha: campana de notificaciones con punto indicador no leído (`mobile-bell-dot`), avatar circular de iniciales enlazado al perfil y botón accesible de cierre de sesión con confirmación SweetAlert2.
+  - Barra de navegación inferior fija (`mobile-bottomnav`): zona de pulgar con 4-5 destinos operativos, icono FontAwesome, etiqueta corta y punto indicador activo (`mobile-nav-dot`).
+  - Enlace de salto de accesibilidad (`mobile-skip-link`) al contenido principal (`#contenido-movil`).
+- **Sistema de Componentes Móviles:**
+  - `MobileCard.vue`: tarjeta base con borde de radio `16px`, padding compacto `12px 12px 10px`, línea de acento superior de `3px` con 5 variantes cromáticas (`blue`, `orange`, `green`, `teal`, `neutral`), pastilla de conteo `mc-count` en esquina superior derecha, y slots estructurados (`icon`, `badge`, `default`, `actions`).
+  - `MobileSectionHeader.vue`: separador de sección con tipografía seminegrita, icono temático y contador opcional.
+  - `MobileEmptyState.vue`: ilustración y mensaje descriptivo para listas vacías en dispositivos móviles.
+- **Regla Única de Modo Conductor (`src/utils/modoConductor.js`):**
+  - `ANCHO_MOVIL_MAX = 768px`.
+  - Rutas operativas del conductor (`RUTAS_OPERATIVAS_CONDUCTOR`): `/dashboard`, `/inspeccion-vehiculos`, `/planillas-de-control-de-servicios`, `/planilla-de-control-de-prestacion-servicios`, `/extracto-de-contrato`, `/vehiculos`, `/profile`, `/notificaciones`, `/flota/solicitudes-tanqueo`. En estas rutas el conductor utiliza siempre el shell móvil de Android, tanto en web como en la app Capacitor.
+  - Soporte para previsualización mediante query string: `?view=conductor` fuerza el modo conductor en rutas operativas para pruebas de diseño/administración; `?view=admin` lo desactiva.
+- **Utilidades de Presentación del Conductor (`src/features/dashboard/utils/presentacionConductor.js`):**
+  - Funciones puras compartidas: `primerNombre` (capitalización adecuada del nombre de pila), `iniciales` (dos letras mayúsculas para avatar), `saludoPorHora` ("Buenos días", "Buenas tardes", "Buenas noches"), `filtrarVehiculos` (búsqueda insensible a mayúsculas por placa, marca, línea o interno) y `formatearPlaca` (formato estándar colombiano `ABC · 123`).
+
+## Hojas de Control por Proyecto y Conmutador de Proyectos (SPEC-009, 2026-10-21 / 2026-10-29)
+
+Rediseño integral de la gestión de Hojas de Control de Servicios (PCP) en `ServiceDeliveryControlSheetListView.vue` y `ServiceDeliveryControlSheetFormView.vue`:
+
+- **Conmutador de Vista (Modo Proyectos vs Lista Plana):**
+  - Barra global superior con selector segmentado: `Vista Proyectos` (organizada por tarjetas de proyecto) y `Lista Plana Todos los Vehículos` (con selector auxiliar `filtro-proyecto-flat` vía `PrimeSelect`).
+- **Tarjetas de Proyectos (`ProjectSwitcherCards.vue`):**
+  - Cuadrícula de tarjetas interactivas de proyecto con foco y selección accesible (`role="button"`, `:aria-pressed`, `@keydown.enter.space`).
+  - Barra superior del conmutador con conteo global de proyectos y vehículos activos.
+  - Filtros rápidos en tarjeta: `Todos`, `Con Pendientes` (badge amarillo) y `Al Día` (badge verde).
+  - Paginador de proyectos (de 4 en 4) para evitar sobrecarga vertical en empresas con múltiples frentes de operación.
+  - Botón de creación rápida "Agregar Proyecto" condicionado por permisos (`projects.create`).
+  - Cabecera contextual del proyecto seleccionado integrada en `.noa-list-card` con placa, fechas de vigencia y accesos a planillas.
+- **Creación Masiva por Proyecto (SPEC-009):**
+  - En tipo "Control Directo con la Empresa", el formulario reemplaza los selects individuales por una tabla sobria con casillas de verificación de los vehículos asignados al proyecto (placa, interno, conductor y documento), marcados por defecto y con selector maestro "Seleccionar todos".
+  - Resumen vivo de creación: cálculo automático *"Se crearán N hojas (una por coche) y M planillas diarias"*.
+  - Llamada a endpoint masivo `POST /bulk` con transacción única en backend y feedback inmediato.
+- **Edición de hojas de control de servicio (2026-10-29):**
+  - Un solo `ServiceDeliveryControlSheetFormView.vue` atiende crear y editar (`isEditMode`): mismo marcado, diferencias por computados y `v-if`.
+  - En edición: tipo de hoja deshabilitado (inmutable; el backend responde 422 si se cambia), bloque «Estado» oculto e `is_active` fuera del payload (reservado al cierre, SPEC-002 §7.2), fecha de servicio sincronizada con `start_date`, selects individuales de vehículo/conductor (la tabla masiva por proyecto es solo de creación) y `buildPayload` con lista explícita de campos (nunca `children` ni `internal_control` del show).
+  - Multi-día: al cambiar proyecto, fechas, tipo o pareja se propaga a las hojas hijas abiertas y se conservan las cerradas; extender el rango crea planillas diarias faltantes y recortarlo elimina solo días abiertos sin evidencia (422 si el día tiene km, horas, recorridos o firmas).
+  - Listado: acciones en línea **Continuar servicio + Editar**; PDF y Firma del coordinador pasan al menú ⋮; en móvil «Editar» solo aparece con `service_delivery_control_sheets.update` y hoja abierta.
+  - Pruebas: `formularioEdicion.test.js` (3) y `listadoEdicion.test.js` (2); backend `EdicionHojaControlTest` (13 casos, 154 aserciones).
+- **Planillas de Control (`ControlSheetsListView.vue`):**
+  - Agrupación por proyectos y persistencia del orden server-side.
+
+## Rastreo GPS en Vivo y Gestión de Combustible (2026-10-22 / 2026-10-28)
+
+- **Mapa GPS en Vivo a Pantalla Completa (`src/features/tracking/views/LiveTrackingView.vue`):**
+  - Interfaz depurada a pantalla completa, eliminando leyendas de estado flotantes que obstruían el mapa.
+  - Umbral de frescura de 12 horas (`src/features/tracking/utils/conductoresVigentes.js`): conductores sin reporte en las últimas 12 horas se ocultan automáticamente del trazado activo.
+  - Auto-arranque del GPS al iniciar sesión y servicio de latido en segundo plano para conductores activos.
+- **Módulo de Combustible y Tanqueo:**
+  - Modal de Estado de Combustible (`FuelStatusDialog.vue`): semaforización de consumo de flota (`EXCEDIDO`, `PROXIMO`, `OK`, `SIN_DATOS`) con fórmulas financieras precisas (redondeo half-even).
+  - Solicitudes de Tanqueo (`FuelRequestListView.vue`): listado unificado con búsqueda y filtros por estado de autorización.
+  - Portal móvil conductor: visualización de solicitudes de tanqueo activas y generación de código QR para redención en estación de servicio.
 
 ## Vinculación de conductores existentes (2026-11-01)
 
