@@ -13,6 +13,69 @@ class VehicleReportsService extends BaseService {
             metadata: { module: 'reports', service: 'vehicles' },
         });
         this._reportAbortController = null;
+        this._calendarAbortController = null;
+    }
+
+    /**
+     * Limpia parámetros vacíos o indefinidos antes de enviar la petición.
+     * @private
+     */
+    _cleanParams(params = {}) {
+        const limpios = {};
+        for (const [k, v] of Object.entries(params ?? {})) {
+            if (v === undefined || v === null || v === '' || v === 'undefined') continue;
+            limpios[k] = v;
+        }
+        return limpios;
+    }
+
+    /**
+     * Ejecuta una petición GET cancelable gestionando el ciclo de vida de su AbortController.
+     * @private
+     */
+    async _getCancelable(endpoint, params = {}, controllerKey = '_reportAbortController') {
+        const limpios = this._cleanParams(params);
+        let controller = null;
+
+        if (typeof AbortController !== 'undefined') {
+            if (this[controllerKey]) {
+                this[controllerKey].abort();
+            }
+            controller = new AbortController();
+            this[controllerKey] = controller;
+        }
+
+        try {
+            const res = await this._getInstance().get(endpoint, {
+                params: limpios,
+                ...(controller ? { signal: controller.signal } : {}),
+            });
+            return res.data;
+        } catch (error) {
+            if (controller?.signal?.aborted) {
+                error.__isCanceled = true;
+            }
+            throw error;
+        } finally {
+            if (controller && this[controllerKey] === controller) {
+                this[controllerKey] = null;
+            }
+        }
+    }
+
+    /**
+     * Consulta cronológica de vencimientos y convenios para el Calendario.
+     */
+    async calendar(params = {}) {
+        return this._getCancelable(`${this.resourcePath}/calendar`, params, '_calendarAbortController');
+    }
+
+    /**
+     * Sincroniza manualmente las alertas de vencimiento del sistema.
+     */
+    async syncNotifications() {
+        const res = await this._getInstance().post('notifications/sync');
+        return res.data;
     }
 
     /**
@@ -21,35 +84,7 @@ class VehicleReportsService extends BaseService {
      * el filtro activo lo define el usuario.
      */
     async report(params = {}) {
-        const limpios = {};
-        for (const [k, v] of Object.entries(params ?? {})) {
-            if (v === undefined || v === null || v === '' || v === 'undefined') continue;
-            limpios[k] = v;
-        }
-        let reportController = null;
-        if (typeof AbortController !== 'undefined') {
-            if (this._reportAbortController) {
-                this._reportAbortController.abort();
-            }
-            reportController = new AbortController();
-            this._reportAbortController = reportController;
-        }
-        try {
-            const res = await this._getInstance().get(this.resourcePath, {
-                params: limpios,
-                ...(reportController ? { signal: reportController.signal } : {}),
-            });
-            return res.data;
-        } catch (error) {
-            if (reportController?.signal?.aborted) {
-                error.__isCanceled = true;
-            }
-            throw error;
-        } finally {
-            if (reportController && this._reportAbortController === reportController) {
-                this._reportAbortController = null;
-            }
-        }
+        return this._getCancelable(this.resourcePath, params, '_reportAbortController');
     }
 
     async downloadExcel(params = {}) {

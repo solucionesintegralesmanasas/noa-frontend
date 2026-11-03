@@ -153,6 +153,22 @@ export const useVehiclesStore = defineStore('vehicles', {
         },
 
         /**
+         * Alterna el estado activo/inactivo de un vehículo.
+         * @param {string} uuid - UUID del vehículo.
+         * @returns {Promise<Object>} Vehículo actualizado.
+         */
+        async toggleStatus(uuid) {
+            return this._run(async () => {
+                const response = await vehiclesService.toggleStatus(uuid);
+                const updated = response?.data?.data ?? response?.data ?? response;
+                this._patchLocal(uuid, updated);
+                const nuevoEstado = updated.is_active ? 'activado' : 'desactivado';
+                await toast('¡Estado actualizado!', `El vehículo ha sido ${nuevoEstado} correctamente`, 'success');
+                return updated;
+            }, 'Error al cambiar el estado del vehículo');
+        },
+
+        /**
          * Obtiene el perfil de un vehículo.
          * @param {string} uuid - UUID del vehículo.
          * @returns {Promise<Object>} Perfil del vehículo.

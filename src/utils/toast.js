@@ -87,3 +87,30 @@ export const toast = async (title, text, icon = 'info') => {
     return Promise.resolve();
 };
 
+/**
+ * Diálogo de confirmación (SweetAlert2 cargado de forma diferida).
+ * @param {object} opciones - { title, html, icon, confirmText, cancelText, confirmColor }.
+ * @returns {Promise<boolean>} true si el usuario confirma.
+ */
+export const confirmar = async ({
+    title = '¿Confirmar acción?',
+    html = '',
+    icon = 'question',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
+    confirmColor = '#198754',
+} = {}) => {
+    const { default: Swal } = await import('sweetalert2');
+    const { isConfirmed } = await Swal.fire({
+        title,
+        html,
+        icon,
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: cancelText,
+        confirmButtonColor: confirmColor,
+        focusCancel: true,
+    });
+    return !!isConfirmed;
+};
+

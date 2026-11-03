@@ -10,4 +10,15 @@ export const vehicleReportsRoutes = [
             permissions: ['reports.vehicles.index'],
         },
     },
+    {
+        path: '/reportes/calendario',
+        name: 'reports.calendar',
+        component: () => import('./views/ExpirationCalendarView.vue'),
+        meta: {
+            title: 'Calendario de vencimientos',
+            auth: true,
+            layout: 'dashboard',
+            permissions: ['reports.vehicles.index'],
+        },
+    },
 ];
