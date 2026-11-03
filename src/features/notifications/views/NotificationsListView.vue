@@ -3,33 +3,60 @@
         title="Alertas y Vencimientos"
         description="Monitoreo en tiempo real de documentos vencidos o próximos a vencer." 
         icon="fad fa-bell text-primary" 
-        :show-refresh="true"
-        :show-create="false" 
         :show-bg="true" 
-        :loading="isViewLoading || store.loading" 
+        :loading="isViewLoading" 
         :compact="true"
         :breadcrumbs="[{ label: 'Notificaciones' }, { label: 'Listado' }]" 
-        @refresh="refreshTable"
-    />
+    >
+        <template #actions>
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3"
+                type="button"
+                title="Actualizar alertas"
+                aria-label="Actualizar alertas"
+                @click="refreshTable"
+            >
+                <i class="fad fa-sync" aria-hidden="true" />
+                <span class="d-none d-sm-inline ms-1">Actualizar</span>
+            </button>
+
+            <button
+                class="btn btn-primary btn-sm px-2 px-sm-3 text-nowrap shadow-sm"
+                type="button"
+                title="Sincronizar alertas con el servidor"
+                aria-label="Sincronizar alertas con el servidor"
+                :disabled="store.loading"
+                @click="handleSync"
+            >
+                <i class="fad fa-sync-alt me-1" :class="{ 'fa-spin': store.loading }" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Sincronizar Alertas</span>
+                <span class="d-sm-none">Sincronizar</span>
+            </button>
+
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3 text-nowrap"
+                type="button"
+                title="Marcar todas como leídas"
+                aria-label="Marcar todas como leídas"
+                :disabled="store.loading || store.unreadCount === 0"
+                @click="handleMarkAllAsRead"
+            >
+                <i class="fad fa-check-double me-1 text-success" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Marcar todo como leído</span>
+                <span class="d-sm-none">Marcar leídas</span>
+            </button>
+        </template>
+    </BasePageHeader>
 
     <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
         <!-- BARRA SUPERIOR DE ACCIONES Y FILTROS -->
         <div class="noa-list-toolbar flex-wrap gap-2 py-2 px-3">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button class="btn btn-sm btn-primary shadow-sm" type="button" @click="handleSync" :disabled="store.loading">
-                    <i class="fad fa-sync-alt me-1" :class="{ 'fa-spin': store.loading }" aria-hidden="true" />
-                    Sincronizar Alertas
-                </button>
-                <button class="btn btn-sm btn-falcon-default" type="button" @click="handleMarkAllAsRead" :disabled="store.loading || store.unreadCount === 0">
-                    <i class="fad fa-check-double me-1 text-success" aria-hidden="true" />
-                    Marcar todo como leído
-                </button>
-            </div>
+            
 
             <!-- Filtros: los tres por el mismo componente (PrimeSelect), con un
                  patrón a11y idéntico: etiqueta oculta + input-id. -->
-            <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1">
                 <label class="visually-hidden" for="f-notifications-status">Filtrar por estado</label>
                 <PrimeSelect input-id="f-notifications-status" v-model="filterStatus" :options="estadoOpciones"
                     option-label="label" option-value="value" size="small" style="min-width: 140px;"
@@ -45,7 +72,7 @@
                     option-label="label" option-value="value" size="small" style="min-width: 160px;"
                     @change="applyFilters" />
 
-                <span v-if="!isViewLoading && !store.loading" class="noa-results ms-1">
+                <span v-if="!isViewLoading" class="noa-results ms-auto">
                     <i class="fas fa-filter" aria-hidden="true" />
                     {{ totalItems }} resultado{{ totalItems !== 1 ? 's' : '' }}
                 </span>

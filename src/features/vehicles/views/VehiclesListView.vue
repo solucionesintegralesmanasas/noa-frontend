@@ -1,8 +1,8 @@
 <template>
-    <BasePageHeader :title="'Listado de ' + 'Vehicles'" description="Gestión del módulo en el sistema."
+    <BasePageHeader :title="'Listado de Vehículos'" description="Gestión del módulo en el sistema."
         icon="fad fa-clipboard-list text-primary" :show-refresh="true" :show-create="can('vehicles.create')" :show-bg="true"
-        :loading="isViewLoading || store.loading" :compact="true" 
-        :breadcrumbs="[{ label: 'Vehicles' }, { label: 'Listado' }]" @refresh="refreshTable" @create="goToCreate"  />
+        :loading="isViewLoading" :compact="true" 
+        :breadcrumbs="[{ label: 'Vehículos' }, { label: 'Listado' }]" @refresh="refreshTable" @create="goToCreate"  />
 
     <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
@@ -16,7 +16,7 @@
                     <i class="fal fa-times" aria-hidden="true" />
                 </button>
             </div>
-            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+            <span v-if="!isViewLoading" class="noa-results">
                 <i class="fas fa-filter" aria-hidden="true" />
                 {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
                 <template v-if="store.search"> para "{{ store.search }}"</template>

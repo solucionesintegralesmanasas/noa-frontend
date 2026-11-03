@@ -3,7 +3,7 @@ import { toast } from '@/utils/toast.js';
 import vehicleReportsService from '../services/vehicleReports.service.js';
 
 /**
- * Store del reporte de vehículos: un filtro activo a la vez,
+ * Store del reporte de vehículos: filtros activos,
  * paginación server-side y catálogos bajo demanda.
  */
 export const useVehicleReportsStore = defineStore('vehicleReports', {
@@ -16,20 +16,31 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
         filterValue: '',
         documentType: '',
         docStatus: '',
+        agreementStatus: '',
+        ownershipType: '',
+        branchUuid: '',
         operationCardStatus: '',
         maintenanceStatus: '',
         search: '',
-        catalogs: { terceros: [], proyectos: [], affiliatedCompanies: [], agreements: [] },
+        catalogs: {
+            terceros: [],
+            proyectos: [],
+            affiliatedCompanies: [],
+            agreements: [],
+            branches: [],
+        },
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
     }),
 
     getters: {
         hasActiveFilter: (s) => {
+            if (s.ownershipType || s.branchUuid) return true;
             if (!s.filterType) return false;
-            if (s.filterType === 'affiliate' || s.filterType === 'driver' || s.filterType === 'project' || s.filterType === 'agreement') {
+            if (s.filterType === 'affiliate' || s.filterType === 'driver' || s.filterType === 'project' || s.filterType === 'branch') {
                 return !!s.filterValue;
             }
             if (s.filterType === 'document') return !!s.documentType || !!s.filterValue || !!s.docStatus;
+            if (s.filterType === 'agreement') return !!s.filterValue || !!s.agreementStatus;
             if (s.filterType === 'operation_card') return !!s.filterValue || !!s.operationCardStatus;
             if (s.filterType === 'maintenance') return !!s.maintenanceStatus || !!s.filterValue;
             return false;
@@ -39,6 +50,8 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
                 search: s.search || undefined,
                 page: s.pagination.currentPage,
                 per_page: s.pagination.itemsPerPage,
+                ownership_type: s.ownershipType || undefined,
+                branch_uuid: s.branchUuid || undefined,
             };
             let active = false;
 
@@ -50,6 +63,11 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
             } else if (s.filterType === 'project') {
                 if (s.filterValue) {
                     p.project_uuid = s.filterValue;
+                    active = true;
+                }
+            } else if (s.filterType === 'branch') {
+                if (s.filterValue) {
+                    p.branch_uuid = s.filterValue;
                     active = true;
                 }
             } else if (s.filterType === 'document') {
@@ -74,6 +92,10 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
             } else if (s.filterType === 'agreement') {
                 if (s.filterValue) {
                     p.contracting_entity_name = s.filterValue;
+                    active = true;
+                }
+                if (s.agreementStatus) {
+                    p.agreement_status = s.agreementStatus;
                     active = true;
                 }
             } else if (s.filterType === 'maintenance') {
@@ -121,10 +143,11 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
             this.filterValue = '';
             this.documentType = '';
             this.docStatus = '';
+            this.agreementStatus = '';
             this.operationCardStatus = '';
             this.maintenanceStatus = '';
             this.pagination.currentPage = 1;
-            if (type === 'affiliate' || type === 'driver' || type === 'project' || type === 'operation_card' || type === 'agreement') {
+            if (['affiliate', 'driver', 'project', 'operation_card', 'agreement', 'branch'].includes(type)) {
                 await this.loadFilterCatalogs(type);
             }
         },
@@ -136,6 +159,7 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
                 if (opts.proyectos) this.catalogs.proyectos = opts.proyectos;
                 if (opts.affiliatedCompanies) this.catalogs.affiliatedCompanies = opts.affiliatedCompanies;
                 if (opts.agreements) this.catalogs.agreements = opts.agreements;
+                if (opts.branches) this.catalogs.branches = opts.branches;
             } catch {
                 await toast('Advertencia', 'No se pudieron cargar las opciones del filtro', 'warning');
             }
@@ -157,6 +181,9 @@ export const useVehicleReportsStore = defineStore('vehicleReports', {
             this.filterValue = '';
             this.documentType = '';
             this.docStatus = '';
+            this.agreementStatus = '';
+            this.ownershipType = '';
+            this.branchUuid = '';
             this.operationCardStatus = '';
             this.maintenanceStatus = '';
             this.search = '';

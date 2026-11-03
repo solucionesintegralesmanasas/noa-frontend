@@ -19,6 +19,9 @@
 .noa-list-card {
     overflow: hidden;
     border-radius: 0.75rem;
+    font-family: var(--noa-font-family, 'Poppins', sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .noa-list-toolbar {
@@ -59,6 +62,23 @@
     box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.15);
 }
 
+/* Ocultar el botón nativo de cancelar (X) del navegador para evitar doble botón con .noa-search__clear */
+.noa-search__input::-webkit-search-decoration,
+.noa-search__input::-webkit-search-cancel-button,
+.noa-search__input::-webkit-search-results-button,
+.noa-search__input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+
+.noa-search__input::-ms-clear,
+.noa-search__input::-ms-reveal {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 .noa-search__icon {
     position: absolute;
     top: 50%;
@@ -94,7 +114,7 @@
     border-radius: 999px;
     background: #f1f5f9;
     color: #334155;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     white-space: nowrap;
 }
@@ -107,7 +127,7 @@
 /* ---------- Tabla ---------- */
 .professional-table .p-datatable-thead > tr > th {
     padding: 0.9rem 1rem !important;
-    font-size: 0.6875rem !important;
+    font-size: 0.75rem !important;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -151,7 +171,7 @@
     padding: 0.9rem 1rem !important;
     vertical-align: middle;
     border-bottom: 1px solid var(--noa-list-border);
-    font-size: 0.8125rem !important;
+    font-size: 0.84375rem !important;
     color: var(--noa-list-text);
     transition: background-color 150ms ease-in-out;
 }
@@ -201,7 +221,7 @@
 /* Texto secundario bajo el dato principal de una celda */
 .noa-cell-sub {
     display: block;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     color: var(--noa-list-muted);
 }
 
@@ -343,7 +363,7 @@
     padding: 0.2rem 0.6rem;
     border: 1px solid transparent;
     border-radius: 999px;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     line-height: 1.4;
     white-space: nowrap;

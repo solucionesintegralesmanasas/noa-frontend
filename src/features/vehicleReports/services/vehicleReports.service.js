@@ -127,6 +127,14 @@ class VehicleReportsService extends BaseService {
             const convenios = await fetchSafe('reports/vehicles/catalogs/agreements');
             return { agreements: withLabel(convenios, 'label', ['value']) };
         }
+        if (filterType === 'branch') {
+            const sedes = await fetchSafe('reports/vehicles/catalogs/branches');
+            const data = (Array.isArray(sedes) ? sedes : []).map((s) => ({
+                label: s.label ?? s.name ?? 'Sin nombre',
+                value: s.value ?? s.uuid,
+            }));
+            return { branches: data };
+        }
         return {};
     }
 }

@@ -1,8 +1,50 @@
 <template>
-    <BasePageHeader title="Facturación" subtitle="Cotizaciones y facturas internas de servicios de transporte"
-        icon="fad fa-file-invoice-dollar text-primary" :show-refresh="true" :show-create="true" :show-bg="true"
-        :loading="isViewLoading || store.loading" :compact="true" :canCreate="can('commercial_invoices.create')"
-        :breadcrumbs="[{ label: 'Comercial' }, { label: 'Facturación' }]" @refresh="refreshTable" @create="goToCreate" />
+    <BasePageHeader
+        title="Facturación"
+        subtitle="Cotizaciones y facturas internas de servicios de transporte"
+        icon="fad fa-file-invoice-dollar text-primary"
+        :show-bg="true"
+        :loading="isViewLoading"
+        :compact="true"
+        :breadcrumbs="[{ label: 'Comercial' }, { label: 'Facturación' }]"
+    >
+        <template #actions>
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3"
+                type="button"
+                title="Actualizar"
+                aria-label="Actualizar"
+                @click="refreshTable"
+            >
+                <i class="fad fa-sync" aria-hidden="true" />
+                <span class="d-none d-sm-inline ms-1">Actualizar</span>
+            </button>
+
+            <button
+                v-if="can('billing_resolutions.index')"
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3 text-nowrap"
+                type="button"
+                title="Resoluciones de facturación"
+                aria-label="Resoluciones de facturación"
+                @click="goToResolutions"
+            >
+                <i class="fad fa-stamp text-primary me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Resoluciones</span>
+            </button>
+
+            <button
+                v-if="can('commercial_invoices.create')"
+                class="btn btn-primary btn-sm px-2 px-sm-3 text-nowrap"
+                type="button"
+                title="Nuevo documento"
+                aria-label="Nuevo documento"
+                @click="goToCreate"
+            >
+                <i class="fad fa-plus me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Nuevo</span>
+            </button>
+        </template>
+    </BasePageHeader>
 
     <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
@@ -29,16 +71,11 @@
                     </button>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <button v-if="can('billing_resolutions.index')" class="btn btn-sm btn-outline-secondary" type="button" @click="goToResolutions">
-                    <i class="fad fa-stamp me-1" aria-hidden="true" />Resoluciones
-                </button>
-                <span v-if="!isViewLoading && !store.loading" class="noa-results">
+            <span v-if="!isViewLoading" class="noa-results">
                     <i class="fas fa-filter" aria-hidden="true" />
                     {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
                     <template v-if="store.search"> para "{{ store.search }}"</template>
                 </span>
-            </div>
         </div>
 
         <!-- SKELETON -->

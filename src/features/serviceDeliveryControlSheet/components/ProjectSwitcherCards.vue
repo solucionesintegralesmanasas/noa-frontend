@@ -3,7 +3,7 @@
         <!-- Cabecera de control del switcher -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 px-1">
             <div class="d-flex align-items-center gap-2">
-                <span class="fw-bold text-dark text-uppercase fs-11 tracking-wider">Proyectos Activos de la Flota</span>
+                <span class="switcher-header-title">Proyectos Activos de la Flota</span>
                 <span class="text-muted fs-11">
                     • {{ projects.length }} proyecto{{ projects.length !== 1 ? 's' : '' }} ({{ totalVehiculos }} vehículo{{ totalVehiculos !== 1 ? 's' : '' }} en total)
                 </span>
@@ -85,7 +85,7 @@
                 class="col-12 col-sm-6 col-lg-3"
             >
                 <div
-                    class="project-card h-100 p-3 rounded-3 transition-all position-relative"
+                    class="project-card h-100 rounded-3 transition-all position-relative"
                     :class="[
                         selectedProjectUuid === proj.uuid ? 'selected border-primary shadow-sm' : 'border-200 hover-shadow bg-white',
                         'border'
@@ -99,7 +99,7 @@
                 >
                     <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
                         <div class="pe-3 text-truncate">
-                            <h6 class="mb-0 fw-bold fs-12 text-dark text-truncate d-flex align-items-center gap-1" :title="proj.project_name">
+                            <h6 class="mb-0 fw-bold card-project-title text-dark text-truncate d-flex align-items-center gap-1" :title="proj.project_name">
                                 <span
                                     class="project-status-dot rounded-circle flex-shrink-0"
                                     :class="selectedProjectUuid === proj.uuid ? 'bg-primary' : 'bg-secondary'"
@@ -139,7 +139,7 @@
                     <!-- Minibarra de progreso -->
                     <div
                         class="progress my-2"
-                        style="height: 6px;"
+                        style="height: 5px;"
                         role="progressbar"
                         :aria-valuenow="proj.summary?.porcentaje_al_dia ?? 100"
                         aria-valuemin="0"
@@ -169,7 +169,7 @@
                     </div>
 
                     <!-- Desglose textual -->
-                    <div class="d-flex align-items-center gap-2 fs-10 text-muted mt-2 pt-1 border-top flex-wrap">
+                    <div class="d-flex align-items-center gap-2 fs-10 text-muted mt-2 pt-2 border-top flex-wrap">
                         <span class="text-success fw-semibold d-inline-flex align-items-center gap-1">
                             <span class="dot-xs bg-success rounded-circle"></span>
                             {{ proj.summary?.certificados || 0 }} OK
@@ -316,25 +316,51 @@ const porcentajeExcepciones = (proj) => {
 </script>
 
 <style scoped>
+.switcher-header-title {
+    font-family: var(--falcon-font-sans-serif, 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #334155;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.card-project-title {
+    font-size: 0.84rem;
+}
+
+
 .fs-10 {
-    font-size: 0.65rem !important;
+    font-size: 0.75rem !important;
 }
 
 .fs-11 {
-    font-size: 0.72rem !important;
+    font-size: 0.8125rem !important;
 }
 
 .fs-12 {
-    font-size: 0.8rem !important;
+    font-size: 0.875rem !important;
 }
 
 .btn-xs {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
+    font-family: var(--falcon-font-sans-serif, 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
     border-radius: 0.35rem;
 }
 
 .project-card {
+    font-family: var(--falcon-font-sans-serif, 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: 0.875rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     background-color: #ffffff;
     cursor: pointer;
     transition: all 0.2s ease-in-out;

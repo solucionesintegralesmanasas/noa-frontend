@@ -12,4 +12,32 @@
     --noa-primary: #2c7be5;
     --noa-primary-dark: #1a68d1;
     --noa-muted: #7b8794;
+    --noa-font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --falcon-body-font-family: var(--noa-font-family);
+}
+
+/* Ocultar la 'X' nativa del navegador en inputs de búsqueda (Chrome, Edge, Safari)
+ * para evitar doble botón de limpiar cuando la UI provee su propio botón. */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+
+input[type="search"]::-ms-clear,
+input[type="search"]::-ms-reveal {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* Suavizado y renderizado nítido de tipografías web */
+body, #app, button, input, optgroup, select, textarea, .table, .card {
+    font-family: var(--noa-font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }

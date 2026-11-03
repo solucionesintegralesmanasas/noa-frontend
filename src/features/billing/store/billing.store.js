@@ -262,6 +262,10 @@ export const useBillingStore = defineStore('billing', {
         // ── Configuraciones básicas ApiDian (módulo 01) ───────────────────
 
         async fetchProviderConfig(uuid) {
+            if (!uuid || typeof uuid !== 'string' || !uuid.trim()) {
+                this.providerConfig = null;
+                return null;
+            }
             this.configLoading = true;
             try {
                 const response = await billingProviderConfigService.consultar(uuid);
@@ -282,6 +286,7 @@ export const useBillingStore = defineStore('billing', {
          * @param {'empresa'|'software'|'software-nomina'|'certificado'|'resolucion'|'ambiente'|'webhook'} paso
          */
         async guardarConfiguracion(uuid, paso, datos = {}) {
+            billingProviderConfigService._validarUuid(uuid);
             const acciones = {
                 empresa: [billingProviderConfigService.guardarEmpresa, 'Empresa guardada en ApiDian'],
                 software: [billingProviderConfigService.software, 'Software guardado en ApiDian'],
@@ -303,6 +308,7 @@ export const useBillingStore = defineStore('billing', {
         },
 
         async eliminarConfigEmpresa(uuid) {
+            billingProviderConfigService._validarUuid(uuid);
             return this._run(async () => {
                 await billingProviderConfigService.eliminarEmpresa(uuid);
                 this.providerConfig = null;
