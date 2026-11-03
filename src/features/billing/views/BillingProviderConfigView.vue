@@ -489,7 +489,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBillingStore } from '../store/billing.store.js';
 import { usePermissionsStore } from '@store';
@@ -561,7 +561,9 @@ const handleEmpresa = () => submit(async () => {
     enviando.value = 'empresa';
     try {
         await store.guardarConfiguracion(uuid.value, 'empresa', { ...empresa });
-        await cargarConfiguracion();
+        if (uuid.value) {
+            await cargarConfiguracion();
+        }
     } finally {
         enviando.value = '';
     }
@@ -710,6 +712,7 @@ const confirmarEliminarEmpresa = async () => {
 
 // ── Carga ─────────────────────────────────────────────────────────────────
 const cargarConfiguracion = async () => {
+    if (!uuid.value) return;
     try {
         const config = await store.fetchProviderConfig(uuid.value);
         if (!config) return;
@@ -737,7 +740,14 @@ onMounted(async () => {
         || (proveedoresApidian.value.find((p) => p.is_active) ?? proveedoresApidian.value[0])?.uuid
         || '';
 
-    await cargarConfiguracion();
+    if (uuid.value) {
+        await cargarConfiguracion();
+    }
+});
+watch(uuid, (nuevoUuid, viejoUuid) => {
+    if (nuevoUuid && nuevoUuid !== viejoUuid) {
+        cargarConfiguracion();
+    }
 });
 </script>
 

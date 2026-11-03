@@ -24,7 +24,9 @@
                     <button
                         type="button"
                         class="notification-dock-toggle notification-dock-toggle--company"
-                        aria-label="Abrir las alertas de la empresa en la campana"
+                        :class="{ 'is-active': isNotificationsOpen && activeClumpSource === 'priority' }"
+                        :aria-label="isNotificationsOpen && activeClumpSource === 'priority' ? 'Cerrar las alertas de la empresa' : 'Abrir las alertas de la empresa en la campana'"
+                        :aria-expanded="isNotificationsOpen && activeClumpSource === 'priority'"
                         @click.stop="openNotificationsMenu('priority')"
                     >
                         <span class="fas fa-building-shield" aria-hidden="true"></span>
@@ -42,7 +44,9 @@
                     <button
                         type="button"
                         class="notification-dock-toggle notification-dock-toggle--third-party"
-                        aria-label="Abrir las alertas de terceros en la campana"
+                        :class="{ 'is-active': isNotificationsOpen && activeClumpSource === 'normal' }"
+                        :aria-label="isNotificationsOpen && activeClumpSource === 'normal' ? 'Cerrar las alertas de terceros' : 'Abrir las alertas de terceros en la campana'"
+                        :aria-expanded="isNotificationsOpen && activeClumpSource === 'normal'"
                         @click.stop="openNotificationsMenu('normal')"
                     >
                         <span class="fas fa-users" aria-hidden="true"></span>
@@ -219,9 +223,31 @@ const isBellAttention = ref(false)
 const BELL_ATTENTION_MS = 600
 let bellAttentionTimeout = null
 
+// Estado del desplegable de notificaciones y origen activo ('priority' | 'normal' | null)
+const isNotificationsOpen = ref(false)
+const activeClumpSource = ref(null)
+
 // Conteo de los clumps, topado para no romper el pill.
 const companyClumpCount = computed(() => (store.unreadCompanyCount > 9 ? '9+' : store.unreadCompanyCount))
 const thirdPartyClumpCount = computed(() => (store.unreadThirdPartyCount > 9 ? '9+' : store.unreadThirdPartyCount))
+
+const isNotificationsDropdownOpen = () => {
+    const trigger = document.getElementById('navbarDropdownNotification')
+    if (!trigger) return false
+    return trigger.classList.contains('show') || trigger.getAttribute('aria-expanded') === 'true'
+}
+
+const hideNotificationsDropdown = () => {
+    const trigger = document.getElementById('navbarDropdownNotification')
+    if (!trigger) return
+
+    if (window.bootstrap?.Dropdown) {
+        window.bootstrap.Dropdown.getOrCreateInstance(trigger).hide()
+        return
+    }
+
+    trigger.click()
+}
 
 const showNotificationsDropdown = () => {
     const trigger = document.getElementById('navbarDropdownNotification')
@@ -237,6 +263,18 @@ const showNotificationsDropdown = () => {
 }
 
 const openNotificationsMenu = (origen = null) => {
+    const estaAbierto = isNotificationsDropdownOpen()
+
+    // Si la campana ya está abierta y se vuelve a presionar el mismo botón de alerta, se cierra
+    if (estaAbierto && activeClumpSource.value === origen) {
+        hideNotificationsDropdown()
+        activeClumpSource.value = null
+        isNotificationsOpen.value = false
+        return
+    }
+
+    activeClumpSource.value = origen
+    isNotificationsOpen.value = true
     if (origen) store.resaltarSeccion(origen)
     showNotificationsDropdown()
 
@@ -248,13 +286,28 @@ const openNotificationsMenu = (origen = null) => {
     }, BELL_ATTENTION_MS)
 }
 
+const handleDropdownHidden = () => {
+    isNotificationsOpen.value = false
+    activeClumpSource.value = null
+}
+
+const handleDropdownShown = () => {
+    isNotificationsOpen.value = true
+}
+
 onMounted(() => {
+    const trigger = document.getElementById('navbarDropdownNotification')
+    trigger?.addEventListener('hidden.bs.dropdown', handleDropdownHidden)
+    trigger?.addEventListener('shown.bs.dropdown', handleDropdownShown)
     store.connectSSE()
 })
 
 onUnmounted(() => {
     if (bellAttentionTimeout) clearTimeout(bellAttentionTimeout)
     store.disconnectSSE()
+    const trigger = document.getElementById('navbarDropdownNotification')
+    trigger?.removeEventListener('hidden.bs.dropdown', handleDropdownHidden)
+    trigger?.removeEventListener('shown.bs.dropdown', handleDropdownShown)
 })
 
 // Destino de la fila: la ficha indicada por la alerta, solo si el usuario
@@ -644,6 +697,12 @@ async function handleLogout() {
     color: #fff;
 }
 
+.notification-dock-toggle--company.is-active {
+    background: rgba(var(--bs-danger-rgb, 230, 55, 87), 0.22);
+    border-color: var(--bs-danger, #e63757);
+    box-shadow: 0 0 0 2px rgba(var(--bs-danger-rgb, 230, 55, 87), 0.35);
+}
+
 .dark .notification-dock-toggle--company {
     background: rgba(var(--bs-danger-rgb, 230, 55, 87), 0.18);
     color: #f5a3b3;
@@ -659,6 +718,12 @@ async function handleLogout() {
 .notification-dock-toggle--third-party:hover {
     background: #d8e8fc;
     border-color: #93bdf3;
+}
+
+.notification-dock-toggle--third-party.is-active {
+    background: #d8e8fc;
+    border-color: #1257b8;
+    box-shadow: 0 0 0 2px rgba(18, 87, 184, 0.35);
 }
 
 .dark .notification-dock-toggle--third-party {

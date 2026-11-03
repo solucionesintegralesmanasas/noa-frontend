@@ -124,7 +124,7 @@
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2">
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase fs-12">{{ selectedProject.project_name }}</h6>
+                            <h6 class="mb-0 fw-semibold text-dark fs-12">{{ selectedProject.project_name }}</h6>
                             <span class="badge badge-subtle-primary rounded-pill fs-10">
                                 Proyecto Activo — {{ selectedProject.assignments_count || 0 }} vehículos
                             </span>
@@ -327,7 +327,7 @@
                             <template #body="{ data }">
                                 <div class="d-flex flex-column">
                                     <span class="noa-cell-strong text-truncate" :title="data.project?.project_name">{{ data.project?.project_name || 'Sin Proyecto' }}</span>
-                                    <span class="badge rounded-pill badge-subtle-secondary mt-1 align-self-start" style="font-size: 0.65rem;">
+                                    <span class="badge rounded-pill badge-subtle-secondary mt-1 align-self-start fs-10">
                                         {{ tipoLabel(data.type_of_control_sheet) }}
                                     </span>
                                 </div>
@@ -357,7 +357,7 @@
                                         <i class="fad fa-user-tie text-muted me-1" aria-hidden="true" />
                                         {{ data.driver_name || data.official_name_and_surname || 'Sin Conductor' }}
                                     </span>
-                                    <small v-if="conductorDocumento(data)" class="noa-cell-sub text-muted font-monospace" style="font-size: 0.72rem;">
+                                    <small v-if="conductorDocumento(data)" class="noa-cell-sub text-muted font-monospace fs-11">
                                         {{ conductorDocumento(data) }}
                                     </small>
                                 </div>
@@ -379,13 +379,13 @@
                         <!-- Fechas -->
                         <Column field="start_date" header="Fechas" sortable style="width: 12%;">
                             <template #body="{ data }">
-                                <div class="d-flex flex-column text-dark" style="font-size: 0.82rem;">
+                                <div class="d-flex flex-column text-dark" style="font-size: 0.875rem;">
                                     <span class="fw-medium">
                                         <i class="fad fa-calendar-alt text-muted me-1" aria-hidden="true" />
                                         {{ formatRango(data.start_date || data.service_date) || '-' }}
                                     </span>
                                     <span v-if="(data.end_date || data.service_date) && (data.end_date || data.service_date) !== (data.start_date || data.service_date)" class="text-muted mt-0.5">
-                                        <i class="fad fa-arrow-down text-muted mx-1" style="font-size: 0.65rem;" aria-hidden="true" />
+                                        <i class="fad fa-arrow-down text-muted mx-1 fs-10" aria-hidden="true" />
                                         {{ formatRango(data.end_date || data.service_date) }}
                                     </span>
                                 </div>
@@ -399,7 +399,7 @@
                                     v-if="data.estado"
                                     class="badge rounded-pill px-2 py-1"
                                     :class="claseEstadoServicio(data.estado)"
-                                    style="font-size: 0.72rem;"
+                                    style="font-size: 0.75rem;"
                                     :title="tituloEstadoServicio(data)"
                                 >
                                     {{ etiquetaEstadoServicio(data.estado) }}
@@ -487,7 +487,7 @@
                                                         v-if="dia.estado"
                                                         class="badge rounded-pill px-2 py-0.5"
                                                         :class="claseEstadoServicio(dia.estado)"
-                                                        style="font-size: 0.65rem;"
+                                                        style="font-size: 0.75rem;"
                                                         :title="tituloEstadoServicio(dia)"
                                                     >
                                                         {{ etiquetaEstadoServicio(dia.estado) }}
@@ -498,7 +498,7 @@
                                                         {{ Array.isArray(dia.routes) ? dia.routes.length : 0 }}
                                                     </span>
                                                 </td>
-                                                <td class="py-2 px-2 text-muted font-monospace" style="font-size: 0.72rem;">
+                                                <td class="py-2 px-2 text-muted font-monospace" style="font-size: 0.8125rem;">
                                                     <span>{{ formatKmValor(dia.starting_kilometer) }}</span>
                                                     <span class="mx-1">—</span>
                                                     <span v-if="tieneKm(dia.ending_kilometer)">{{ formatKmValor(dia.ending_kilometer) }}</span>
@@ -1106,6 +1106,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.card, .professional-table, .btn, .noa-results {
+    font-family: var(--falcon-font-sans-serif, 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
 .fade-in-up {
     animation: fadeInUp 0.4s ease-out forwards;
 }
@@ -1118,7 +1123,7 @@ onMounted(async () => {
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: none;
     }
 }
 
@@ -1127,20 +1132,20 @@ onMounted(async () => {
 }
 
 .fs-10 {
-    font-size: 0.65rem !important;
+    font-size: 0.75rem !important;
 }
 
 .fs-11 {
-    font-size: 0.72rem !important;
+    font-size: 0.8125rem !important;
 }
 
 .fs-12 {
-    font-size: 0.8rem !important;
+    font-size: 0.875rem !important;
 }
 
 .btn-xs {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.68rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
     border-radius: 0.35rem;
 }
 
@@ -1157,7 +1162,7 @@ onMounted(async () => {
     display: inline-flex;
     align-items: center;
     padding: 0.35rem 0.85rem;
-    font-size: 0.74rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     border-radius: 0.4rem;
     letter-spacing: 0.01em;

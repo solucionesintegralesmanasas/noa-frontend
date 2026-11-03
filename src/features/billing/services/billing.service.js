@@ -93,15 +93,22 @@ class DocumentosElectronicosService extends BillingApiService {
 class BillingProviderConfigService extends BillingApiService {
     constructor() { super('/billing/billing-providers'); }
 
-    consultar(uuid) { return this._request('GET', `/${uuid}/configuracion`); }
-    guardarEmpresa(uuid, data) { return this._request('POST', `/${uuid}/configuracion`, { data }); }
-    software(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/software`, { data }); }
-    softwareNomina(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/software-nomina`, { data }); }
-    certificado(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/certificado`, { data }); }
-    resolucion(uuid, data) { return this._request('POST', `/${uuid}/configuracion/resoluciones`, { data }); }
-    ambiente(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/ambiente`, { data }); }
-    webhook(uuid, data) { return this._request('PUT', `/${uuid}/configuracion/webhook`, { data }); }
-    eliminarEmpresa(uuid) { return this._request('DELETE', `/${uuid}/configuracion/empresa`); }
+    _validarUuid(uuid) {
+        if (!uuid || typeof uuid !== 'string' || !uuid.trim()) {
+            throw new Error('UUID del proveedor tecnológico es requerido');
+        }
+        return uuid.trim();
+    }
+
+    consultar(uuid) { return this._request('GET', `/${this._validarUuid(uuid)}/configuracion`); }
+    guardarEmpresa(uuid, data) { return this._request('POST', `/${this._validarUuid(uuid)}/configuracion`, { data }); }
+    software(uuid, data) { return this._request('PUT', `/${this._validarUuid(uuid)}/configuracion/software`, { data }); }
+    softwareNomina(uuid, data) { return this._request('PUT', `/${this._validarUuid(uuid)}/configuracion/software-nomina`, { data }); }
+    certificado(uuid, data) { return this._request('PUT', `/${this._validarUuid(uuid)}/configuracion/certificado`, { data }); }
+    resolucion(uuid, data) { return this._request('POST', `/${this._validarUuid(uuid)}/configuracion/resoluciones`, { data }); }
+    ambiente(uuid, data) { return this._request('PUT', `/${this._validarUuid(uuid)}/configuracion/ambiente`, { data }); }
+    webhook(uuid, data) { return this._request('PUT', `/${this._validarUuid(uuid)}/configuracion/webhook`, { data }); }
+    eliminarEmpresa(uuid) { return this._request('DELETE', `/${this._validarUuid(uuid)}/configuracion/empresa`); }
 }
 
 export const billingService = new CommercialInvoicesService();

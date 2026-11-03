@@ -8,14 +8,6 @@
         show-bg
         @back="goBack"
     >
-        <template #title-after>
-            <span v-if="vehicle.internal_number && !isViewLoading"
-                class="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-25"
-                style="font-size: 0.65rem;">
-                <i class="fad fa-hashtag me-1"></i>{{ vehicle.internal_number }}
-            </span>
-        </template>
-
         <template #actions>
             <button v-if="!isViewLoading" class="btn btn-falcon-default btn-sm px-3" @click="goCompleteDocuments"
                 :disabled="checkingDocs" :aria-busy="checkingDocs" title="Revisar documentos del vehículo" data-bs-toggle="tooltip">
@@ -82,8 +74,18 @@
                         <div class="w-100">
                             <dl class="row mb-0 small g-2 g-md-3">
                                 <dt class="col-5 text-muted fw-medium">Placa:</dt>
-                                <dd class="col-7 text-dark fw-semibold font-monospace">
-                                    {{ vehicle.vehicle_license_plate || '—' }}
+                                <dd class="col-7 text-dark fw-semibold font-monospace d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ vehicle.vehicle_license_plate || '—' }}</span>
+                                    <span v-if="vehicle.internal_number"
+                                        class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"
+                                        style="font-size: 0.7rem;">
+                                        <i class="fad fa-hashtag me-1"></i>Int. {{ vehicle.internal_number }}
+                                    </span>
+                                    <span v-else
+                                        class="badge bg-light text-muted border"
+                                        style="font-size: 0.7rem;">
+                                        Sin interno
+                                    </span>
                                 </dd>
 
                                 <dt class="col-5 text-muted fw-medium mt-1">Licencia de tránsito:</dt>

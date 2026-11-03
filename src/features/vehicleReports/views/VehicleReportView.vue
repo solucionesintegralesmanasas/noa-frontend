@@ -1,10 +1,174 @@
 <template>
-    <BasePageHeader title="Reporte de vehículos" description="Consulta y auditoría de la flota vehicular."
-        icon="fad fa-file-chart-column text-primary" :show-refresh="true" :show-create="false" :show-bg="true"
-        :loading="isViewLoading || store.loading" :compact="true"
-        :breadcrumbs="[{ label: 'Reportes' }, { label: 'Vehículos' }]" @refresh="refreshTable" />
+    <BasePageHeader
+        title="Reporte de vehículos"
+        description="Consulta y auditoría de la flota vehicular."
+        icon="fad fa-file-chart-column text-primary"
+        :show-bg="true"
+        :loading="isViewLoading"
+        :compact="true"
+        :breadcrumbs="[{ label: 'Reportes' }, { label: 'Vehículos' }]"
+    >
+        <template #actions>
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3"
+                type="button"
+                title="Actualizar reporte"
+                aria-label="Actualizar reporte"
+                @click="refreshTable"
+            >
+                <i class="fad fa-sync" aria-hidden="true" />
+                <span class="d-none d-sm-inline ms-1">Actualizar</span>
+            </button>
 
-    <!-- LISTADO: toolbar unificada + tabla + paginador en una sola tarjeta según el estándar Stitch -->
+            <div class="btn-group btn-group-sm" role="group" aria-label="Exportar reporte">
+                <button
+                    v-if="can('reports.vehicles.export-excel')"
+                    class="btn btn-falcon-default btn-sm text-success px-2 px-sm-3"
+                    type="button"
+                    title="Exportar a Excel" aria-label="Exportar a Excel"
+                    :disabled="store.exporting || store.pagination.totalItems === 0"
+                    @click="store.exportReport('excel')"
+                >
+                    <i class="fad fa-file-excel me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">Excel</span>
+                </button>
+                <button
+                    v-if="can('reports.vehicles.export-pdf')"
+                    class="btn btn-falcon-default btn-sm text-danger px-2 px-sm-3"
+                    type="button"
+                    title="Exportar a PDF" aria-label="Exportar a PDF"
+                    :disabled="store.exporting || store.pagination.totalItems === 0"
+                    @click="store.exportReport('pdf')"
+                >
+                    <i class="fad fa-file-pdf me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">PDF</span>
+                </button>
+            </div>
+        </template>
+    </BasePageHeader>
+
+    <!-- BARRA SUPERIOR DE FILTROS DE CONSULTA -->
+    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.05s;">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Criterio principal -->
+                <div class="d-flex align-items-center gap-2 me-1 text-muted">
+                    <i class="fad fa-filter text-primary" aria-hidden="true" />
+                    <span class="fw-semibold text-dark small text-nowrap">Filtrar por:</span>
+                </div>
+
+                <div style="min-width: 175px;">
+                    <label class="visually-hidden" for="f-filter-type">Criterio de filtro</label>
+                    <PrimeSelect input-id="f-filter-type" v-model="store.filterType" :options="filterOptions"
+                        option-label="label" option-value="value" placeholder="Criterio (Documentos, Sede...)" showClear
+                        size="small" class="w-100" @change="onFilterTypeChange" />
+                </div>
+
+                <!-- Selectores dependientes según el criterio -->
+                <div v-if="store.filterType" class="d-flex align-items-center gap-2 flex-wrap">
+                    <!-- 1. Documentos: Tipo + Vencimiento (+15d, 5d, hoy, vencidas) -->
+                    <template v-if="store.filterType === 'document'">
+                        <div style="min-width: 180px;">
+                            <label class="visually-hidden" for="f-document-type">Tipo de documento</label>
+                            <PrimeSelect input-id="f-document-type" v-model="store.documentType"
+                                :options="documentOptions" option-label="label" option-value="value"
+                                placeholder="Todos los documentos" size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                        <div style="min-width: 180px;">
+                            <label class="visually-hidden" for="f-doc-status">Vencimiento del documento</label>
+                            <PrimeSelect input-id="f-doc-status" v-model="store.docStatus"
+                                :options="expiryStatusOptions" option-label="label" option-value="value"
+                                placeholder="Vencimiento..." showClear size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                    </template>
+
+                    <!-- 2. Convenios: Entidad + Vencimiento (+15d, 5d, hoy, vencidas) -->
+                    <template v-else-if="store.filterType === 'agreement'">
+                        <div style="min-width: 180px;">
+                            <label class="visually-hidden" for="f-agreement-name">Convenio</label>
+                            <PrimeSelect input-id="f-agreement-name" v-model="store.filterValue" :options="store.catalogs.agreements"
+                                option-label="label" option-value="value" placeholder="Todos los convenios" showClear
+                                filter size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                        <div style="min-width: 180px;">
+                            <label class="visually-hidden" for="f-agreement-status">Vencimiento del convenio</label>
+                            <PrimeSelect input-id="f-agreement-status" v-model="store.agreementStatus"
+                                :options="expiryStatusOptions" option-label="label" option-value="value"
+                                placeholder="Vencimiento..." showClear size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                    </template>
+
+                    <!-- 3. Sede operativa -->
+                    <div v-else-if="store.filterType === 'branch'" style="min-width: 190px;">
+                        <label class="visually-hidden" for="f-branch">Sede operativa</label>
+                        <PrimeSelect input-id="f-branch" v-model="store.filterValue" :options="store.catalogs.branches"
+                            option-label="label" option-value="value" placeholder="Seleccionar sede..." showClear
+                            size="small" class="w-100" @change="onFilterValueChange" />
+                    </div>
+
+                    <!-- 4. Afiliado / Conductor -->
+                    <div v-else-if="store.filterType === 'affiliate' || store.filterType === 'driver'" style="min-width: 220px;">
+                        <label class="visually-hidden" :for="store.filterType === 'affiliate' ? 'f-affiliate' : 'f-driver'">
+                            {{ store.filterType === 'affiliate' ? 'Afiliado' : 'Conductor' }}
+                        </label>
+                        <PrimeSelect :input-id="store.filterType === 'affiliate' ? 'f-affiliate' : 'f-driver'"
+                            v-model="store.filterValue" :options="store.catalogs.terceros" option-value="uuid"
+                            option-label="company_name" :placeholder="store.filterType === 'affiliate' ? 'Seleccionar afiliado...' : 'Seleccionar conductor...'" 
+                            showClear filter size="small" class="w-100" @change="onFilterValueChange" />
+                    </div>
+
+                    <!-- 5. Proyecto -->
+                    <div v-else-if="store.filterType === 'project'" style="min-width: 200px;">
+                        <label class="visually-hidden" for="f-project">Proyecto</label>
+                        <PrimeSelect input-id="f-project" v-model="store.filterValue" :options="store.catalogs.proyectos"
+                            option-value="uuid" option-label="project_name" placeholder="Seleccionar proyecto..." showClear
+                            filter size="small" class="w-100" @change="onFilterValueChange" />
+                    </div>
+
+                    <!-- 6. Tarjeta de Operación -->
+                    <div v-else-if="store.filterType === 'operation_card'" class="d-flex gap-2">
+                        <div style="min-width: 170px;">
+                            <label class="visually-hidden" for="f-opcard-company">Empresa afiliada</label>
+                            <PrimeSelect input-id="f-opcard-company" v-model="store.filterValue"
+                                :options="store.catalogs.affiliatedCompanies" option-label="label" option-value="value"
+                                placeholder="Empresa..." showClear filter size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                        <div style="min-width: 130px;">
+                            <label class="visually-hidden" for="f-opcard">Estado de tarjeta</label>
+                            <PrimeSelect input-id="f-opcard" v-model="store.operationCardStatus"
+                                :options="operationCardOptions" option-label="label" option-value="value"
+                                placeholder="Estado" showClear size="small" class="w-100" @change="onFilterValueChange" />
+                        </div>
+                    </div>
+
+                    <!-- 7. Mantenimiento -->
+                    <div v-else-if="store.filterType === 'maintenance'" style="min-width: 160px;">
+                        <label class="visually-hidden" for="f-maintenance">Estado de mantenimiento</label>
+                        <PrimeSelect input-id="f-maintenance" v-model="store.maintenanceStatus"
+                            :options="maintenanceOptions" option-label="label" option-value="value"
+                            placeholder="Estado mtto..." showClear size="small" class="w-100" @change="onFilterValueChange" />
+                    </div>
+                </div>
+
+                <!-- Separación: Filtro transversal de Propiedad (Empresa vs Terceros) -->
+                <div class="d-flex align-items-center gap-1 ms-sm-auto">
+                    <label class="visually-hidden" for="f-ownership">Tipo de vinculación</label>
+                    <PrimeSelect input-id="f-ownership" v-model="store.ownershipType" :options="ownershipOptions"
+                        option-label="label" option-value="value" size="small" style="min-width: 185px;"
+                        @change="onOwnershipChange" />
+                </div>
+
+                <!-- Botón Restablecer -->
+                <button v-if="store.hasActiveFilter || searchQuery" class="btn btn-outline-secondary btn-sm" type="button"
+                    title="Restablecer filtros" aria-label="Restablecer filtros" @click="clearAll">
+                    <i class="fad fa-eraser me-1" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">Restablecer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta según el estándar Stitch -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
         <!-- TOOLBAR UNIFICADA STITCH -->
         <div class="noa-list-toolbar">
@@ -19,84 +183,11 @@
                 </button>
             </div>
 
-            <!-- FILTRO DE CRITERIO ESPECÍFICO (OPCIONAL) -->
-            <div class="d-flex align-items-center gap-2">
-                <div style="min-width: 170px;">
-                    <PrimeSelect input-id="f-filter-type" v-model="store.filterType" :options="filterOptions"
-                        option-label="label" option-value="value" placeholder="Filtrar por..." showClear
-                        size="small" class="w-100" @change="onFilterTypeChange" />
-                </div>
-
-                <!-- Selector de valor dependiente según el criterio -->
-                <div v-if="store.filterType" style="min-width: 220px; max-width: 320px;">
-                    <div v-if="store.filterType === 'affiliate' || store.filterType === 'driver'">
-                        <PrimeSelect :input-id="store.filterType === 'affiliate' ? 'f-affiliate' : 'f-driver'"
-                            v-model="store.filterValue" :options="store.catalogs.terceros" option-value="uuid"
-                            option-label="company_name" :placeholder="store.filterType === 'affiliate' ? 'Seleccionar afiliado...' : 'Seleccionar conductor...'" 
-                            showClear filter size="small" class="w-100" @change="onFilterValueChange" />
-                    </div>
-
-                    <div v-else-if="store.filterType === 'project'">
-                        <PrimeSelect input-id="f-project" v-model="store.filterValue" :options="store.catalogs.proyectos"
-                            option-value="uuid" option-label="project_name" placeholder="Seleccionar proyecto..." showClear
-                            filter size="small" class="w-100" @change="onFilterValueChange" />
-                    </div>
-
-                    <div v-else-if="store.filterType === 'document'">
-                        <PrimeSelect input-id="f-document" v-model="store.documentType"
-                            :options="documentOptions" option-label="label" option-value="value"
-                            placeholder="Tipo (SOAT, RCC...)" showClear size="small" class="w-100" @change="onFilterValueChange" />
-                    </div>
-
-                    <div v-else-if="store.filterType === 'operation_card'" class="d-flex gap-1">
-                        <PrimeSelect input-id="f-opcard-company" v-model="store.filterValue"
-                            :options="store.catalogs.affiliatedCompanies" option-label="label" option-value="value"
-                            placeholder="Empresa..." showClear filter size="small" class="w-100" @change="onFilterValueChange" />
-                        <PrimeSelect input-id="f-opcard" v-model="store.operationCardStatus"
-                            :options="operationCardOptions" option-label="label" option-value="value"
-                            placeholder="Estado" showClear size="small" style="min-width: 100px;" @change="onFilterValueChange" />
-                    </div>
-
-                    <div v-else-if="store.filterType === 'agreement'">
-                        <PrimeSelect input-id="f-agreement" v-model="store.filterValue" :options="store.catalogs.agreements"
-                            option-label="label" option-value="value" placeholder="Seleccionar convenio..." showClear
-                            filter size="small" class="w-100" @change="onFilterValueChange" />
-                    </div>
-
-                    <div v-else-if="store.filterType === 'maintenance'">
-                        <PrimeSelect input-id="f-maintenance" v-model="store.maintenanceStatus"
-                            :options="maintenanceOptions" option-label="label" option-value="value"
-                            placeholder="Estado mtto..." showClear size="small" class="w-100" @change="onFilterValueChange" />
-                    </div>
-                </div>
-
-                <button v-if="store.filterType || searchQuery" class="btn btn-outline-secondary btn-sm" type="button"
-                    title="Restablecer filtros" aria-label="Restablecer filtros" @click="clearAll">
-                    <i class="fad fa-eraser" aria-hidden="true" />
-                </button>
-            </div>
-
-            <!-- CONTADOR Y EXPORTACIÓN -->
-            <div class="d-flex align-items-center gap-2 ms-auto">
-                <span v-if="!isViewLoading && !store.loading" class="noa-results me-2">
-                    <i class="fas fa-filter" aria-hidden="true" />
-                    {{ store.pagination.totalItems }} vehículo{{ store.pagination.totalItems !== 1 ? 's' : '' }}
-                    <template v-if="store.search"> para "{{ store.search }}"</template>
-                </span>
-
-                <div class="btn-group btn-group-sm" role="group">
-                    <button v-if="can('reports.vehicles.export-excel')" class="btn btn-falcon-default text-success" type="button"
-                        title="Exportar a Excel" :disabled="store.exporting || store.pagination.totalItems === 0"
-                        @click="store.exportReport('excel')">
-                        <i class="fad fa-file-excel me-1" aria-hidden="true" />Excel
-                    </button>
-                    <button v-if="can('reports.vehicles.export-pdf')" class="btn btn-falcon-default text-danger" type="button"
-                        title="Exportar a PDF" :disabled="store.exporting || store.pagination.totalItems === 0"
-                        @click="store.exportReport('pdf')">
-                        <i class="fad fa-file-pdf me-1" aria-hidden="true" />PDF
-                    </button>
-                </div>
-            </div>
+            <span v-if="!isViewLoading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ store.pagination.totalItems }} vehículo{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                <template v-if="store.search"> para "{{ store.search }}"</template>
+            </span>
         </div>
 
         <!-- SKELETON -->
@@ -131,18 +222,29 @@
                     tableStyle="min-width: 90rem" class="table table-sm mb-0 professional-table"
                     emptyMessage="No se encontraron vehículos registrados" @page="onPageChange">
 
-                    <!-- Placa -->
-                    <Column field="vehicle_license_plate" header="Placa" sortable frozen style="min-width: 140px;">
+                    <!-- Placa y Vinculación -->
+                    <Column field="vehicle_license_plate" header="Placa" sortable frozen style="min-width: 145px;">
                         <template #body="{ data }">
-                            <router-link
-                                :to="{ path: '/vehiculos-documentos', query: { vehicle_uuid: data.uuid } }"
-                                class="noa-cell-strong font-monospace text-primary text-decoration-none"
-                                :aria-label="`Ver documentos del vehículo ${data.vehicle_license_plate}`"
-                                :title="`Actualizar documentos de ${data.vehicle_license_plate}`">
-                                {{ data.vehicle_license_plate || '—' }}
-                            </router-link>
+                            <div class="d-flex align-items-center gap-1">
+                                <router-link
+                                    :to="{ name: 'vehicles.profile', params: { id: data.uuid } }"
+                                    class="noa-cell-strong font-monospace text-primary text-decoration-none"
+                                    :aria-label="`Ver perfil del vehículo ${data.vehicle_license_plate}`"
+                                    :title="`Ver perfil del vehículo ${data.vehicle_license_plate}`">
+                                    {{ data.vehicle_license_plate || '—' }}
+                                </router-link>
+                                <span class="badge border py-0 px-1"
+                                    :class="data.is_own ? 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25' : 'bg-light text-muted'"
+                                    style="font-size: 0.68rem; font-weight: 500;"
+                                    :title="data.is_own ? 'Vehículo propio de la empresa' : 'Vehículo de tercero / afiliado'">
+                                    {{ data.ownership_label || (data.is_own ? 'Propio' : 'Tercero') }}
+                                </span>
+                            </div>
                             <small v-if="data.affiliate_name" class="text-muted d-block" style="font-size: 0.72rem;">
                                 {{ data.affiliate_name }}
+                            </small>
+                            <small v-if="data.branch_name" class="text-secondary d-block" style="font-size: 0.70rem;">
+                                <i class="fal fa-building me-1" aria-hidden="true" />{{ data.branch_name }}
                             </small>
                         </template>
                     </Column>
@@ -178,73 +280,148 @@
                     </Column>
 
                     <!-- SOAT -->
-                    <Column field="soat_expiry" header="SOAT" style="min-width: 120px;">
+                    <Column field="soat_expiry" header="SOAT" style="min-width: 125px;">
                         <template #body="{ data }">
-                            <router-link v-if="docEditLink(data, 'SOAT')" :to="docEditLink(data, 'SOAT')"
-                                :class="expiryClass(data.soat_expiry)"
-                                :title="`Actualizar SOAT — placa ${data.vehicle_license_plate}`"
-                                :aria-label="`Actualizar SOAT del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.soat_expiry)}`">
-                                {{ formatDate(data.soat_expiry) }}
-                            </router-link>
-                            <span v-else :class="expiryClass(data.soat_expiry)">{{ formatDate(data.soat_expiry) }}</span>
+                            <template v-if="data.soat_expiry">
+                                <router-link v-if="docEditLink(data, 'SOAT')" :to="docEditLink(data, 'SOAT')"
+                                    :class="expiryClass(data.soat_expiry)"
+                                    :title="`Actualizar SOAT — placa ${data.vehicle_license_plate}`"
+                                    :aria-label="`Actualizar SOAT del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.soat_expiry)}`">
+                                    {{ formatDate(data.soat_expiry) }}
+                                </router-link>
+                                <span v-else :class="expiryClass(data.soat_expiry)">{{ formatDate(data.soat_expiry) }}</span>
+                            </template>
+                            <template v-else>
+                                <router-link v-if="docEditLink(data, 'SOAT')" :to="docEditLink(data, 'SOAT')"
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.75rem; font-weight: 500;"
+                                    :title="`Registrar SOAT para ${data.vehicle_license_plate}`">
+                                    <i class="fad fa-plus-circle" aria-hidden="true" />
+                                    <span>Sin registrar</span>
+                                </router-link>
+                                <span v-else class="badge bg-light text-muted border py-1 px-2" style="font-size: 0.75rem;">Sin registrar</span>
+                            </template>
                         </template>
                     </Column>
 
                     <!-- RCC -->
-                    <Column field="rcc_expiry" header="RCC" style="min-width: 120px;">
+                    <Column field="rcc_expiry" header="RCC" style="min-width: 135px;">
                         <template #body="{ data }">
-                            <span v-if="data.es_particular" class="text-muted small">No aplica</span>
-                            <router-link v-else-if="docEditLink(data, 'RCC')" :to="docEditLink(data, 'RCC')"
-                                :class="expiryClass(data.rcc_expiry)"
-                                :title="`Actualizar póliza RCC — placa ${data.vehicle_license_plate}`"
-                                :aria-label="`Actualizar póliza RCC del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rcc_expiry)}`">
-                                {{ formatDate(data.rcc_expiry) }}
-                            </router-link>
-                            <span v-else :class="expiryClass(data.rcc_expiry)">{{ formatDate(data.rcc_expiry) }}</span>
+                            <span v-if="data.es_particular" class="badge bg-light text-muted border py-1 px-2 d-inline-flex align-items-center gap-1"
+                                style="font-size: 0.75rem; font-weight: 500;"
+                                title="No aplica por normativa (Decreto 1079/2015): los vehículos particulares no requieren póliza RCC">
+                                <i class="fal fa-shield-alt text-muted" aria-hidden="true" />
+                                <span>Exento · Particular</span>
+                            </span>
+                            <template v-else-if="data.rcc_expiry">
+                                <router-link v-if="docEditLink(data, 'RCC')" :to="docEditLink(data, 'RCC')"
+                                    :class="expiryClass(data.rcc_expiry)"
+                                    :title="`Actualizar póliza RCC — placa ${data.vehicle_license_plate}`"
+                                    :aria-label="`Actualizar póliza RCC del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rcc_expiry)}`">
+                                    {{ formatDate(data.rcc_expiry) }}
+                                </router-link>
+                                <span v-else :class="expiryClass(data.rcc_expiry)">{{ formatDate(data.rcc_expiry) }}</span>
+                            </template>
+                            <template v-else>
+                                <router-link v-if="docEditLink(data, 'RCC')" :to="docEditLink(data, 'RCC')"
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.75rem; font-weight: 500;"
+                                    :title="`Registrar póliza RCC para ${data.vehicle_license_plate}`">
+                                    <i class="fad fa-plus-circle" aria-hidden="true" />
+                                    <span>Sin registrar</span>
+                                </router-link>
+                                <span v-else class="badge bg-light text-muted border py-1 px-2" style="font-size: 0.75rem;">Sin registrar</span>
+                            </template>
                         </template>
                     </Column>
 
                     <!-- RCE -->
-                    <Column field="rce_expiry" header="RCE" style="min-width: 120px;">
+                    <Column field="rce_expiry" header="RCE" style="min-width: 135px;">
                         <template #body="{ data }">
-                            <span v-if="data.es_particular" class="text-muted small">No aplica</span>
-                            <router-link v-else-if="docEditLink(data, 'RCE')" :to="docEditLink(data, 'RCE')"
-                                :class="expiryClass(data.rce_expiry)"
-                                :title="`Actualizar póliza RCE — placa ${data.vehicle_license_plate}`"
-                                :aria-label="`Actualizar póliza RCE del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rce_expiry)}`">
-                                {{ formatDate(data.rce_expiry) }}
-                            </router-link>
-                            <span v-else :class="expiryClass(data.rce_expiry)">{{ formatDate(data.rce_expiry) }}</span>
+                            <span v-if="data.es_particular" class="badge bg-light text-muted border py-1 px-2 d-inline-flex align-items-center gap-1"
+                                style="font-size: 0.75rem; font-weight: 500;"
+                                title="No aplica por normativa (Decreto 1079/2015): los vehículos particulares no requieren póliza RCE">
+                                <i class="fal fa-shield-alt text-muted" aria-hidden="true" />
+                                <span>Exento · Particular</span>
+                            </span>
+                            <template v-else-if="data.rce_expiry">
+                                <router-link v-if="docEditLink(data, 'RCE')" :to="docEditLink(data, 'RCE')"
+                                    :class="expiryClass(data.rce_expiry)"
+                                    :title="`Actualizar póliza RCE — placa ${data.vehicle_license_plate}`"
+                                    :aria-label="`Actualizar póliza RCE del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rce_expiry)}`">
+                                    {{ formatDate(data.rce_expiry) }}
+                                </router-link>
+                                <span v-else :class="expiryClass(data.rce_expiry)">{{ formatDate(data.rce_expiry) }}</span>
+                            </template>
+                            <template v-else>
+                                <router-link v-if="docEditLink(data, 'RCE')" :to="docEditLink(data, 'RCE')"
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.75rem; font-weight: 500;"
+                                    :title="`Registrar póliza RCE para ${data.vehicle_license_plate}`">
+                                    <i class="fad fa-plus-circle" aria-hidden="true" />
+                                    <span>Sin registrar</span>
+                                </router-link>
+                                <span v-else class="badge bg-light text-muted border py-1 px-2" style="font-size: 0.75rem;">Sin registrar</span>
+                            </template>
                         </template>
                     </Column>
 
                     <!-- RTM -->
-                    <Column field="rtm_expiry" header="RTM" style="min-width: 120px;">
+                    <Column field="rtm_expiry" header="RTM" style="min-width: 125px;">
                         <template #body="{ data }">
-                            <router-link v-if="docEditLink(data, 'RTM')" :to="docEditLink(data, 'RTM')"
-                                :class="expiryClass(data.rtm_expiry)"
-                                :title="`Actualizar RTM — placa ${data.vehicle_license_plate}`"
-                                :aria-label="`Actualizar revisión RTM del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rtm_expiry)}`">
-                                {{ formatDate(data.rtm_expiry) }}
-                            </router-link>
-                            <span v-else :class="expiryClass(data.rtm_expiry)">{{ formatDate(data.rtm_expiry) }}</span>
+                            <template v-if="data.rtm_expiry">
+                                <router-link v-if="docEditLink(data, 'RTM')" :to="docEditLink(data, 'RTM')"
+                                    :class="expiryClass(data.rtm_expiry)"
+                                    :title="`Actualizar RTM — placa ${data.vehicle_license_plate}`"
+                                    :aria-label="`Actualizar revisión RTM del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.rtm_expiry)}`">
+                                    {{ formatDate(data.rtm_expiry) }}
+                                </router-link>
+                                <span v-else :class="expiryClass(data.rtm_expiry)">{{ formatDate(data.rtm_expiry) }}</span>
+                            </template>
+                            <template v-else>
+                                <router-link v-if="docEditLink(data, 'RTM')" :to="docEditLink(data, 'RTM')"
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.75rem; font-weight: 500;"
+                                    :title="`Registrar RTM para ${data.vehicle_license_plate}`">
+                                    <i class="fad fa-plus-circle" aria-hidden="true" />
+                                    <span>Sin registrar</span>
+                                </router-link>
+                                <span v-else class="badge bg-light text-muted border py-1 px-2" style="font-size: 0.75rem;">Sin registrar</span>
+                            </template>
                         </template>
                     </Column>
 
                     <!-- Tarj. Operación -->
-                    <Column field="operation_card_expiry" header="Tarj. Operación" style="min-width: 130px;">
+                    <Column field="operation_card_expiry" header="Tarj. Operación" style="min-width: 145px;">
                         <template #body="{ data }">
-                            <span v-if="data.es_particular" class="text-muted small">No aplica</span>
-                            <router-link v-else-if="opCardEditLink(data)" :to="opCardEditLink(data)"
-                                :class="expiryClass(data.operation_card_expiry)"
-                                :title="`Actualizar tarjeta de operación — placa ${data.vehicle_license_plate}`"
-                                :aria-label="`Actualizar tarjeta de operación del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.operation_card_expiry)}`">
-                                {{ formatDate(data.operation_card_expiry) }}
-                            </router-link>
-                            <span v-else :class="expiryClass(data.operation_card_expiry)">{{ formatDate(data.operation_card_expiry) }}</span>
-                            <small v-if="data.operation_card_number" class="text-muted d-block" style="font-size: 0.72rem;">
-                                N.º {{ data.operation_card_number }}
-                            </small>
+                            <span v-if="data.es_particular" class="badge bg-light text-muted border py-1 px-2 d-inline-flex align-items-center gap-1"
+                                style="font-size: 0.75rem; font-weight: 500;"
+                                title="No aplica por normativa (Decreto 1079/2015): los vehículos particulares no requieren Tarjeta de Operación">
+                                <i class="fal fa-id-badge text-muted" aria-hidden="true" />
+                                <span>Exento · Particular</span>
+                            </span>
+                            <template v-else-if="data.operation_card_expiry">
+                                <router-link v-if="opCardEditLink(data)" :to="opCardEditLink(data)"
+                                    :class="expiryClass(data.operation_card_expiry)"
+                                    :title="`Actualizar tarjeta de operación — placa ${data.vehicle_license_plate}`"
+                                    :aria-label="`Actualizar tarjeta de operación del vehículo ${data.vehicle_license_plate}, vence ${formatDate(data.operation_card_expiry)}`">
+                                    {{ formatDate(data.operation_card_expiry) }}
+                                </router-link>
+                                <span v-else :class="expiryClass(data.operation_card_expiry)">{{ formatDate(data.operation_card_expiry) }}</span>
+                                <small v-if="data.operation_card_number" class="text-muted d-block" style="font-size: 0.72rem;">
+                                    N.º {{ data.operation_card_number }}
+                                </small>
+                            </template>
+                            <template v-else>
+                                <router-link v-if="opCardEditLink(data)" :to="opCardEditLink(data)"
+                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.75rem; font-weight: 500;"
+                                    :title="`Registrar tarjeta de operación para ${data.vehicle_license_plate}`">
+                                    <i class="fad fa-plus-circle" aria-hidden="true" />
+                                    <span>Sin registrar</span>
+                                </router-link>
+                                <span v-else class="badge bg-light text-muted border py-1 px-2" style="font-size: 0.75rem;">Sin registrar</span>
+                            </template>
                         </template>
                     </Column>
 
@@ -260,7 +437,7 @@
                             <i class="fad fa-file-chart-column fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
                             <h6 class="text-muted mb-1 fw-medium">No se encontraron vehículos</h6>
                             <p class="text-muted small mb-0">
-                                {{ store.filterType || searchQuery
+                                {{ store.hasActiveFilter || searchQuery
                                     ? 'No hay registros que coincidan con los criterios seleccionados.'
                                     : 'No hay vehículos registrados en la flota.' }}
                             </p>
@@ -302,25 +479,43 @@ const searchQuery = ref('');
 let searchTimer = null;
 
 const filterOptions = [
-    { label: 'Afiliado', value: 'affiliate' },
-    { label: 'Tarjeta de operación', value: 'operation_card' },
     { label: 'Documentos', value: 'document' },
+    { label: 'Convenio', value: 'agreement' },
+    { label: 'Sede operativa', value: 'branch' },
+    { label: 'Tarjeta de operación', value: 'operation_card' },
+    { label: 'Afiliado', value: 'affiliate' },
+    { label: 'Conductor', value: 'driver' },
     { label: 'Proyectos', value: 'project' },
     { label: 'Mantenimiento', value: 'maintenance' },
-    { label: 'Conductor', value: 'driver' },
-    { label: 'Convenio', value: 'agreement' },
 ];
 
 const documentOptions = [
+    { label: 'Todos los documentos', value: 'TODOS' },
     { label: 'SOAT', value: 'SOAT' },
     { label: 'RCC', value: 'RCC' },
     { label: 'RCE', value: 'RCE' },
     { label: 'RTM', value: 'RTM' },
 ];
 
+const expiryStatusOptions = [
+    { label: 'Todos los vencimientos', value: '' },
+    { label: 'Vencidas', value: 'vencido' },
+    { label: 'Vence hoy', value: 'hoy' },
+    { label: 'Por vencer (5 días)', value: 'por_vencer_5d' },
+    { label: '+15 días (Vigentes)', value: 'mas_15d' },
+];
+
+const ownershipOptions = [
+    { label: 'Empresa y Terceros', value: '' },
+    { label: 'Empresa (Propios)', value: 'propios' },
+    { label: 'Terceros (Afiliados)', value: 'terceros' },
+];
+
 const operationCardOptions = [
     { label: 'Vigente', value: 'vigente' },
+    { label: 'Por vencer (5 días)', value: 'por_vencer_5d' },
     { label: 'Por vencer (30 días)', value: 'por_vencer' },
+    { label: 'Vence hoy', value: 'hoy' },
     { label: 'Vencida', value: 'vencida' },
 ];
 
@@ -330,13 +525,18 @@ const maintenanceOptions = [
     { label: 'Pendiente', value: 'pendiente' },
 ];
 
-
-
 const syncQuery = () => {
     router.replace({
         query: {
             ...route.query,
             filter_type: store.filterType || undefined,
+            ownership_type: store.ownershipType || undefined,
+            doc_type: store.documentType || undefined,
+            doc_status: store.docStatus || undefined,
+            agreement_status: store.agreementStatus || undefined,
+            card_status: store.operationCardStatus || undefined,
+            mtto_status: store.maintenanceStatus || undefined,
+            filter_value: store.filterValue || undefined,
             page: store.pagination.currentPage > 1 ? store.pagination.currentPage : undefined,
             search: store.search || undefined,
         },
@@ -350,8 +550,12 @@ const onFilterTypeChange = async () => {
 };
 
 const onFilterValueChange = async () => {
-    if (store.filterType === 'document') store.filterValue = store.documentType;
-    if (store.filterType === 'maintenance') store.filterValue = store.maintenanceStatus;
+    store.pagination.currentPage = 1;
+    await store.fetchItems();
+    syncQuery();
+};
+
+const onOwnershipChange = async () => {
     store.pagination.currentPage = 1;
     await store.fetchItems();
     syncQuery();
@@ -441,12 +645,21 @@ onMounted(async () => {
         const ft = route.query.filter_type;
         if (ft && filterOptions.some((o) => o.value === ft)) {
             await store.setFilterType(ft);
+            const q = route.query;
+            if (q.doc_type) store.documentType = String(q.doc_type);
+            if (q.doc_status) store.docStatus = String(q.doc_status);
+            if (q.agreement_status) store.agreementStatus = String(q.agreement_status);
+            if (q.card_status) store.operationCardStatus = String(q.card_status);
+            if (q.mtto_status) store.maintenanceStatus = String(q.mtto_status);
+            if (q.filter_value) store.filterValue = String(q.filter_value);
+        }
+        if (route.query.ownership_type) {
+            store.ownershipType = String(route.query.ownership_type);
         }
         if (route.query.search) {
             searchQuery.value = String(route.query.search);
             store.search = searchQuery.value;
         }
-        // Carga inicial de datos (la tabla ya no aparece vacía al entrar)
         await store.fetchItems();
     } finally {
         isViewLoading.value = false;

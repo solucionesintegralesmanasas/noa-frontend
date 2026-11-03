@@ -1,9 +1,61 @@
 <template>
-    <BasePageHeader title="Control de Combustible y Kilometraje"
+    <BasePageHeader
+        title="Control de Combustible y Kilometraje"
         description="Registro de surtimientos, rendimiento (km/gal), costo por km y saldos de tanque."
-        icon="fad fa-gas-pump text-primary" :show-refresh="true" :show-create="true" :show-bg="true"
-        :loading="isViewLoading || store.loading" :compact="true"
-        :breadcrumbs="[{ label: 'Flota' }, { label: 'Combustible' }]" @refresh="refreshTable" @create="goToCreate" />
+        icon="fad fa-gas-pump text-primary"
+        :show-bg="true"
+        :loading="isViewLoading"
+        :compact="true"
+        :breadcrumbs="[{ label: 'Flota' }, { label: 'Combustible' }]"
+    >
+        <template #actions>
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3"
+                type="button"
+                title="Actualizar"
+                aria-label="Actualizar"
+                @click="refreshTable"
+            >
+                <i class="fad fa-sync" aria-hidden="true" />
+                <span class="d-none d-sm-inline ms-1">Actualizar</span>
+            </button>
+
+            <button
+                v-if="can('fuel_logs.index')"
+                type="button"
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3 text-nowrap"
+                title="Estado de combustible"
+                @click="openStatus()"
+            >
+                <i class="fad fa-gauge-high text-primary me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Estado de combustible</span>
+                <span class="d-sm-none">Estado</span>
+            </button>
+
+            <router-link
+                v-if="puedeSolicitarTanqueo"
+                to="/flota/solicitudes-tanqueo"
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3 text-nowrap"
+                title="Solicitudes de tanqueo"
+            >
+                <i class="fad fa-qrcode text-primary me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Solicitudes de tanqueo</span>
+                <span class="d-sm-none">Solicitudes</span>
+            </router-link>
+
+            <button
+                v-if="can('fuel_logs.create')"
+                class="btn btn-primary btn-sm px-2 px-sm-3 text-nowrap"
+                type="button"
+                title="Nuevo registro"
+                aria-label="Nuevo registro"
+                @click="goToCreate"
+            >
+                <i class="fad fa-plus me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Nuevo registro</span>
+            </button>
+        </template>
+    </BasePageHeader>
 
     <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
@@ -18,21 +70,8 @@
                 </button>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <button v-if="can('fuel_logs.index')" type="button" class="btn btn-falcon-default btn-sm text-nowrap" @click="openStatus()">
-                    <i class="fad fa-gauge-high text-primary me-1" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">Estado de combustible</span>
-                    <span class="d-sm-none">Estado</span>
-                </button>
-                <router-link v-if="puedeSolicitarTanqueo" to="/flota/solicitudes-tanqueo"
-                    class="btn btn-primary btn-sm text-nowrap">
-                    <i class="fad fa-qrcode me-1" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">Solicitar tanqueo</span>
-                    <span class="d-sm-none">Solicitar</span>
-                </router-link>
-            </div>
 
-            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+            <span v-if="!isViewLoading" class="noa-results">
                 <i class="fas fa-filter" aria-hidden="true" />
                 {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
                 <template v-if="store.search"> para "{{ store.search }}"</template>

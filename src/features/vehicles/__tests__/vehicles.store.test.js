@@ -5,6 +5,7 @@ vi.mock('../services/vehicles.service.js', () => ({
     default: {
         list: vi.fn(),
         getFormOptions: vi.fn(),
+        toggleStatus: vi.fn(),
     },
 }));
 vi.mock('@/utils/toast.js', () => ({ toast: vi.fn() }));
@@ -104,5 +105,51 @@ describe('useVehiclesStore: orden server-side', () => {
             sort_by: 'is_active',
             sort_order: 'asc',
         }));
+    });
+});
+
+
+describe('useVehiclesStore: toggleStatus', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        vi.clearAllMocks();
+    });
+
+    it('alterna el estado de un vehículo y actualiza localmente en el store', async () => {
+        const store = useVehiclesStore();
+        store.items = [
+            { uuid: 'v-1', vehicle_license_plate: 'ABC123', is_active: true },
+            { uuid: 'v-2', vehicle_license_plate: 'XYZ789', is_active: false },
+        ];
+
+        service.toggleStatus.mockResolvedValue({
+            success: true,
+            data: { uuid: 'v-1', vehicle_license_plate: 'ABC123', is_active: false },
+        });
+
+        const res = await store.toggleStatus('v-1');
+
+        expect(service.toggleStatus).toHaveBeenCalledWith('v-1');
+        expect(res.is_active).toBe(false);
+        expect(store.items[0].is_active).toBe(false);
+        expect(store.items[1].is_active).toBe(false);
+    });
+
+    it('reactiva un vehículo inactivo y actualiza localmente', async () => {
+        const store = useVehiclesStore();
+        store.items = [
+            { uuid: 'v-2', vehicle_license_plate: 'XYZ789', is_active: false },
+        ];
+
+        service.toggleStatus.mockResolvedValue({
+            success: true,
+            data: { uuid: 'v-2', vehicle_license_plate: 'XYZ789', is_active: true },
+        });
+
+        const res = await store.toggleStatus('v-2');
+
+        expect(service.toggleStatus).toHaveBeenCalledWith('v-2');
+        expect(res.is_active).toBe(true);
+        expect(store.items[0].is_active).toBe(true);
     });
 });
