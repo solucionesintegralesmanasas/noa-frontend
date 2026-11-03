@@ -198,6 +198,27 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
         },
 
         /**
+         * Actualiza en bloque todas las hojas de control abiertas de un proyecto
+         * (ampliación/ajuste de fechas y recorrido general) y recarga el listado.
+         * @param {Object} data - Payload con project_uuid, start_date, end_date, daily_route.
+         * @returns {Promise<Object>} { updated, daily_sheets, sheets }.
+         */
+        updateBulk(data) {
+            return this._run(async () => {
+                const response = await serviceDeliveryControlSheetService.updateBulk(data);
+                const resultado = response?.data ?? response;
+                const hojas = Number(resultado?.updated) || 0;
+                const planillas = Number(resultado?.daily_sheets) || 0;
+                const detalle = planillas > 0
+                    ? ` (${planillas} ${planillas === 1 ? 'planilla diaria' : 'planillas diarias'})`
+                    : '';
+                await toast('¡Éxito!', `${hojas} ${hojas === 1 ? 'hoja actualizada' : 'hojas actualizadas'}${detalle}`, 'success');
+                await this.fetchItems();
+                return resultado;
+            }, 'Error al actualizar las hojas del proyecto');
+        },
+
+        /**
          * Actualiza un registro existente.
          * @param {string} uuid - UUID del registro.
          * @param {Object} data - Datos actualizados.

@@ -44,6 +44,13 @@ class VehiclesService extends BaseService {
     delete(uuid) { return this._request('DELETE', `/${uuid}`); }
 
     /**
+     * Alterna el estado activo/inactivo de un vehículo.
+     * @param {string} uuid - UUID del vehículo.
+     * @returns {Promise<Object>} Vehículo actualizado.
+     */
+    toggleStatus(uuid) { return this._request('PATCH', `/${uuid}/toggle-status`); }
+
+    /**
      * Obtiene el perfil detallado de un vehículo.
      * @param {string} uuid - UUID del vehículo.
      * @returns {Promise<Object>} Perfil del vehículo.

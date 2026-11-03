@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia';
 import trackingService from '../services/tracking.service';
 import { isCancelError } from '@/utils/error-handler.js';
+import { logger } from '@/utils/logger.js';
+import {
+    agregarPuntoAEstela,
+    fechaLocalDe,
+    fusionarEstela,
+    viajeActual,
+} from '../utils/movimientoDeConductor';
 
 export const useTrackingStore = defineStore('tracking', {
     state: () => ({
@@ -17,6 +24,12 @@ export const useTrackingStore = defineStore('tracking', {
         error: null,
         sortField: null,
         sortOrder: null,
+        // Estela del viaje actual por conductor (uuid → puntos GPS en orden).
+        trailByDriver: {},
+        // Sello que los mapas observan para re-dibujar las estelas (ARQ-009:
+        // los componentes no crean temporizadores ni sondeos propios).
+        trailRevision: 0,
+        trailLoading: false,
     }),
 
     getters: {
@@ -56,6 +69,54 @@ export const useTrackingStore = defineStore('tracking', {
             } finally {
                 this.loading = false;
             }
+        },
+
+        /**
+         * Siembra la estela del viaje actual de un conductor con el recorrido
+         * de hoy (historial decimado). Sin el permiso locations.history el
+         * backend responde 403 y la estela degrada a la que se acumule en vivo.
+         */
+        async fetchDriverTrail(uuid, signal) {
+            if (!uuid) return;
+            this.trailLoading = true;
+            try {
+                const response = await trackingService.getTodayTrail(uuid, fechaLocalDe(), { signal });
+                const puntos = response.data?.data || response.data || [];
+                this.setTrail(uuid, viajeActual(Array.isArray(puntos) ? puntos : []));
+            } catch (err) {
+                if (isCancelError(err)) return;
+                logger.warn('[tracking] Sin recorrido del día para la estela:', err?.message || err);
+            } finally {
+                this.trailLoading = false;
+            }
+        },
+
+        /** Fusiona la estela sembrada (historial) con los puntos ya acumulados. */
+        setTrail(uuid, puntos) {
+            if (!uuid) return;
+            this.trailByDriver = {
+                ...this.trailByDriver,
+                [uuid]: fusionarEstela(puntos, this.trailByDriver[uuid] || []),
+            };
+            this.trailRevision += 1;
+        },
+
+        /** Agrega un punto en vivo a la estela del conductor. */
+        appendTrailPoint(uuid, punto) {
+            if (!uuid || !punto) return;
+            const actual = this.trailByDriver[uuid] || [];
+            const lista = agregarPuntoAEstela(actual, punto);
+            if (lista === actual) return;
+            this.trailByDriver = { ...this.trailByDriver, [uuid]: lista };
+            this.trailRevision += 1;
+        },
+
+        clearTrail(uuid) {
+            if (!uuid || !this.trailByDriver[uuid]) return;
+            const restantes = { ...this.trailByDriver };
+            delete restantes[uuid];
+            this.trailByDriver = restantes;
+            this.trailRevision += 1;
         },
 
         async fetchDriverStats(uuid, startDate = null, endDate = null) {
@@ -154,7 +215,7 @@ export const useTrackingStore = defineStore('tracking', {
             try {
                 await trackingService.sendLocation(data);
             } catch (err) {
-                console.error('Error sending location:', err);
+                logger.error('Error sending location:', err);
             }
         },
 
@@ -175,7 +236,7 @@ export const useTrackingStore = defineStore('tracking', {
                 try {
                     await trackingService.stopSession(this.currentSession.uuid);
                 } catch (err) {
-                    console.error('Error stopping session:', err);
+                    logger.error('Error stopping session:', err);
                 }
             }
             this.currentSession = null;

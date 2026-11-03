@@ -102,6 +102,10 @@ onBeforeUnmount(() => {
                     <i class="fad fa-satellite me-1" style="font-size:10px;" />
                     {{ onlineCount }} en línea
                 </span>
+                <span class="badge rounded-pill badge-subtle ms-1">
+                    <i class="fad fa-tachometer-fast me-1" style="font-size:10px;" />
+                    {{ movingCount }} en ruta
+                </span>
             </template>
 
             <template #actions>
@@ -130,21 +134,6 @@ onBeforeUnmount(() => {
                     :style="{ height: isFullscreen ? '100vh' : 'calc(100vh - 150px)' }">
                     <DriverMap :interactive="true" :show-geofences="showGeofences"
                         :show-legend="!isFullscreen" :fullscreen="isFullscreen" />
-
-                    <div v-if="!isFullscreen" class="position-absolute top-0 start-0 p-2 z-2 d-flex align-items-center gap-2">
-                        <span class="badge bg-white bg-opacity-90 text-dark shadow-sm px-2 py-1 rounded-pill">
-                            <span class="dot-green me-1"></span>
-                            <small>En movimiento</small>
-                        </span>
-                        <span class="badge bg-white bg-opacity-90 text-dark shadow-sm px-2 py-1 rounded-pill">
-                            <span class="dot-amber me-1"></span>
-                            <small>Detenido</small>
-                        </span>
-                        <span class="badge bg-white bg-opacity-90 text-dark shadow-sm px-2 py-1 rounded-pill">
-                            <i class="fad fa-satellite-dish text-primary me-1"></i>
-                            <small>{{ movingCount }} en ruta</small>
-                        </span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -186,21 +175,5 @@ onBeforeUnmount(() => {
     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
     70% { box-shadow: 0 0 0 5px rgba(255, 255, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-}
-
-.dot-green {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-    display: inline-block;
-}
-
-.dot-amber {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #f59e0b;
-    display: inline-block;
 }
 </style>

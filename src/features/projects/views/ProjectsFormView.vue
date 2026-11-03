@@ -69,6 +69,15 @@
                             </div>
                         </div>
 
+                        <div v-if="isEditMode" class="col-12">
+                            <div class="alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-0 small" role="status">
+                                <i class="fad fa-calendar-check text-primary" aria-hidden="true"></i>
+                                <span>
+                                    Al ampliar o modificar las fechas de inicio o finalización del proyecto, todas las <strong>Hojas de Control de Servicio abiertas</strong> asociadas a este proyecto se actualizarán automáticamente con los nuevos días.
+                                </span>
+                            </div>
+                        </div>
+
                         <div class="col-12 col-md-6">
                             <label class="form-label" for="purchase_order">Número de Orden de Compra</label>
                             <input id="purchase_order" v-model="formData.purchase_order" class="form-control"

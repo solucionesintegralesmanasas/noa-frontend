@@ -1,37 +1,62 @@
 <template>
-    <BasePageHeader title="Solicitudes de tanqueo"
+    <BasePageHeader
+        title="Solicitudes de tanqueo"
         description="Solicita, aprueba y controla el QR de tanqueo por vehículo."
-        icon="fad fa-qrcode text-primary" :show-refresh="true" :show-bg="true"
-        :loading="isViewLoading || store.loading" :compact="true"
-        :breadcrumbs="[{ label: 'Flota' }, { label: 'Solicitudes de tanqueo' }]" @refresh="refresh" />
+        icon="fad fa-qrcode text-primary"
+        :show-bg="true"
+        :loading="isViewLoading"
+        :compact="true"
+        :breadcrumbs="[{ label: 'Flota' }, { label: 'Solicitudes de tanqueo' }]"
+    >
+        <template #actions>
+            <button
+                class="btn btn-falcon-default btn-sm px-2 px-sm-3"
+                type="button"
+                title="Actualizar"
+                aria-label="Actualizar"
+                @click="refresh"
+            >
+                <i class="fad fa-sync" aria-hidden="true" />
+                <span class="d-none d-sm-inline ms-1">Actualizar</span>
+            </button>
+
+            <button
+                v-if="can('fuel_requests.create')"
+                type="button"
+                class="btn btn-primary btn-sm px-2 px-sm-3 text-nowrap"
+                title="Solicitar tanqueo"
+                aria-label="Solicitar tanqueo"
+                @click="abrirCrear"
+            >
+                <i class="fad fa-plus me-1" aria-hidden="true" />
+                <span class="d-none d-sm-inline">Solicitar tanqueo</span>
+            </button>
+        </template>
+    </BasePageHeader>
 
     <!-- LISTADO: toolbar + tabla + paginador en una sola tarjeta -->
     <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
         <div class="noa-list-toolbar">
-            <div class="noa-search">
-                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
-                <input id="f-tanqueo-busqueda" v-model="search" type="search" class="noa-search__input"
-                    placeholder="Código, placa o conductor..." aria-label="Buscar solicitudes de tanqueo"
-                    @input="debouncedSearch" />
-                <button v-if="search" class="noa-search__clear" type="button" title="Limpiar búsqueda"
-                    aria-label="Limpiar búsqueda" @click="clearSearch">
-                    <i class="fal fa-times" aria-hidden="true" />
-                </button>
+            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1" style="max-width: 38rem;">
+                <div class="noa-search flex-grow-1">
+                    <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                    <input id="f-tanqueo-busqueda" v-model="search" type="search" class="noa-search__input"
+                        placeholder="Código, placa o conductor..." aria-label="Buscar solicitudes de tanqueo"
+                        @input="debouncedSearch" />
+                    <button v-if="search" class="noa-search__clear" type="button" title="Limpiar búsqueda"
+                        aria-label="Limpiar búsqueda" @click="clearSearch">
+                        <i class="fal fa-times" aria-hidden="true" />
+                    </button>
+                </div>
+                <div style="min-width: 170px;">
+                    <label class="visually-hidden" for="f-tanqueo-estado">Filtrar por estado</label>
+                    <PrimeSelect input-id="f-tanqueo-estado" v-model="statusFilter" :options="estadosOpciones"
+                        option-label="label" option-value="value" size="small" class="w-100"
+                        @change="refresh" />
+                </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <label class="visually-hidden" for="f-tanqueo-estado">Filtrar por estado</label>
-                <PrimeSelect input-id="f-tanqueo-estado" v-model="statusFilter" :options="estadosOpciones"
-                    option-label="label" option-value="value" size="small" style="min-width: 180px;"
-                    @change="refresh" />
-
-                <button v-if="can('fuel_requests.create')" type="button" class="btn btn-primary btn-sm text-nowrap"
-                    @click="abrirCrear">
-                    <i class="fad fa-plus me-1" aria-hidden="true" />Solicitar tanqueo
-                </button>
-            </div>
-
-            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+            <span v-if="!isViewLoading" class="noa-results">
                 <i class="fas fa-filter" aria-hidden="true" />
                 {{ store.pagination.totalItems }} resultado{{ store.pagination.totalItems !== 1 ? 's' : '' }}
                 <template v-if="store.filters?.search"> para "{{ store.filters.search }}"</template>

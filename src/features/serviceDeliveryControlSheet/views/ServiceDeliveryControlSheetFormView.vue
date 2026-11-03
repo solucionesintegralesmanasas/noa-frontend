@@ -84,9 +84,13 @@
                             <PrimeSelect :input-id="'f-type_of_control_sheet'" v-model="formData.type_of_control_sheet"
                                 :options="[{ label: 'Directo con la empresa', value: 'DIRECTO_CON_LA_EMPRESA' }, { label: 'Subcontratado', value: 'SUBCONTRATADO' }, { label: 'Con vehículo contratado', value: 'CON_VEHICULO_CONTRATADO' }, { label: 'Vehículo externo de plataforma', value: 'EXTERNO_PLATAFORMA' }]"
                                 option-label="label" option-value="value" class="w-100"
+                                :disabled="isEditMode"
                                 :invalid="!!validationErrors['type_of_control_sheet']" />
                             <div v-if="validationErrors.type_of_control_sheet" class="invalid-feedback d-block" id="f-type_of_control_sheet-error" role="alert">{{
                                 validationErrors.type_of_control_sheet }}</div>
+                            <div v-else-if="isEditMode" class="form-text text-muted small">
+                                El tipo de hoja no se puede cambiar después de crearla.
+                            </div>
                         </div>
 
                         <div class="col-12 col-sm-6 col-lg-3">
@@ -130,7 +134,8 @@
                                 <span>Las fechas están fuera de la vigencia del proyecto ({{ formatFecha(vigenciaMin) }} al {{ formatFecha(vigenciaMax) }}). El backend las rechazará.</span>
                             </div>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <!-- El estado se gestiona con el cierre del servicio (SPEC-002 §7.2). -->
+                        <div class="col-12 col-sm-6 col-lg-3" v-if="!isEditMode">
                             <label class="form-label" for="f-is_active">Estado</label>
                             <PrimeSelect :input-id="'f-is_active'" v-model="formData.is_active"
                                 :options="[{ label: 'Activo', value: '1' }, { label: 'Inactivo', value: '0' }]"
@@ -392,8 +397,8 @@ import { showSwalModal, closeSwal, showLoadingModal } from '@/utils/confirm.js';
  * @created_at 2026-06-19
  * @module {Features.Fleet}
  * @resource {ServiceDeliveryControlSheet}
- * @deprecated La edición manual directa de hojas de control está obsoleta y en desuso;
- * el registro operativo de campo debe realizarse a través de Control en Ruta.
+ * Formulario único para crear y editar hojas de control: en edición reutiliza
+ * el mismo marcado y cambia solo los campos que el backend considera inmutables.
  */
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -701,8 +706,9 @@ const validateForm = () => {
         if (isEmpty(formData[field])) validationErrors[field] = 'Este campo es obligatorio';
     });
 
-    // Si start_date está presente pero service_date no (caso creación), sincronizar
-    if (formData.start_date && !formData.service_date) {
+    // La hoja padre usa como fecha de servicio su primer día: en la creación se
+    // completa si falta y en la edición sigue siempre a la fecha de inicio.
+    if (formData.start_date && (isEditMode.value || !formData.service_date)) {
         formData.service_date = formData.start_date;
     }
 
@@ -812,13 +818,40 @@ const shareCoordinatorLink = async () => {
 };
 
 const buildPayload = () => {
-    // Los recorridos los registra el conductor en la operación diaria, no en este formulario.
-    const payload = { ...formData };
-    if (!payload.daily_route || !payload.daily_route.trim()) payload.daily_route = null;
-    if (payload.vehicle_license_plate) payload.vehicle_license_plate = payload.vehicle_license_plate.toUpperCase().trim();
+    // Lista explícita: el formulario también contiene hijos de la respuesta
+    // (`children`, `internal_control`, etc.) que no deben viajar al backend.
+    // Los recorridos los registra el conductor en la operación diaria.
+    const payload = {
+        company_uuid: formData.company_uuid,
+        project_uuid: formData.project_uuid || null,
+        official_name_and_surname: formData.official_name_and_surname || null,
+        service_date: formData.service_date,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        daily_route: formData.daily_route?.trim() || null,
+        type_of_control_sheet: formData.type_of_control_sheet,
+        vehicle_uuid: formData.vehicle_uuid || null,
+        third_party_uuid: formData.third_party_uuid || null,
+        fuec_uuid: formData.fuec_uuid || null,
+        vehicle_class_uuid: formData.vehicle_class_uuid || null,
+        vehicle_license_plate: formData.vehicle_license_plate
+            ? formData.vehicle_license_plate.toUpperCase().trim()
+            : null,
+        driver_name_and_surname: formData.driver_name_and_surname?.trim() || null,
+        driver_license_number: formData.driver_license_number?.trim() || null,
+    };
+
+    // El estado no se edita desde el formulario: queda reservado al cierre
+    // (SPEC-002 §7.2) y el backend ignora `is_active` en el update.
+    if (!isEditMode.value) payload.is_active = formData.is_active;
+
     // La sección de Control Directo ya no captura FUEC: no se envía para no
     // pisar el valor histórico al editar. El control externo sí lo conserva.
     if (!isExternalType.value) delete payload.fuec_uuid;
+
+    // El tipo de hoja no se puede cambiar después de crearla.
+    if (isEditMode.value) delete payload.type_of_control_sheet;
+
     return payload;
 };
 

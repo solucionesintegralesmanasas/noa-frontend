@@ -109,6 +109,14 @@ class ServiceDeliveryControlSheetService extends BaseService {
     createBulk(data) { return this._request('POST', '/bulk', { data }); }
 
     /**
+     * Actualización masiva de todas las hojas de control abiertas de un proyecto:
+     * permite ampliar/ajustar las fechas (y opcionalmente el recorrido) en bloque.
+     * @param {Object} data - Payload con project_uuid, start_date, end_date, daily_route.
+     * @returns {Promise<Object>} { updated, daily_sheets, sheets }.
+     */
+    updateBulk(data) { return this._request('PUT', '/bulk', { data }); }
+
+    /**
      * Obtiene las opciones de los catálogos relacionados (Empresas, Vehículos, Conductores).
      * @returns {Promise<Object>} Objeto con los arreglos de opciones.
      */

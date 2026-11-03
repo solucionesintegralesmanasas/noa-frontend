@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-// Issue #9: los datos de la cédula (lugar y fecha de expedición, sexo, estado
-// civil y grupo sanguíneo) aparecen solo para personas NATURALES, se validan
-// al enviar con foco al primer error y viajan en el payload al guardar.
+// Issue #9: los datos de nacimiento y cédula (lugar y fecha de nacimiento,
+// lugar y fecha de expedición, sexo, estado civil y grupo sanguíneo) aparecen
+// solo para personas NATURALES, son opcionales (solo se valida el rango de
+// las fechas cuando se diligencian) y viajan en el payload al guardar.
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import ThirdPartiesFormView from '../views/ThirdPartiesFormView.vue';
@@ -109,7 +110,26 @@ const selectorTipoPersona = (vista) => vista.findAll('select').find((s) => s.att
 /** Identificador de error accesible por campo (f-<campo>-error). */
 const errorDe = (vista, campo) => vista.find(`#f-${campo}-error`);
 
-const llenarPersonaNatural = async (vista) => {
+/** Los siete datos opcionales de nacimiento y cédula del formulario. */
+const CAMPOS_DATOS_PERSONA = [
+    'birth_place_uuid',
+    'birth_date',
+    'id_card_issue_place_uuid',
+    'id_card_issue_date',
+    'sex',
+    'marital_status',
+    'blood_type',
+];
+
+/** Cambia un PrimeSelect/prime nativo del formulario por su id. */
+const setSelectValue = async (vista, id, value) => {
+    const el = vista.findAll('select').find((s) => s.attributes('id') === id);
+    if (!el) throw new Error(`no hay select con id ${id}`);
+    await el.setValue(value);
+};
+
+/** Solo los campos obligatorios del flujo (sin datos de nacimiento ni cédula). */
+const llenarBaseNatural = async (vista) => {
     await selectorTipoPersona(vista).setValue('NATURAL');
     await vista.find('#document_type_uuid').setValue('doc-cc');
     await vista.find('#document_number').setValue('1090555999');
@@ -118,25 +138,24 @@ const llenarPersonaNatural = async (vista) => {
     await vista.find('#email').setValue('ana.test@tercero.local');
 
     const selects = vista.findAll('select');
-    const setValue = async (id, value) => {
-        const el = selects.find((s) => s.attributes('id') === id);
-        if (!el) throw new Error(`no hay select con id ${id}`);
-        await el.setValue(value);
-    };
     if (selects.some((s) => s.attributes('id') === 'municipality_uuid')) {
-        await setValue('municipality_uuid', 'ciudad-1');
-        await setValue('tax_responsibility_uuid', 'resp-1');
-        await setValue('tax_regime', '48');
-        await setValue('branch_uuid', 'sede-1');
-        await setValue('f-partyTypes', 'is_customer');
+        await setSelectValue(vista, 'municipality_uuid', 'ciudad-1');
+        await setSelectValue(vista, 'tax_responsibility_uuid', 'resp-1');
+        await setSelectValue(vista, 'tax_regime', '48');
+        await setSelectValue(vista, 'branch_uuid', 'sede-1');
+        await setSelectValue(vista, 'f-partyTypes', 'is_customer');
     }
-    await setValue('f-birth_place_uuid', 'ciudad-1');
+};
+
+const llenarPersonaNatural = async (vista) => {
+    await llenarBaseNatural(vista);
+    await setSelectValue(vista, 'f-birth_place_uuid', 'ciudad-1');
     const fechaNacimiento = vista.find('#f-birth_date');
     await fechaNacimiento.setValue('1985-04-12');
-    await setValue('f-id_card_issue_place_uuid', 'ciudad-1');
-    await setValue('f-sex', 'F');
-    await setValue('f-marital_status', 'SOLTERO');
-    await setValue('f-blood_type', 'O+');
+    await setSelectValue(vista, 'f-id_card_issue_place_uuid', 'ciudad-1');
+    await setSelectValue(vista, 'f-sex', 'F');
+    await setSelectValue(vista, 'f-marital_status', 'SOLTERO');
+    await setSelectValue(vista, 'f-blood_type', 'O+');
 
     const fecha = vista.find('#f-id_card_issue_date');
     await fecha.setValue('2005-06-15');
@@ -148,39 +167,47 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         updateItem.mockClear();
     });
 
-    it('una persona natural ve los cinco campos con sus ids y errores accesibles', async () => {
+    it('una persona natural ve los siete campos, todos opcionales y sin error al enviarlos vacíos', async () => {
         const vista = montarVista();
         await flushPromises();
         await selectorTipoPersona(vista).setValue('NATURAL');
 
-        for (const campo of [
-            'birth_place_uuid',
-            'birth_date',
-            'id_card_issue_place_uuid',
-            'id_card_issue_date',
-            'sex',
-            'marital_status',
-            'blood_type',
-        ]) {
-            expect(vista.find(`label[for="f-${campo}"]`).exists()).toBe(true);
-            const input = vista.find(`#f-${campo}`);
-            expect(input.exists()).toBe(true);
+        for (const campo of CAMPOS_DATOS_PERSONA) {
+            const etiqueta = vista.find(`label[for="f-${campo}"]`);
+            expect(etiqueta.exists()).toBe(true);
+            // Ninguno va marcado como obligatorio.
+            expect(etiqueta.classes()).not.toContain('required');
+            expect(vista.find(`#f-${campo}`).exists()).toBe(true);
         }
 
-        // El error asociado usa el patrón f-<campo>-error con role="alert".
+        // Enviar sin diligenciarlos no genera errores en estos campos.
         await vista.find('#document_number').setValue('1090555999');
         await vista.find('#email').setValue('ana.test@tercero.local');
         await vista.find('form').trigger('submit');
         await flushPromises();
 
-        const errorFecha = errorDe(vista, 'id_card_issue_date');
-        expect(errorFecha.attributes('id')).toBe('f-id_card_issue_date-error');
-        expect(errorFecha.attributes('role')).toBe('alert');
-        expect(errorDe(vista, 'birth_place_uuid').exists()).toBe(true);
-        expect(errorDe(vista, 'birth_date').exists()).toBe(true);
-        expect(errorDe(vista, 'sex').exists()).toBe(true);
-        expect(errorDe(vista, 'marital_status').exists()).toBe(true);
-        expect(errorDe(vista, 'blood_type').exists()).toBe(true);
+        for (const campo of CAMPOS_DATOS_PERSONA) {
+            expect(errorDe(vista, campo).exists()).toBe(false);
+        }
+    });
+
+    it('una persona natural puede guardarse sin los datos de nacimiento y cédula', async () => {
+        const vista = montarVista();
+        await flushPromises();
+        await llenarBaseNatural(vista);
+
+        await vista.find('form').trigger('submit');
+        await flushPromises();
+
+        expect(createItem).toHaveBeenCalledTimes(1);
+        const payload = createItem.mock.calls[0][0];
+        expect(payload.birth_place_uuid).toBeNull();
+        expect(payload.birth_date).toBeNull();
+        expect(payload.id_card_issue_place_uuid).toBeNull();
+        expect(payload.id_card_issue_date).toBeNull();
+        expect(payload.sex).toBeNull();
+        expect(payload.marital_status).toBeNull();
+        expect(payload.blood_type).toBeNull();
     });
 
     it('una persona juridica no ve los campos de cédula y guarda sin ellos', async () => {
@@ -227,7 +254,10 @@ describe('datos de persona en el formulario de terceros (issue #9)', () => {
         await flushPromises();
 
         expect(createItem).not.toHaveBeenCalled();
-        expect(errorDe(vista, 'id_card_issue_date').text()).toContain('no puede ser posterior a hoy');
+        const errorFecha = errorDe(vista, 'id_card_issue_date');
+        expect(errorFecha.attributes('id')).toBe('f-id_card_issue_date-error');
+        expect(errorFecha.attributes('role')).toBe('alert');
+        expect(errorFecha.text()).toContain('no puede ser posterior a hoy');
         expect(document.activeElement?.id).toBe('f-id_card_issue_date');
     });
 

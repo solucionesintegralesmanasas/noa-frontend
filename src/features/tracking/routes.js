@@ -6,6 +6,12 @@ export const trackingRoutes = [
         meta: { title: 'Mapa en Vivo', auth: true, layout: 'dashboard', permissions: ['locations.view'] },
     },
     {
+        path: '/rastreo/seguimiento/:uuid?',
+        name: 'tracking.follow',
+        component: () => import('./views/DriverFollowView.vue'),
+        meta: { title: 'Seguimiento de Conductor', auth: true, layout: 'dashboard', permissions: ['locations.view'] },
+    },
+    {
         path: '/rastreo',
         name: 'tracking.map',
         component: () => import('./views/TrackingMapView.vue'),

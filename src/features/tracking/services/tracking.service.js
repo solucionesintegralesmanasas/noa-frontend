@@ -26,6 +26,13 @@ export default {
     getDriverHistory(uuid, params) {
         return this.client.get(`/tracking/driver/${uuid}/history`, { params });
     },
+    // Estela del día para el mapa en vivo: trazado decimado del historial (mode=map).
+    getTodayTrail(uuid, fecha, { signal } = {}) {
+        return this.client.get(`/tracking/driver/${uuid}/history`, {
+            params: { start_date: fecha, end_date: fecha, mode: 'map', max_points: 1000 },
+            signal,
+        });
+    },
     getDriverStats(uuid, params = {}) {
         return this.client.get(`/tracking/driver/${uuid}/stats`, { params });
     },
