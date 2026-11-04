@@ -137,10 +137,6 @@ const refreshCalendar = async () => {
     await store.fetchCalendar();
 };
 
-const onTriggerMassNotification = async () => {
-    await store.triggerMassNotification();
-    await store.fetchCalendar();
-};
 
 onMounted(async () => {
     try {
@@ -230,21 +226,6 @@ onMounted(async () => {
                     </button>
                 </div>
 
-                <button
-                    class="btn btn-primary btn-sm px-2 px-sm-3"
-                    type="button"
-                    title="Sincronizar alertas preventivas de vencimiento"
-                    aria-label="Sincronizar alertas preventivas de vencimiento"
-                    :disabled="store.notifying"
-                    @click="onTriggerMassNotification"
-                >
-                    <i
-                        class="fad fa-bell-on"
-                        :class="{ 'fa-spin': store.notifying }"
-                        aria-hidden="true"
-                    ></i>
-                    <span class="d-none d-sm-inline ms-1">Notificación Masiva</span>
-                </button>
             </template>
         </BasePageHeader>
 

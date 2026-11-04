@@ -99,6 +99,26 @@ describe('Calendario de Vencimientos — Utilidades y Componentes', () => {
         expect(estilo.chipText).toBe('TJW731 · SOAT Vencido');
         expect(estilo.statusText).toContain('(Vencido)');
 
+        const evConvenioAlerta = {
+            date: '2026-04-16',
+            status: 'expiring_15d',
+            days_remaining: 10,
+            category: 'AGREEMENT',
+            agreement_name: 'COOPTRANS',
+        };
+        const estiloConvenioAlerta = estiloEventoCalendario(evConvenioAlerta);
+        expect(estiloConvenioAlerta.tone).toBe('warning');
+
+        const evConvenioVigente = {
+            date: '2026-05-20',
+            status: 'valid',
+            days_remaining: 45,
+            category: 'AGREEMENT',
+            agreement_name: 'COOPTRANS',
+        };
+        const estiloConvenioVigente = estiloEventoCalendario(evConvenioVigente);
+        expect(estiloConvenioVigente.tone).toBe('primary');
+
         const link = enlaceEditarDocumento(evVencido, (perm) => perm === 'vehicle_documents.update');
         expect(link).toEqual({
             path: '/vehiculos-documentos/soat/editar/doc-123',
@@ -238,6 +258,7 @@ describe('Calendario de Vencimientos — Utilidades y Componentes', () => {
 
         expect(wrapper.findAll('.noa-calendar-cell')).toHaveLength(42);
         expect(wrapper.text()).toContain('TJW731 · SOAT Vencido');
+        expect(wrapper.text()).toContain('Vence ≤ 15 días');
 
         // Verifica la barra de búsqueda estándar de la plataforma en la cabecera
         const searchInput = wrapper.find('#f-calendario-busqueda');

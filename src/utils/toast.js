@@ -114,3 +114,29 @@ export const confirmar = async ({
     return !!isConfirmed;
 };
 
+/**
+ * Diálogo informativo modal accesible (reemplazo de alert).
+ */
+export const alerta = async ({
+    title = 'Información',
+    text = '',
+    icon = 'info',
+    confirmText = 'Aceptar',
+} = {}) => {
+    const { default: Swal } = await import('sweetalert2');
+    return Swal.fire({
+        title,
+        text,
+        icon,
+        confirmButtonText: confirmText,
+    });
+};
+
+/**
+ * Diálogo interactivo con HTML personalizado y eventos didOpen.
+ */
+export const dialogoHtml = async (opciones = {}) => {
+    const { default: Swal } = await import('sweetalert2');
+    return Swal.fire(opciones);
+};
+

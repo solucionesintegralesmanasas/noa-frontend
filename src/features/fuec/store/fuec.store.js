@@ -301,11 +301,12 @@ export const useFuecStore = defineStore('fuec', {
         /**
          * Obtiene el PDF generado por el servidor.
          * @param {string} uuid - UUID del FUEC.
+         * @param {string|null} filename - Nombre de respaldo para la descarga.
          * @returns {Promise<Blob>} Archivo PDF binario.
          */
-        downloadPdf(uuid) {
+        downloadPdf(uuid, filename = null) {
             return this._run(
-                () => fuecService.downloadPdf(uuid),
+                () => fuecService.downloadPdf(uuid, filename),
                 'Error al generar el PDF del servidor'
             );
         },

@@ -88,8 +88,8 @@ export function construirCeldasMes(year, month, eventsByDate = {}, todayIso = ''
         const dayLabel = showMonthTag ? `${dayNumberStr} ${ABREV_MESES[cMonth - 1]}` : dayNumberStr;
 
         const alertCount = dayEvents.filter((e) => e.days_remaining <= 15).length;
-        const hasCritical = dayEvents.some((e) => e.status === 'expired' || e.status === 'today');
-        const hasWarning = dayEvents.some((e) => e.status === 'expiring_5d' || e.status === 'expiring_15d');
+        const hasCritical = dayEvents.some((e) => e.status === 'expired' || e.status === 'today' || e.days_remaining <= 0);
+        const hasWarning = dayEvents.some((e) => (e.days_remaining > 0 && e.days_remaining <= 15) || e.status === 'expiring_5d' || e.status === 'expiring_15d');
 
         celdas.push({
             date: dateStr,
@@ -161,9 +161,9 @@ export function estiloEventoCalendario(event) {
 
     if (cat === 'AGREEMENT') {
         const nombreConvenio = event.agreement_name || 'Convenio';
-        const tone = status === 'expired' || status === 'today'
+        const tone = status === 'expired' || status === 'today' || days <= 0
             ? 'danger'
-            : status === 'expiring_5d'
+            : (status === 'expiring_5d' || status === 'expiring_15d' || (days > 0 && days <= 15))
                 ? 'warning'
                 : 'primary';
         return {
@@ -194,7 +194,7 @@ export function estiloEventoCalendario(event) {
         };
     }
 
-    if (status === 'expiring_5d' || status === 'expiring_15d') {
+    if (status === 'expiring_5d' || status === 'expiring_15d' || (days > 0 && days <= 15)) {
         return {
             tone: 'warning',
             icon: 'fas fa-clock',

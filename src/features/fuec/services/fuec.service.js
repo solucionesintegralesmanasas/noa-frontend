@@ -250,9 +250,11 @@ class FuecService extends BaseService {
     /**
      * Obtiene el PDF generado por el servidor.
      * @param {string} uuid - UUID del FUEC.
+     * @param {string|null} filename - Nombre de respaldo si el navegador no
+     *   puede leer `Content-Disposition` (descarga cross-origin).
      */
-    async downloadPdf(uuid) {
-        return this._downloadPdf(`/${uuid}/pdf`);
+    async downloadPdf(uuid, filename = null) {
+        return this._downloadPdf(`/${uuid}/pdf`, filename);
     }
 
     /**
