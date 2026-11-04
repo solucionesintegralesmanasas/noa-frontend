@@ -33,7 +33,6 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             search: '',
             loading: false,
             exporting: false,
-            notifying: false,
             error: null,
             events: [],
             kpis: {
@@ -224,24 +223,6 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             }
         },
 
-        async triggerMassNotification() {
-            this.notifying = true;
-            try {
-                await vehicleReportsService.syncNotifications();
-                await toast(
-                    'Notificación Masiva Procesada',
-                    'Se han sincronizado y emitido las alertas preventivas de documentos y convenios por vencer.',
-                    'success'
-                );
-            } catch (error) {
-                await toast(
-                    'Error',
-                    error.response?.data?.message || error.message || 'No se pudo procesar la notificación masiva.',
-                    'error'
-                );
-            } finally {
-                this.notifying = false;
-            }
-        },
+
     },
 });

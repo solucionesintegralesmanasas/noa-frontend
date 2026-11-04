@@ -334,11 +334,11 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-6">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-origin">
                                     Origen</label>
-                                <input id="f-origin" :aria-invalid="!!validationErrors['origin']" :aria-describedby="validationErrors['origin'] ? 'f-origin-error' : undefined" type="text" autocomplete="off" class="form-control" :class="{
+                                <input id="f-origin" :aria-invalid="!!validationErrors['origin']" :aria-describedby="validationErrors['origin'] ? 'f-origin-error' : undefined" type="text" autocomplete="off" class="form-control text-uppercase" style="text-transform: uppercase;" :class="{
                                     'is-invalid': validationErrors['origin'],
                                     'is-valid': formData.origin && !validationErrors['origin']
-                                }" v-model="formData.origin" placeholder="Ej: Bogotá D.C."
-                                    @input="validateField('origin', formData.origin, 'Obligatorio')"
+                                }" v-model="formData.origin" placeholder="Ej: BOGOTÁ D.C."
+                                    @input="onOriginInput"
                                     @blur="validateField('origin', formData.origin, 'Obligatorio')" />
                                 <div v-if="validationErrors['origin']" class="invalid-feedback d-block" id="f-origin-error" role="alert">
                                     {{ validationErrors['origin'] }}
@@ -349,11 +349,11 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-6">
                                 <label class="form-label required fw-medium" style="font-size: 0.9rem;" for="f-destination">
                                     Destino</label>
-                                <input id="f-destination" :aria-invalid="!!validationErrors['destination']" :aria-describedby="validationErrors['destination'] ? 'f-destination-error' : undefined" type="text" autocomplete="off" class="form-control" :class="{
+                                <input id="f-destination" :aria-invalid="!!validationErrors['destination']" :aria-describedby="validationErrors['destination'] ? 'f-destination-error' : undefined" type="text" autocomplete="off" class="form-control text-uppercase" style="text-transform: uppercase;" :class="{
                                     'is-invalid': validationErrors['destination'],
                                     'is-valid': formData.destination && !validationErrors['destination']
-                                }" v-model="formData.destination" placeholder="Ej: Medellín"
-                                    @input="validateField('destination', formData.destination, 'Obligatorio')"
+                                }" v-model="formData.destination" placeholder="Ej: MEDELLÍN"
+                                    @input="onDestinationInput"
                                     @blur="validateField('destination', formData.destination, 'Obligatorio')" />
                                 <div v-if="validationErrors['destination']" class="invalid-feedback d-block" id="f-destination-error" role="alert">
                                     {{ validationErrors['destination'] }}
@@ -1249,6 +1249,16 @@ const consultarContratista = async () => {
     }
 };
 
+const onOriginInput = (e) => {
+    formData.origin = (e.target.value || '').toUpperCase();
+    validateField('origin', formData.origin, 'Obligatorio');
+};
+
+const onDestinationInput = (e) => {
+    formData.destination = (e.target.value || '').toUpperCase();
+    validateField('destination', formData.destination, 'Obligatorio');
+};
+
 const validateField = (field, value, msg) => {
     if (isEmpty(value)) {
         validationErrors[field] = msg;
@@ -1455,8 +1465,8 @@ const handleSubmit = async () => {
             issue_date: formData.issue_date,
             effective_date: formData.effective_date,
             expiration_date: formData.expiration_date,
-            origin_route: formData.origin,
-            destination_route: formData.destination,
+            origin_route: (formData.origin || '').trim().toUpperCase(),
+            destination_route: (formData.destination || '').trim().toUpperCase(),
             company_uuid: formData.company_uuid,
             vehicle_uuid: formData.vehicle_uuid,
             object_contract_uuid: formData.object_contract_uuid,
@@ -1609,8 +1619,8 @@ onMounted(async () => {
                 formData.issue_date = text(item.issue_date)?.slice?.(0, 10) ?? text(item.issue_date);
                 formData.effective_date = text(item.effective_date)?.slice?.(0, 10) ?? text(item.effective_date);
                 formData.expiration_date = text(item.expiration_date)?.slice?.(0, 10) ?? text(item.expiration_date);
-                formData.origin = text(item.origin_route ?? item.origin);
-                formData.destination = text(item.destination_route ?? item.destination);
+                formData.origin = text(item.origin_route ?? item.origin)?.toUpperCase() ?? '';
+                formData.destination = text(item.destination_route ?? item.destination)?.toUpperCase() ?? '';
                 formData.company_uuid = text(item.company_uuid);
                 formData.vehicle_uuid = text(item.vehicle_uuid);
                 formData.object_contract_uuid = text(item.object_contract_uuid);

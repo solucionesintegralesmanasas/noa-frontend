@@ -107,7 +107,7 @@ const gruposAgenda = computed(() => {
 const badgeCeldaClase = (cell) => {
     if (cell.hasCritical) return 'noa-cell-count--danger';
     if (cell.hasWarning) return 'noa-cell-count--warning';
-    return 'noa-cell-count--primary';
+    return 'noa-cell-count--success';
 };
 
 const onCellClick = (cell) => {
@@ -196,7 +196,7 @@ const onCellClick = (cell) => {
                 </div>
                 <div class="d-flex align-items-center gap-1.5">
                     <span class="noa-legend-dot noa-legend-dot--warning" aria-hidden="true" />
-                    <span>Vence &le; 5 días</span>
+                    <span>Vence &le; 15 días</span>
                 </div>
                 <div class="d-flex align-items-center gap-1.5">
                     <span class="noa-legend-dot noa-legend-dot--primary" aria-hidden="true" />
@@ -598,6 +598,11 @@ const onCellClick = (cell) => {
 .noa-cell-count--warning {
     background: #fef3c7;
     color: #92400e;
+}
+
+.noa-cell-count--success {
+    background: #d1fae5;
+    color: #065f46;
 }
 
 .noa-cell-count--primary {

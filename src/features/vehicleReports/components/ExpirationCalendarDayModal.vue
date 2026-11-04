@@ -47,7 +47,11 @@ const alertCount = computed(() => {
 });
 
 const hasCriticalAlerts = computed(() =>
-    props.events.some((ev) => ev.status === 'expired' || ev.status === 'today' || ev.days_remaining <= 15)
+    props.events.some((ev) => ev.status === 'expired' || ev.status === 'today' || ev.days_remaining <= 0)
+);
+
+const hasWarningAlerts = computed(() =>
+    props.events.some((ev) => (ev.days_remaining > 0 && ev.days_remaining <= 15) || ev.status === 'expiring_5d' || ev.status === 'expiring_15d')
 );
 
 function badgeEstadoClase(ev) {
@@ -91,7 +95,7 @@ function cerrarModal() {
 
                 <span
                     class="noa-status"
-                    :class="hasCriticalAlerts ? 'noa-status--danger' : 'noa-status--info'"
+                    :class="hasCriticalAlerts ? 'noa-status--danger' : (hasWarningAlerts ? 'noa-status--warning' : 'noa-status--success')"
                 >
                     <span class="noa-status-dot" aria-hidden="true"></span>
                     <template v-if="alertCount > 0">

@@ -152,7 +152,8 @@ import RowActions from '@/components/RowActions.vue';
 import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import { confirmar } from '@/utils/toast.js';
+import { confirmar, alerta, dialogoHtml } from '@/utils/toast.js';
+import logger from '@/utils/logger.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -223,7 +224,7 @@ const accionesDe = (data) => [
 
 const handleChangeBranch = async (vehicle) => {
     try {
-        const { default: Swal } = await import('sweetalert2');
+
 
         if (!store.catalogs.branches || store.catalogs.branches.length === 0) {
             await store.loadCatalogs();
@@ -231,7 +232,7 @@ const handleChangeBranch = async (vehicle) => {
 
         const branches = store.catalogs.branches || [];
         if (branches.length === 0) {
-            await Swal.fire({
+            await alerta({
                 title: 'Atención',
                 text: 'No hay sedes configuradas en el sistema.',
                 icon: 'warning',
@@ -244,7 +245,7 @@ const handleChangeBranch = async (vehicle) => {
         const availableBranches = branches.filter(b => b.uuid !== currentBranchUuid);
 
         if (availableBranches.length === 0) {
-            await Swal.fire({
+            await alerta({
                 title: 'Información',
                 text: 'No hay otras sedes configuradas en el sistema a las que se pueda trasladar este vehículo.',
                 icon: 'info',
@@ -341,7 +342,7 @@ const handleChangeBranch = async (vehicle) => {
         });
         branchesHtml += `</div>`;
 
-        const { isConfirmed } = await Swal.fire({
+        const { isConfirmed } = await dialogoHtml({
             title: '<span style="font-size: 1.15rem; font-weight: 700; color: #1a202c;">Cambiar Sede del Vehículo</span>',
             html: `
                 <div style="text-align: left; margin-bottom: 12px; font-size: 0.8rem; color: #4a5568; line-height: 1.4;">
@@ -387,7 +388,7 @@ const handleChangeBranch = async (vehicle) => {
             await store.fetchItems();
         }
     } catch (error) {
-        console.error('Error al cambiar la sede:', error);
+        logger.error('Error al cambiar la sede:', error);
     }
 };
 
