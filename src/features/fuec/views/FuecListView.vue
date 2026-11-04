@@ -202,6 +202,10 @@
                         <i class="fad fa-file-pdf text-danger" aria-hidden="true"></i>
                         <span>PDF</span>
                     </button>
+                    <button v-if="can('fuec.renew')" class="mc-btn-secondary" type="button" @click="goToRenew(item.uuid)">
+                        <i class="fad fa-sync-alt text-primary" aria-hidden="true"></i>
+                        <span>Renovar</span>
+                    </button>
                     <button v-if="can('fuec.update')" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
                         <i class="fad fa-edit text-warning" aria-hidden="true"></i>
                         <span>Editar</span>
@@ -283,6 +287,7 @@ const onPageChange = async ({ page, first, rows }) => {
 };
 
 const goToCreate = () => router.push('/extracto-de-contrato/crear');
+const goToRenew = (uuid) => router.push({ path: '/extracto-de-contrato/crear', query: { renovar: uuid } });
 const goToEdit = (uuid) => router.push(`/extracto-de-contrato/editar/${uuid}`);
 const goToDetail = (uuid) => router.push(`/extracto-de-contrato/perfil/${uuid}`);
 
@@ -294,6 +299,7 @@ const handleDelete = (item) => confirmDelete(item, {
 const accionesDe = (data) => [
     { key: 'perfil', label: 'Ver detalle', icon: 'far fa-eye', tone: 'primary', inline: true, visible: can('fuec.profile'), onClick: () => goToDetail(data.uuid) },
     { key: 'pdf', label: 'Descargar PDF', icon: 'far fa-file-pdf', tone: 'neutral', inline: true, onClick: () => downloadPdfServer(data) },
+    { key: 'renovar', label: 'Renovar', icon: 'far fa-sync-alt', tone: 'primary', visible: can('fuec.renew'), onClick: () => goToRenew(data.uuid) },
     { key: 'editar', label: 'Editar', icon: 'far fa-pen', tone: 'warning', visible: can('fuec.update'), onClick: () => goToEdit(data.uuid) },
     { key: 'eliminar', label: 'Eliminar', icon: 'far fa-trash-alt', tone: 'danger', visible: can('fuec.delete'), onClick: () => handleDelete(data) },
 ];

@@ -77,6 +77,20 @@
                         </template>
 
                         <template v-else>
+                            <div v-if="isRenewMode" class="col-12" role="status">
+                                <div class="alert alert-info border-0 d-flex align-items-center mb-0 shadow-sm">
+                                    <i class="fad fa-sync-alt fs-4 me-3 text-info" aria-hidden="true"></i>
+                                    <div>
+                                        <h6 class="mb-1 text-info fw-bold">Modo Renovación de FUEC</h6>
+                                        <p class="mb-0 small text-dark">
+                                            Se han extraído los datos del contrato original (N° {{ formData.contractor.contract_number }}).
+                                            El consecutivo FUEC se ha incrementado para este nuevo extracto.
+                                            Por favor asigne la <strong>Fecha de Inicio</strong> y <strong>Fecha de Vencimiento</strong> para expedir el nuevo FUEC.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Campos ocultos -->
                             <div style="display: none;">
                                 <input type="hidden" v-model="formData.vehicle_uuid" />
@@ -462,7 +476,7 @@
 
                             <!-- Botones: siempre col-12 -->
                             <div class="col-12">
-                                <BaseFormActions :submitting="submitting" :is-edit-mode="isEditMode"
+                                <BaseFormActions :submitting="submitting" :is-edit-mode="isEditMode" :submit-label="isRenewMode ? 'Emitir FUEC Renovado' : undefined"
                                     @cancel="goToList" />
                             </div>
                         </template>
@@ -498,7 +512,7 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFuecStore } from '../store/fuec.store.js';
 import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
-import { useAuthStore } from '@store';
+import { useAuthStore, usePermissionsStore } from '@store';
 import { useSystemConfigurationStore } from '@/features/systemConfiguration/store/systemConfiguration.store.js';
 import { useThirdPartiesStore } from '@/features/thirdParties/store/thirdParties.store.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -514,6 +528,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useFuecStore();
 const authStore = useAuthStore();
+const permissionsStore = usePermissionsStore();
 const systemConfigStore = useSystemConfigurationStore();
 const thirdPartiesStore = useThirdPartiesStore();
 
@@ -528,11 +543,12 @@ const Toast = Swal.mixin({
 });
 
 const isEditMode = computed(() => route.params.id !== undefined);
+const isRenewMode = computed(() => !isEditMode.value && Boolean(route.query.renovar));
 
 /** Computed para BasePageHeader (evita expresiones complejas en el template) */
-const pageTitle = computed(() => isEditMode.value ? 'Actualizar Fuec' : 'Registrar Fuec');
-const pageSubtitle = computed(() => isEditMode.value ? 'Modifica los datos del registro en el sistema' : 'Completa los datos para crear un nuevo registro');
-const breadcrumbs = computed(() => [{ label: 'Fuec', to: '/extracto-de-contrato' }, { label: isEditMode.value ? 'Editar' : 'Nuevo' },]);
+const pageTitle = computed(() => isRenewMode.value ? 'Renovar Fuec' : (isEditMode.value ? 'Actualizar Fuec' : 'Registrar Fuec'));
+const pageSubtitle = computed(() => isRenewMode.value ? 'Genera un nuevo extracto conservando los datos del contrato original' : (isEditMode.value ? 'Modifica los datos del registro en el sistema' : 'Completa los datos para crear un nuevo registro'));
+const breadcrumbs = computed(() => [{ label: 'Fuec', to: '/extracto-de-contrato' }, { label: isRenewMode.value ? 'Renovar' : (isEditMode.value ? 'Editar' : 'Nuevo') },]);
 
 const isViewLoading = ref(true);
 const isLoaded = ref(false);
@@ -1598,7 +1614,7 @@ watch(
 
 // El consecutivo llega después del primer pintado (SPEC-006: sale del camino crítico del paso 1).
 watch(() => store.catalogs.nextContractNumber, (siguiente) => {
-    if (isEditMode.value || !siguiente || formData.contractor.contract_number) return;
+    if (isEditMode.value || isRenewMode.value || !siguiente || formData.contractor.contract_number) return;
     const formatted = siguiente.formatted || '';
     formData.contractor.contract_number = formatted;
     formData.contract_number_display = formatted;
@@ -1669,6 +1685,99 @@ onMounted(async () => {
                         .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC.', err?.message));
                 }
             }
+        } else if (isRenewMode.value) {
+            if (!permissionsStore.can('fuec.renew')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Acceso Denegado',
+                    text: 'La función de renovar FUEC está reservada exclusivamente para administradores.',
+                    confirmButtonText: 'Aceptar'
+                });
+                goBack();
+                return;
+            }
+            const item = await store.fetchProfileById(route.query.renovar);
+            if (item) {
+                const text = (v) => (v === null || v === undefined ? '' : v);
+                formData.company_uuid = text(item.company_uuid);
+                formData.vehicle_uuid = text(item.vehicle_uuid);
+                formData.object_contract_uuid = text(item.object_contract_uuid);
+                formData.main_conductor_uuid = text(item.main_conductor_uuid);
+                formData.secondary_conductor_uuid = text(item.secondary_conductor_uuid);
+                formData.tertiary_conductor_uuid = text(item.tertiary_conductor_uuid);
+                formData.origin = text(item.origin_route ?? item.origin)?.toUpperCase() ?? '';
+                formData.destination = text(item.destination_route ?? item.destination)?.toUpperCase() ?? '';
+                formData.status = 'ACTIVO';
+
+                if (item.contractor && typeof item.contractor === 'object') {
+                    const c = item.contractor;
+                    Object.assign(formData.contractor, {
+                        uuid: text(c.uuid),
+                        company_uuid: text(c.company_uuid || formData.company_uuid),
+                        document_type_uuid: text(c.document_type_uuid),
+                        document_number: text(c.document_number),
+                        company_name: text(c.company_name),
+                        address: text(c.address),
+                        telephone: text(c.telephone),
+                        contract_number: text(c.contract_number),
+                        contracting_party_city: text(c.contracting_party_city),
+                        vehicle_uuid: text(c.vehicle_uuid || formData.vehicle_uuid),
+                        responsible_name: text(c.responsible_name),
+                        responsible_document: text(c.responsible_document),
+                        responsible_phone: text(c.responsible_phone),
+                        responsible_address: text(c.responsible_address),
+                        status: c.status ?? 1
+                    });
+                    formData.contract_number_display = text(item.contract_number_display) || text(c.contract_number).slice(-4);
+                }
+
+                if (item.passengers && Array.isArray(item.passengers)) {
+                    formData.passengers = item.passengers.map(p => ({
+                        uuid: null,
+                        type_of_document_uuid: p.type_of_document_uuid || '',
+                        document_number: p.document_number || '',
+                        first_and_last_name: p.first_and_last_name || ''
+                    }));
+                }
+
+                // REGLA: Fecha de Inicio y Fecha de Vencimiento deben estar vacías al renovar
+                formData.effective_date = '';
+                formData.expiration_date = '';
+                formData.issue_date = new Date().toISOString().split('T')[0];
+
+                // FUEC nuevo: nuevo código y números
+                formData.verification_code = '';
+                formData.number_fuec = '';
+                formData.request_number = '';
+
+                // Omitir paso 1 (selección de vehículo)
+                formFuec.value = false;
+
+                if (formData.vehicle_uuid) {
+                    const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
+                    selectedVehicle.value = catalogVehicle || null;
+                    store.fetchVehicleValidationData(formData.vehicle_uuid)
+                        .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
+                        .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC a renovar.', err?.message));
+                }
+
+                if (formData.company_uuid && formData.contractor.uuid) {
+                    try {
+                        const previewNum = await store.getPreviewFuecNumber(
+                            formData.company_uuid,
+                            formData.contractor.uuid,
+                            formData.contractor.contract_number
+                        );
+                        formData.request_number = previewNum;
+                        formData.number_fuec = previewNum && previewNum.length >= 4 ? previewNum.slice(-4) : previewNum;
+                        if (previewNum) {
+                            formData.verification_code = await generateVerificationCode({ uuid: null, request_number: previewNum });
+                        }
+                    } catch (err) {
+                        logger.warn('Error al calcular preview de FUEC renovado:', err?.message);
+                    }
+                }
+            }
         } else {
             let companyUuid = authStore.currentTenant?.id;
             if (!companyUuid && store.catalogs.companies && store.catalogs.companies.length > 0) {
@@ -1705,7 +1814,7 @@ onMounted(async () => {
         setTimeout(() => {
             isViewLoading.value = false;
             isLoaded.value = true;
-        }, isEditMode.value ? 400 : 0);
+        }, (isEditMode.value || isRenewMode.value) ? 400 : 0);
     }
 });
 </script>
