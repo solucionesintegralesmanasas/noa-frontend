@@ -877,7 +877,8 @@ watch([
     validateLicensesExpiryDate();
 });
 
-const consultarVehiculo = async () => {
+const consultarVehiculo = async (opciones) => {
+    const renovando = opciones?.renovando === true;
     if (!formData.vehicle_uuid) return;
     isFetchingVehicle.value = true;
     try {
@@ -1141,12 +1142,19 @@ const consultarVehiculo = async () => {
                     confirmButton: 'btn btn-danger px-4 rounded-pill'
                 }
             });
+            if (renovando) goToList();
             return;
         }
 
         // El límite máximo del FUEC está regulado estrictamente por el pago de administración (next_payment_date) y convenio de colaboración
         vehiclePaymentLimit.value = calculatedLimit;
         selectedVehicle.value = vehicle;
+
+        if (renovando) {
+            // Renovación: se conservan contratante, contrato y conductores del FUEC original.
+            formFuec.value = false;
+            return;
+        }
 
         // Procedemos con el paso 2
         formData.contractor.vehicle_uuid = formData.vehicle_uuid;
@@ -1490,6 +1498,7 @@ const handleSubmit = async () => {
             secondary_conductor_uuid: formData.secondary_conductor_uuid || null,
             tertiary_conductor_uuid: formData.tertiary_conductor_uuid || null,
             status: formData.status,
+            renewed_from_uuid: isRenewMode.value ? route.query.renovar : undefined,
             contractor: {
                 uuid: formData.contractor.uuid || null,
                 document_type_uuid: formData.contractor.document_type_uuid,
@@ -1753,29 +1762,12 @@ onMounted(async () => {
                 // Omitir paso 1 (selección de vehículo)
                 formFuec.value = false;
 
+                // El FUEC es nuevo: se revalida el vehículo hoy (documentos, convenio, tope de vencimiento).
+                // El consecutivo de vista previa lo calcula el watcher de company/contratante.
                 if (formData.vehicle_uuid) {
                     const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
                     selectedVehicle.value = catalogVehicle || null;
-                    store.fetchVehicleValidationData(formData.vehicle_uuid)
-                        .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
-                        .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC a renovar.', err?.message));
-                }
-
-                if (formData.company_uuid && formData.contractor.uuid) {
-                    try {
-                        const previewNum = await store.getPreviewFuecNumber(
-                            formData.company_uuid,
-                            formData.contractor.uuid,
-                            formData.contractor.contract_number
-                        );
-                        formData.request_number = previewNum;
-                        formData.number_fuec = previewNum && previewNum.length >= 4 ? previewNum.slice(-4) : previewNum;
-                        if (previewNum) {
-                            formData.verification_code = await generateVerificationCode({ uuid: null, request_number: previewNum });
-                        }
-                    } catch (err) {
-                        logger.warn('Error al calcular preview de FUEC renovado:', err?.message);
-                    }
+                    await consultarVehiculo({ renovando: true });
                 }
             }
         } else {

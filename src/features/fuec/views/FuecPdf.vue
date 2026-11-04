@@ -22,9 +22,6 @@
                     </button>
                     
                     <div class="d-flex gap-2" v-if="pdfUrl">
-                        <button v-if="permissionsStore.can('fuec.renew')" class="btn btn-falcon-default btn-sm rounded-pill px-3" @click="goToRenew">
-                            <i class="fad fa-sync-alt text-primary me-1"></i> Renovar
-                        </button>
                         <button class="btn btn-falcon-success btn-sm rounded-pill px-3" @click="downloadPdf">
                             <i class="fad fa-download me-1"></i> Descargar PDF
                         </button>
@@ -70,15 +67,12 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFuecStore } from '../store/fuec.store.js';
 import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
-import { usePermissionsStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import Swal from 'sweetalert2';
 
 const route = useRoute();
 const router = useRouter();
 const store = useFuecStore();
-const permissionsStore = usePermissionsStore();
-const goToRenew = () => router.push({ path: '/extracto-de-contrato/crear', query: { renovar: route.params.id } });
 
 const pdfUrl = ref(null);
 const loading = ref(true);
