@@ -4,7 +4,10 @@ import {
     esCerrado,
     resumenDiasInfo,
     formatKm,
-    paginaDestino
+    tieneKm,
+    formatKmValor,
+    paginaDestino,
+    diasHijos
 } from '../hooks/useServiceList.js';
 
 describe('useServiceList helpers', () => {
@@ -69,9 +72,50 @@ describe('useServiceList helpers', () => {
         expect(formatKm(null, null)).toBe('-');
     });
 
+    it('tieneKm y formatKmValor validan y formatean valores individuales de odómetro', () => {
+        expect(tieneKm(142500)).toBe(true);
+        expect(tieneKm('142500')).toBe(true);
+        expect(tieneKm(0)).toBe(true);
+        expect(tieneKm(null)).toBe(false);
+        expect(tieneKm(undefined)).toBe(false);
+        expect(tieneKm('')).toBe(false);
+
+        expect(formatKmValor(142500)).toBe('142.500 km');
+        expect(formatKmValor(null)).toBe('-');
+        expect(formatKmValor('')).toBe('-');
+    });
+
     it('paginaDestino calcula correctamente la página base 1', () => {
         expect(paginaDestino({ page: 0, rows: 10 })).toBe(1);
         expect(paginaDestino({ page: 2, rows: 10 })).toBe(3);
         expect(paginaDestino({ first: 20, rows: 10 })).toBe(3);
+    });
+
+    it('diasHijos ordena de más nueva a más vieja en cerradas y normal en las demás', () => {
+        const item = {
+            children: [
+                { uuid: 'd1', service_date: '2026-10-16', is_active: false },
+                { uuid: 'd2', service_date: '2026-10-17', is_active: false },
+                { uuid: 'd3', service_date: '2026-10-15', is_active: false },
+                { uuid: 'd4', service_date: '2026-10-18', is_active: true }
+            ]
+        };
+
+        // Al filtrar solo cerradas (soloCerradas = true): descendente (más nueva arriba)
+        const cerradas = diasHijos(item, true);
+        expect(cerradas.map(c => c.service_date)).toEqual([
+            '2026-10-17',
+            '2026-10-16',
+            '2026-10-15'
+        ]);
+
+        // En las demás pestañas (soloCerradas = false): orden normal cronológico ascendente
+        const todas = diasHijos(item, false);
+        expect(todas.map(c => c.service_date)).toEqual([
+            '2026-10-15',
+            '2026-10-16',
+            '2026-10-17',
+            '2026-10-18'
+        ]);
     });
 });

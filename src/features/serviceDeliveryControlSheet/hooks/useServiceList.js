@@ -13,10 +13,16 @@ export function formatRango(fecha) {
 export function diasHijos(data, soloCerradas = true) {
     const raw = data?.children ?? data?.dias ?? [];
     const hijos = Array.isArray(raw) ? [...raw] : Object.values(raw ?? {});
-    const l = hijos
-        .filter((h) => h && (h.uuid || h.service_date))
-        .sort((a, b) => String(a.service_date || '').localeCompare(String(b.service_date || '')));
-    return soloCerradas ? l.filter((x) => !(x.is_active == 1 || x.is_active === true)) : l;
+    const validos = hijos.filter((x) => x && (x.uuid || x.service_date));
+    const filtrados = soloCerradas ? validos.filter((x) => esCerrado(x)) : validos;
+
+    // Solo en la pestaña de cerradas se organiza de la más nueva a la más vieja (descendente).
+    // En las demás pestañas se conserva el orden cronológico normal (ascendente).
+    return filtrados.sort((a, b) => {
+        const fechaA = String(a.service_date || '');
+        const fechaB = String(b.service_date || '');
+        return soloCerradas ? fechaB.localeCompare(fechaA) : fechaA.localeCompare(fechaB);
+    });
 }
 
 export function recorridosCount(data) {
@@ -100,12 +106,22 @@ export function resumenDiasInfo(data) {
 }
 
 export function formatKm(inicial, final) {
-    if ((inicial === null || inicial === undefined || inicial === '') && (final === null || final === undefined || final === '')) {
+    if (!tieneKm(inicial) && !tieneKm(final)) {
         return '-';
     }
-    const fInit = inicial !== null && inicial !== undefined && inicial !== '' ? `${Number(inicial).toLocaleString('es-CO')} km` : 'Pendiente';
-    const fEnd = final !== null && final !== undefined && final !== '' ? `${Number(final).toLocaleString('es-CO')} km` : 'Pendiente';
+    const fInit = tieneKm(inicial) ? formatKmValor(inicial) : 'Pendiente';
+    const fEnd = tieneKm(final) ? formatKmValor(final) : 'Pendiente';
     return `${fInit} — ${fEnd}`;
+}
+
+export function tieneKm(val) {
+    return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
+}
+
+export function formatKmValor(val) {
+    if (!tieneKm(val)) return '-';
+    const num = Number(val);
+    return Number.isFinite(num) ? `${num.toLocaleString('es-CO')} km` : `${val} km`;
 }
 
 /**

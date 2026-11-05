@@ -791,7 +791,9 @@ import {
     recorridosCount as recorridosCountHook,
     recorridosTexto as recorridosTextoHook,
     esCerrado,
-    resumenDiasInfo
+    resumenDiasInfo,
+    tieneKm,
+    formatKmValor
 } from '../hooks/useServiceList.js';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';

@@ -512,6 +512,7 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useFuecStore } from '../store/fuec.store.js';
 import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
+import { RUTA_FUEC_LISTADO } from '../utils/rutasFuec.js';
 import { useAuthStore, usePermissionsStore } from '@store';
 import { useSystemConfigurationStore } from '@/features/systemConfiguration/store/systemConfiguration.store.js';
 import { useThirdPartiesStore } from '@/features/thirdParties/store/thirdParties.store.js';
@@ -519,7 +520,8 @@ import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
-import Swal from 'sweetalert2';
+import { getSwal } from '@/utils/confirm.js';
+import { toast } from '@/utils/toast.js';
 import { dateUtils } from '@utils/date.js';
 import { logger } from '@utils/logger.js';
 import { masReciente } from '@/hooks/useDocumentWizard.js';
@@ -534,21 +536,13 @@ const thirdPartiesStore = useThirdPartiesStore();
 
 const systemConfig = computed(() => systemConfigStore.config);
 
-const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 2000,
-    timerProgressBar: true
-});
-
 const isEditMode = computed(() => route.params.id !== undefined);
 const isRenewMode = computed(() => !isEditMode.value && Boolean(route.query.renovar));
 
 /** Computed para BasePageHeader (evita expresiones complejas en el template) */
 const pageTitle = computed(() => isRenewMode.value ? 'Renovar Fuec' : (isEditMode.value ? 'Actualizar Fuec' : 'Registrar Fuec'));
 const pageSubtitle = computed(() => isRenewMode.value ? 'Genera un nuevo extracto conservando los datos del contrato original' : (isEditMode.value ? 'Modifica los datos del registro en el sistema' : 'Completa los datos para crear un nuevo registro'));
-const breadcrumbs = computed(() => [{ label: 'Fuec', to: '/extracto-de-contrato' }, { label: isRenewMode.value ? 'Renovar' : (isEditMode.value ? 'Editar' : 'Nuevo') },]);
+const breadcrumbs = computed(() => [{ label: 'Fuec', to: RUTA_FUEC_LISTADO }, { label: isRenewMode.value ? 'Renovar' : (isEditMode.value ? 'Editar' : 'Nuevo') }]);
 
 const isViewLoading = ref(true);
 const isLoaded = ref(false);
@@ -632,7 +626,8 @@ const _escapeHtml = (str) => {
     return div.innerHTML;
 };
 
-const openPassengerModal = () => {
+const openPassengerModal = async () => {
+    const Swal = await getSwal();
     if (!store.catalogs.documentTypes || store.catalogs.documentTypes.length === 0) {
         Swal.fire({
             title: 'Sin tipos de documento',
@@ -694,15 +689,13 @@ const openPassengerModal = () => {
     }).then((result) => {
         if (result.isConfirmed && result.value) {
             formData.passengers.push(result.value);
-            Toast.fire({
-                title: 'Pasajero agregado',
-                icon: 'success'
-            });
+            toast('Pasajero agregado', '', 'success');
         }
     });
 };
 
-const removePassenger = (index) => {
+const removePassenger = async (index) => {
+    const Swal = await getSwal();
     Swal.fire({
         title: '¿Eliminar pasajero?',
         text: 'Esta acción removerá al pasajero de la lista.',
@@ -717,10 +710,7 @@ const removePassenger = (index) => {
     }).then((result) => {
         if (result.isConfirmed) {
             formData.passengers.splice(index, 1);
-            Toast.fire({
-                title: 'Pasajero eliminado',
-                icon: 'success'
-            });
+            toast('Pasajero eliminado', '', 'success');
         }
     });
 };
@@ -748,7 +738,7 @@ const validateDriverLicenseExpired = async (conductorUuid, fieldName) => {
             if (isLoaded.value) {
                 formData[fieldName] = '';
                 driverLicenseExpirations[fieldName] = null;
-
+                const Swal = await getSwal();
                 await Swal.fire({
                     title: 'Licencia Inválida',
                     text: data.message || 'El conductor seleccionado tiene la licencia vencida y no puede ser asignado.',
@@ -804,6 +794,7 @@ const validateDriverSocialSecurity = async (conductorUuid, fieldName) => {
                 formData[fieldName] = '';
 
                 const periodDisplay = dateUtils.dayjs(expectedPeriod).format('MM/YYYY');
+                const Swal = await getSwal();
                 await Swal.fire({
                     title: 'Seguridad Social Pendiente',
                     text: `El conductor seleccionado no cuenta con aportes de seguridad social pagados para el periodo del viaje (${periodDisplay}).`,
@@ -884,6 +875,7 @@ const consultarVehiculo = async (opciones) => {
     try {
         const { vehicle, adminCharges } = await store.fetchVehicleValidationData(formData.vehicle_uuid);
 
+        const Swal = await getSwal();
         if (!vehicle) {
             await Swal.fire({
                 title: 'Error',
@@ -1194,10 +1186,7 @@ const consultarVehiculo = async (opciones) => {
             const driverInCatalog = store.catalogs.drivers.find(d => d.uuid === affiliateUuid);
             if (driverInCatalog) {
                 formData.main_conductor_uuid = driverInCatalog.uuid;
-                Toast.fire({
-                    title: 'Conductor propietario seleccionado automáticamente',
-                    icon: 'info'
-                });
+                toast('Conductor propietario seleccionado automáticamente', '', 'info');
             }
         }
 
@@ -1205,6 +1194,7 @@ const consultarVehiculo = async (opciones) => {
         formFuec.value = false;
     } catch (error) {
         logger.error('Error al consultar vehículo:', error?.message);
+        const Swal = await getSwal();
         await Swal.fire({
             title: 'Error',
             text: 'Ocurrió un error al validar la información del vehículo.',
@@ -1255,16 +1245,10 @@ const consultarContratista = async () => {
                 formData.object_contract_uuid = found.object_contract_uuid;
             }
 
-            Toast.fire({
-                title: `Datos de ${found.company_name} cargados`,
-                icon: 'success'
-            });
+            toast(`Datos de ${found.company_name} cargados`, '', 'success');
 
         } else {
-            Toast.fire({
-                title: 'Contratante no registrado, ingrese los datos manualmente',
-                icon: 'info'
-            });
+            toast('Contratante no registrado, ingrese los datos manualmente', '', 'info');
         }
     } catch (error) {
         logger.error('Error al consultar contratista:', error?.message);
@@ -1437,7 +1421,7 @@ const generateVerificationCode = async (fuecData) => {
 };
 
 
-const goBack = () => router.push('/extracto-de-contrato');
+const goBack = () => router.push(RUTA_FUEC_LISTADO);
 const goToList = goBack;
 
 const handleSubmit = async () => {
@@ -1449,6 +1433,7 @@ const handleSubmit = async () => {
             firstError.focus({ preventScroll: true });
             firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        const Swal = await getSwal();
         return Swal.fire({
             title: 'Atención',
             text: 'Revisa los campos obligatorios',
@@ -1527,6 +1512,7 @@ const handleSubmit = async () => {
         }
 
         if (uuid) {
+            const Swal = await getSwal();
             Swal.fire({
                 title: 'Generando PDF...',
                 text: 'Por favor espere mientras el servidor prepara el documento.',
@@ -1573,6 +1559,7 @@ const handleSubmit = async () => {
     } catch (error) {
         logger.error('Error al guardar el FUEC', error?.message);
         const errMsg = error.response?.data?.message || 'No se pudo procesar la solicitud';
+        const Swal = await getSwal();
         Swal.fire({
             title: 'Error',
             text: errMsg,
@@ -1629,74 +1616,105 @@ watch(() => store.catalogs.nextContractNumber, (siguiente) => {
     formData.contract_number_display = formatted;
 });
 
+/**
+ * Hidrata el estado del formulario a partir de un FUEC existente.
+ * Consolida la lógica compartida entre el modo edición y el modo renovación.
+ */
+const hidratarFormularioDesdeFuec = async (item, { esRenovacion = false } = {}) => {
+    if (!item) return;
+    const text = (v) => (v === null || v === undefined ? '' : v);
+
+    formData.company_uuid = text(item.company_uuid);
+    formData.vehicle_uuid = text(item.vehicle_uuid);
+    formData.object_contract_uuid = text(item.object_contract_uuid);
+    formData.main_conductor_uuid = text(item.main_conductor_uuid);
+    formData.secondary_conductor_uuid = text(item.secondary_conductor_uuid);
+    formData.tertiary_conductor_uuid = text(item.tertiary_conductor_uuid);
+    formData.origin = text(item.origin_route ?? item.origin)?.toUpperCase() ?? '';
+    formData.destination = text(item.destination_route ?? item.destination)?.toUpperCase() ?? '';
+    formData.status = esRenovacion ? 'ACTIVO' : (text(item.status) || 'ACTIVO');
+
+    if (item.contractor && typeof item.contractor === 'object') {
+        const c = item.contractor;
+        Object.assign(formData.contractor, {
+            uuid: text(c.uuid),
+            company_uuid: text(c.company_uuid || formData.company_uuid),
+            document_type_uuid: text(c.document_type_uuid),
+            document_number: text(c.document_number),
+            company_name: text(c.company_name),
+            address: text(c.address),
+            telephone: text(c.telephone),
+            contract_number: text(c.contract_number),
+            contracting_party_city: text(c.contracting_party_city),
+            vehicle_uuid: text(c.vehicle_uuid || formData.vehicle_uuid),
+            responsible_name: text(c.responsible_name),
+            responsible_document: text(c.responsible_document),
+            responsible_phone: text(c.responsible_phone),
+            responsible_address: text(c.responsible_address),
+            status: c.status ?? 1
+        });
+        formData.contract_number_display = text(item.contract_number_display) || text(c.contract_number).slice(-4);
+    }
+
+    if (item.passengers && Array.isArray(item.passengers)) {
+        formData.passengers = item.passengers.map(p => ({
+            uuid: esRenovacion ? null : (p.uuid || null),
+            type_of_document_uuid: p.type_of_document_uuid || '',
+            document_number: p.document_number || '',
+            first_and_last_name: p.first_and_last_name || ''
+        }));
+    }
+
+    // Omitir paso 1 (selección de vehículo)
+    formFuec.value = false;
+
+    if (esRenovacion) {
+        // REGLA: Fecha de Inicio y Fecha de Vencimiento deben estar vacías al renovar
+        formData.effective_date = '';
+        formData.expiration_date = '';
+        formData.issue_date = new Date().toISOString().split('T')[0];
+        formData.verification_code = '';
+        formData.number_fuec = '';
+        formData.request_number = '';
+    } else {
+        formData.number_fuec = text(item.number_fuec);
+        formData.request_number = text(item.request_number);
+        formData.contract_number_display = text(item.contract_number_display) || formData.contract_number_display;
+        formData.verification_code = text(item.verification_code);
+        formData.issue_date = text(item.issue_date)?.slice?.(0, 10) ?? text(item.issue_date);
+        formData.effective_date = text(item.effective_date)?.slice?.(0, 10) ?? text(item.effective_date);
+        formData.expiration_date = text(item.expiration_date)?.slice?.(0, 10) ?? text(item.expiration_date);
+
+        if (!formData.verification_code && item.uuid) {
+            formData.verification_code = await generateVerificationCode(item);
+        }
+    }
+
+    if (formData.vehicle_uuid) {
+        const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
+        selectedVehicle.value = catalogVehicle || null;
+        if (esRenovacion) {
+            // El FUEC es nuevo: se revalida el vehículo hoy (documentos, convenio, tope de vencimiento).
+            await consultarVehiculo({ renovando: true });
+        } else {
+            store.fetchVehicleValidationData(formData.vehicle_uuid)
+                .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
+                .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC.', err?.message));
+        }
+    }
+};
+
 onMounted(async () => {
     isViewLoading.value = true;
     try {
         await store.loadFormOptions();
         if (isEditMode.value) {
             const item = await store.fetchProfileById(route.params.id);
-            if (item) {
-                const text = (v) => (v === null || v === undefined ? '' : v);
-                formData.number_fuec = text(item.number_fuec);
-                formData.request_number = text(item.request_number);
-                formData.contract_number_display = text(item.contract_number_display);
-                formData.verification_code = text(item.verification_code);
-                formData.issue_date = text(item.issue_date)?.slice?.(0, 10) ?? text(item.issue_date);
-                formData.effective_date = text(item.effective_date)?.slice?.(0, 10) ?? text(item.effective_date);
-                formData.expiration_date = text(item.expiration_date)?.slice?.(0, 10) ?? text(item.expiration_date);
-                formData.origin = text(item.origin_route ?? item.origin)?.toUpperCase() ?? '';
-                formData.destination = text(item.destination_route ?? item.destination)?.toUpperCase() ?? '';
-                formData.company_uuid = text(item.company_uuid);
-                formData.vehicle_uuid = text(item.vehicle_uuid);
-                formData.object_contract_uuid = text(item.object_contract_uuid);
-                formData.main_conductor_uuid = text(item.main_conductor_uuid);
-                formData.secondary_conductor_uuid = text(item.secondary_conductor_uuid);
-                formData.tertiary_conductor_uuid = text(item.tertiary_conductor_uuid);
-                formData.status = text(item.status) || 'ACTIVO';
-                if (item.contractor && typeof item.contractor === 'object') {
-                    const c = item.contractor;
-                    Object.assign(formData.contractor, {
-                        uuid: text(c.uuid),
-                        company_uuid: text(c.company_uuid || formData.company_uuid),
-                        document_type_uuid: text(c.document_type_uuid),
-                        document_number: text(c.document_number),
-                        company_name: text(c.company_name),
-                        address: text(c.address),
-                        telephone: text(c.telephone),
-                        contract_number: text(c.contract_number),
-                        contracting_party_city: text(c.contracting_party_city),
-                        vehicle_uuid: text(c.vehicle_uuid || formData.vehicle_uuid),
-                        responsible_name: text(c.responsible_name),
-                        responsible_document: text(c.responsible_document),
-                        responsible_phone: text(c.responsible_phone),
-                        responsible_address: text(c.responsible_address),
-                        status: c.status ?? 1
-                    });
-                    formData.contract_number_display = text(item.contract_number_display) || text(c.contract_number).slice(-4);
-                }
-                if (item.passengers && Array.isArray(item.passengers)) {
-                    formData.passengers = item.passengers.map(p => ({
-                        uuid: p.uuid || null,
-                        type_of_document_uuid: p.type_of_document_uuid || '',
-                        document_number: p.document_number || '',
-                        first_and_last_name: p.first_and_last_name || ''
-                    }));
-                }
-                if (!formData.verification_code && item.uuid) {
-                    formData.verification_code = await generateVerificationCode(item);
-                }
-                formFuec.value = false; // Ya no mostramos paso 1
-                if (formData.vehicle_uuid) {
-                    const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
-                    selectedVehicle.value = catalogVehicle || null;
-                    store.fetchVehicleValidationData(formData.vehicle_uuid)
-                        .then(({ vehicle }) => { if (vehicle) selectedVehicle.value = vehicle; })
-                        .catch((err) => logger.warn('No se pudo cargar el vehículo del FUEC.', err?.message));
-                }
-            }
+            await hidratarFormularioDesdeFuec(item, { esRenovacion: false });
         } else if (isRenewMode.value) {
             if (!permissionsStore.can('fuec.renew')) {
-                Swal.fire({
+                const Swal = await getSwal();
+                await Swal.fire({
                     icon: 'error',
                     title: 'Acceso Denegado',
                     text: 'La función de renovar FUEC está reservada exclusivamente para administradores.',
@@ -1706,70 +1724,7 @@ onMounted(async () => {
                 return;
             }
             const item = await store.fetchProfileById(route.query.renovar);
-            if (item) {
-                const text = (v) => (v === null || v === undefined ? '' : v);
-                formData.company_uuid = text(item.company_uuid);
-                formData.vehicle_uuid = text(item.vehicle_uuid);
-                formData.object_contract_uuid = text(item.object_contract_uuid);
-                formData.main_conductor_uuid = text(item.main_conductor_uuid);
-                formData.secondary_conductor_uuid = text(item.secondary_conductor_uuid);
-                formData.tertiary_conductor_uuid = text(item.tertiary_conductor_uuid);
-                formData.origin = text(item.origin_route ?? item.origin)?.toUpperCase() ?? '';
-                formData.destination = text(item.destination_route ?? item.destination)?.toUpperCase() ?? '';
-                formData.status = 'ACTIVO';
-
-                if (item.contractor && typeof item.contractor === 'object') {
-                    const c = item.contractor;
-                    Object.assign(formData.contractor, {
-                        uuid: text(c.uuid),
-                        company_uuid: text(c.company_uuid || formData.company_uuid),
-                        document_type_uuid: text(c.document_type_uuid),
-                        document_number: text(c.document_number),
-                        company_name: text(c.company_name),
-                        address: text(c.address),
-                        telephone: text(c.telephone),
-                        contract_number: text(c.contract_number),
-                        contracting_party_city: text(c.contracting_party_city),
-                        vehicle_uuid: text(c.vehicle_uuid || formData.vehicle_uuid),
-                        responsible_name: text(c.responsible_name),
-                        responsible_document: text(c.responsible_document),
-                        responsible_phone: text(c.responsible_phone),
-                        responsible_address: text(c.responsible_address),
-                        status: c.status ?? 1
-                    });
-                    formData.contract_number_display = text(item.contract_number_display) || text(c.contract_number).slice(-4);
-                }
-
-                if (item.passengers && Array.isArray(item.passengers)) {
-                    formData.passengers = item.passengers.map(p => ({
-                        uuid: null,
-                        type_of_document_uuid: p.type_of_document_uuid || '',
-                        document_number: p.document_number || '',
-                        first_and_last_name: p.first_and_last_name || ''
-                    }));
-                }
-
-                // REGLA: Fecha de Inicio y Fecha de Vencimiento deben estar vacías al renovar
-                formData.effective_date = '';
-                formData.expiration_date = '';
-                formData.issue_date = new Date().toISOString().split('T')[0];
-
-                // FUEC nuevo: nuevo código y números
-                formData.verification_code = '';
-                formData.number_fuec = '';
-                formData.request_number = '';
-
-                // Omitir paso 1 (selección de vehículo)
-                formFuec.value = false;
-
-                // El FUEC es nuevo: se revalida el vehículo hoy (documentos, convenio, tope de vencimiento).
-                // El consecutivo de vista previa lo calcula el watcher de company/contratante.
-                if (formData.vehicle_uuid) {
-                    const catalogVehicle = store.catalogs.vehicles?.find(v => v.uuid === formData.vehicle_uuid);
-                    selectedVehicle.value = catalogVehicle || null;
-                    await consultarVehiculo({ renovando: true });
-                }
-            }
+            await hidratarFormularioDesdeFuec(item, { esRenovacion: true });
         } else {
             let companyUuid = authStore.currentTenant?.id;
             if (!companyUuid && store.catalogs.companies && store.catalogs.companies.length > 0) {
