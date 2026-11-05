@@ -180,7 +180,7 @@ describe('listado de hojas de control (acción Editar)', () => {
         expect(botonesEditar).toHaveLength(0);
     });
 
-    it('permite actualización general desde el botón Editar de cada tarjeta en Proyectos Activos de la Flota', async () => {
+    it('permite modificar fechas desde el botón Modificar Fechas y ya no muestra Editar en las tarjetas', async () => {
         mock.permissions.edit = true;
         mock.store.viewMode = 'projects';
         mock.store.projectsOverview = [
@@ -216,9 +216,11 @@ describe('listado de hojas de control (acción Editar)', () => {
         await flushPromises();
 
         const btnEditarTarjeta = wrapper.find('.project-card button[aria-label="Editar hojas del proyecto Proyecto Uno"]');
-        expect(btnEditarTarjeta.exists()).toBe(true);
+        expect(btnEditarTarjeta.exists()).toBe(false);
 
-        await btnEditarTarjeta.trigger('click');
+        const btnModificarFechas = wrapper.findAll('button').find((b) => b.text().includes('Modificar Fechas'));
+        expect(btnModificarFechas).toBeDefined();
+        await btnModificarFechas.trigger('click');
         await flushPromises();
 
         const inputFin = wrapper.find('#bulk-end-date');

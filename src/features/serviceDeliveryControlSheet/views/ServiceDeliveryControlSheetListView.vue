@@ -108,10 +108,8 @@
             :selected-project-uuid="store.projectFilter"
             :loading="store.loading"
             :can-create-project="permissionsStore.can('projects.create')"
-            :can-edit-sheets="permissions.edit"
             @select="onProjectCardSelect"
             @create-project="goToCreateProject"
-            @edit-project-sheets="openBulkUpdateModal"
         />
 
         <!-- LISTADO: cabecera contextual del proyecto + toolbar + tabla + paginador en una sola tarjeta -->
@@ -141,11 +139,11 @@
                         v-if="permissions.edit && selectedProject.uuid"
                         type="button"
                         class="btn btn-primary btn-project-action shadow-xs"
-                        title="Actualizar fechas o ruta de todas las hojas de control abiertas del proyecto"
+                        title="Modificar fechas de vigencia de las hojas de control del proyecto"
                         @click="openBulkUpdateModal(selectedProject)"
                     >
                         <i class="fad fa-calendar-edit" aria-hidden="true" />
-                        <span>Actualizar General</span>
+                        <span>Modificar Fechas</span>
                     </button>
                     <button
                         v-if="permissions.pdf"
@@ -247,11 +245,11 @@
                         v-if="permissions.edit && !(store.viewMode === 'projects' && selectedProject)"
                         type="button"
                         class="btn btn-primary btn-project-action shadow-xs"
-                        title="Actualizar fechas o ruta de todas las hojas de control abiertas de un proyecto"
+                        title="Modificar fechas de vigencia de las hojas de control de un proyecto"
                         @click="openBulkUpdateModal(selectedProject)"
                     >
                         <i class="fad fa-calendar-edit" aria-hidden="true" />
-                        <span>Actualizar General</span>
+                        <span>Modificar Fechas</span>
                     </button>
                     <button
                         v-if="permissions.pdf && !(store.viewMode === 'projects' && selectedProject)"
@@ -665,12 +663,13 @@
         </div>
     </div>
 
-    <!-- DIÁLOGO ÚNICO DE REPORTES: rango, vehículo, conductor, día y mensual en PDF y Excel (solo cerradas) -->
+    <!-- DIÁLOGO ÚNICO DE REPORTES: rango, vehículo, conductor, día, mensual y proyecto en PDF y Excel (solo cerradas) -->
     <ServiceReportsDialog
         v-model:visible="showReportsDialog"
         :vehicles="reportVehicles"
         :drivers="reportDrivers"
         :project="selectedProject"
+        :projects="reportProjects"
     />
 
     <!-- DIÁLOGO DE ACTUALIZACIÓN GENERAL DE HOJAS DEL PROYECTO -->
@@ -685,7 +684,7 @@
         <template #header>
             <div class="d-flex align-items-center gap-2">
                 <i class="fad fa-calendar-edit text-primary fs-4" aria-hidden="true"></i>
-                <h5 class="mb-0 fw-bold">Actualización General de Hojas de Control</h5>
+                <h5 class="mb-0 fw-bold">Modificar Fechas de Hojas de Control</h5>
             </div>
         </template>
         <div class="p-1">
@@ -837,6 +836,7 @@ const bulkUpdateForm = reactive({
 });
 const reportVehicles = computed(() => store.catalogs.vehicles ?? []);
 const reportDrivers = computed(() => store.catalogs.drivers ?? []);
+const reportProjects = computed(() => (store.projects?.length ? store.projects : (store.projectsOverview ?? [])));
 const downloadingDaily = ref(null);
 const sharingLink = ref(null);
 
