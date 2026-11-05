@@ -1,4 +1,5 @@
 import { BaseService } from '@/services/api/base.service.js';
+import { logger } from '@/utils/logger.js';
 
 class CompaniesService extends BaseService {
     constructor() {
@@ -34,7 +35,7 @@ class CompaniesService extends BaseService {
                 const res = await this._getInstance().get(url);
                 return res.data?.data ?? res.data ?? [];
             } catch (err) {
-                console.warn(`Error cargando catálogo: ${url}`, err.message);
+                logger.warn(`Error cargando catálogo: ${url}`, err.message);
                 return [];
             }
         };
