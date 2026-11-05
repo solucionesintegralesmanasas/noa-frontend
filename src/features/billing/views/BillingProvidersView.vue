@@ -1,388 +1,224 @@
 <template>
-    <BasePageHeader title="Proveedores de facturación" subtitle="Conexión con el proveedor tecnológico por empresa"
-        icon="fad fa-server text-primary" :show-back="true" :show-refresh="true"
-        :breadcrumbs="[{ label: 'Comercial' }, { label: 'Facturación', to: '/facturacion' }, { label: 'Proveedores' }]"
-        @back="goBack" @refresh="recargar" />
+    <BasePageHeader title="Proveedores de facturación"
+        description="Conexión con Factus para la emisión de facturas electrónicas ante la DIAN."
+        icon="fad fa-server text-primary" :show-refresh="true" :show-create="true" :show-bg="true"
+        :can-create="can('billing_providers.create')" :loading="isViewLoading || store.loading" :compact="true"
+        :breadcrumbs="[{ label: 'Finanzas' }, { label: 'Facturación', to: '/facturacion' }, { label: 'Proveedores' }]"
+        @refresh="refreshTable" @create="goToCreate" />
 
-    <div class="row g-2 g-md-3">
-        <div class="col-12 col-lg-5" ref="tarjetaFormulario">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fas fa-id-card text-primary" aria-hidden="true"></i>
-                        <h6 class="mb-0 fw-medium">{{ editando ? 'Editar proveedor' : 'Nuevo proveedor tecnológico' }}</h6>
-                    </div>
-                    <span v-if="editando" class="badge rounded-pill bg-warning text-dark">
-                        <i class="fas fa-pen me-1" aria-hidden="true"></i>Editando
-                    </span>
-                </div>
-                <div class="card-body">
-                    <form @submit.prevent="handleSubmit" class="row g-3" novalidate>
-                        <!-- Proveedor -->
-                        <fieldset>
-                            <legend class="leyenda">Proveedor</legend>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label required" for="f-name">Nombre</label>
-                                    <input id="f-name" v-model="formData.name" class="form-control"
-                                        :class="{ 'is-invalid': errors.name }" type="text" placeholder="Ej: ApiDian"
-                                        maxlength="100"
-                                        :aria-invalid="!!errors.name"
-                                        :aria-describedby="errors.name ? 'f-name-error' : undefined" />
-                                    <div v-if="errors.name" class="invalid-feedback d-block" id="f-name-error" role="alert">
-                                        {{ errors.name }}
-                                    </div>
+    <!-- LISTADO: toolbar + tabla en una sola tarjeta -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar">
+            <div class="noa-search">
+                <i class="fal fa-search noa-search__icon" aria-hidden="true" />
+                <input id="f-proveedores-busqueda" v-model="searchQuery" class="noa-search__input" type="search"
+                    placeholder="Buscar por nombre, usuario o URL..."
+                    aria-label="Buscar proveedor de facturación" @input="onSearch" />
+                <button v-if="searchQuery" class="noa-search__clear" type="button"
+                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda" @click="clearSearch">
+                    <i class="fal fa-times" aria-hidden="true" />
+                </button>
+            </div>
+
+            <span v-if="!isViewLoading && !store.loading" class="noa-results">
+                <i class="fas fa-filter" aria-hidden="true" />
+                {{ proveedoresFiltrados.length }} proveedor{{ proveedoresFiltrados.length !== 1 ? 'es' : '' }}
+                <template v-if="searchQuery"> para "{{ searchQuery }}"</template>
+            </span>
+        </div>
+
+        <!-- SKELETON -->
+        <div v-if="isViewLoading" class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th v-for="w in ['34%', '22%', '14%', '12%', '18%']" :key="w" style="padding:12px 8px">
+                                <div class="skeleton-text" :style="`height:16px;width:${w}`" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="n in 3" :key="`sk-${n}`">
+                            <td><div class="skeleton-text" style="height:18px;width:70%;" /></td>
+                            <td><div class="skeleton-text" style="height:18px;width:55%;" /></td>
+                            <td><div class="skeleton-text" style="height:18px;width:60%;" /></td>
+                            <td><div class="skeleton-text" style="height:18px;width:60%;" /></td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <div v-for="j in 2" :key="j" class="skeleton-icon" style="height:28px;width:28px;" />
                                 </div>
-
-                                <div class="col-12">
-                                    <label class="form-label required" for="f-driver">Proveedor tecnológico</label>
-                                    <PrimeSelect input-id="f-driver" v-model="formData.driver"
-                                        :options="opcionesDriver" option-label="etiqueta" option-value="valor"
-                                        placeholder="Seleccione el proveedor tecnológico"
-                                        :invalid="!!errors.driver" v-bind="fieldAria('driver')" />
-                                    <div v-if="errors.driver" class="invalid-feedback d-block" id="f-driver-error" role="alert">
-                                        {{ errors.driver }}
-                                    </div>
-                                </div>
-
-                                <div class="col-12" v-if="formData.driver === 'apidian'">
-                                    <label class="form-label required" for="f-server_url">URL del API</label>
-                                    <input id="f-server_url" v-model="formData.server_url" class="form-control"
-                                        :class="{ 'is-invalid': errors.server_url }" type="url"
-                                        placeholder="https://apidian.systemsfact.com.co" maxlength="200"
-                                        :aria-invalid="!!errors.server_url"
-                                        :aria-describedby="errors.server_url ? 'f-server_url-error' : undefined" />
-                                    <div v-if="errors.server_url" class="invalid-feedback d-block" id="f-server_url-error" role="alert">
-                                        {{ errors.server_url }}
-                                    </div>
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        <!-- Login -->
-                        <fieldset v-if="formData.driver === 'apidian'">
-                            <legend class="leyenda">Login ApiDian</legend>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label required" for="f-client_id">Correo de login</label>
-                                    <input id="f-client_id" v-model="formData.client_id" class="form-control"
-                                        :class="{ 'is-invalid': errors.client_id }" type="email"
-                                        maxlength="200" autocomplete="off" placeholder="sandbox-…@pruebas.local"
-                                        :aria-invalid="!!errors.client_id"
-                                        :aria-describedby="errors.client_id ? 'f-client_id-error' : undefined" />
-                                    <div v-if="errors.client_id" class="invalid-feedback d-block" id="f-client_id-error" role="alert">
-                                        {{ errors.client_id }}
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label" :class="{ required: !editando }" for="f-client_password">Contraseña</label>
-                                    <input id="f-client_password" v-model="formData.client_password" class="form-control"
-                                        :class="{ 'is-invalid': errors.client_password }" type="password"
-                                        :placeholder="editando ? 'Dejar vacío para conservar el token actual' : 'Contraseña del portal ApiDian'"
-                                        maxlength="255" autocomplete="new-password"
-                                        :aria-invalid="!!errors.client_password"
-                                        :aria-describedby="errors.client_password ? 'f-client_password-error' : undefined" />
-                                    <div v-if="errors.client_password" class="invalid-feedback d-block" id="f-client_password-error" role="alert">
-                                        {{ errors.client_password }}
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <div class="alert alert-light border small py-2 px-3 mb-0 d-flex align-items-start gap-2" role="note">
-                                        <i class="fas fa-key text-primary mt-1" aria-hidden="true"></i>
-                                        <span>
-                                            Al guardar, NOA <strong>inicia sesión</strong> con estos datos y guarda el token
-                                            automáticamente; no hay que pegarlo. Si expira, se renueva solo.
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        <!-- Habilitación -->
-                        <fieldset v-if="formData.driver === 'apidian'">
-                            <legend class="leyenda">Habilitación DIAN</legend>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label" for="f-test_set_id">Set de pruebas</label>
-                                    <input id="f-test_set_id" v-model="formData.test_set_id" class="form-control" type="text"
-                                        placeholder="Vacío = producción; en habilitación va el testSetId del portal" maxlength="100" />
-                                    <small class="text-muted d-block mt-1">
-                                        Si viene, la emisión va a la ruta de habilitación con test_set_id.
-                                    </small>
-                                </div>
-
-                                <div class="col-12">
-                                    <div class="form-check rounded bg-light p-2 px-3">
-                                        <input class="form-check-input" type="checkbox" id="f-send_to_dian"
-                                            v-model="formData.send_to_dian">
-                                        <label class="form-check-label" for="f-send_to_dian">
-                                            Transmitir a la DIAN
-                                        </label>
-                                        <small class="text-muted d-block">
-                                            Sin marcar: ApiDian valida, firma y persiste <strong>sin</strong> contactar la DIAN.
-                                            Márcalo solo con las habilitaciones oficiales o producción.
-                                        </small>
-                                    </div>
-                                    <div v-if="formData.send_to_dian && !formData.test_set_id.trim()"
-                                        class="alert alert-warning small py-2 px-3 mt-2 mb-0 d-flex align-items-center gap-2" role="alert">
-                                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                                        <span>Send en producción sin set de pruebas: revisa que tus habilitaciones estén listas.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        <div class="col-12">
-                            <BaseFormActions :submitting="isSubmitting" :is-edit-mode="editando"
-                                :submit-label="editando ? 'Guardar cambios' : 'Conectar proveedor'"
-                                @cancel="cancelarEdicion" />
-                        </div>
-                    </form>
-                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="col-12 col-lg-7">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fas fa-list text-primary" aria-hidden="true"></i>
-                        <h6 class="mb-0 fw-medium">Proveedores registrados</h6>
-                    </div>
-                    <span class="badge rounded-pill bg-light text-body border">{{ store.providers.length }}</span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <DataTable :value="store.providers" :loading="store.loading" responsiveLayout="scroll"
-                            tableStyle="min-width: 32rem" class="table table-sm mb-0">
-                            <template #empty>
-                                <div class="text-center py-5 px-3">
-                                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light mb-3"
-                                        style="width: 56px; height: 56px;">
-                                        <i class="fad fa-server fs-5 text-secondary" aria-hidden="true"></i>
-                                    </div>
-                                    <p class="fw-medium mb-1">Aún no hay proveedores registrados</p>
-                                    <p class="text-muted small mb-0 mx-auto" style="max-width: 28rem;">
-                                        Registra el primero con el correo y la contraseña de ApiDian:
-                                        el token se obtiene solo.
-                                    </p>
-                                </div>
-                            </template>
-                            <Column field="name" header="Nombre">
-                                <template #body="{ data }">
-                                    <strong>{{ data.name }}</strong>
-                                    <div v-if="data.description" class="text-muted small">{{ data.description }}</div>
-                                </template>
-                            </Column>
-                            <Column header="Integración" style="width: 7rem;">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill"
-                                        :class="data.driver === 'apidian' ? 'bg-primary' : 'bg-secondary'">
-                                        {{ data.driver === 'apidian' ? 'ApiDian' : 'Nula' }}
-                                    </span>
-                                </template>
-                            </Column>
-                            <Column header="Envío DIAN" style="width: 8rem;" class="text-center">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill" :class="data.send_to_dian ? 'bg-success' : 'bg-secondary'">
-                                        {{ data.send_to_dian ? 'Transmite' : 'Sin envío' }}
-                                    </span>
-                                </template>
-                            </Column>
-                            <Column header="Estado" style="width: 6rem;" class="text-center">
-                                <template #body="{ data }">
-                                    <span class="badge rounded-pill" :class="data.is_active ? 'bg-success' : 'bg-secondary'">
-                                        {{ data.is_active ? 'Activo' : 'Inactivo' }}
-                                    </span>
-                                </template>
-                            </Column>
-                            <Column header="Acciones" style="width: 10rem;" class="text-center">
-                                <template #body="{ data }">
-                                    <button v-if="data.driver === 'apidian' && can('billing_providers.update')"
-                                        class="btn btn-sm btn-outline-secondary me-1" type="button"
-                                        aria-label="Configurar ApiDian" title="Configuración básica ApiDian"
-                                        @click="goToConfig(data)">
-                                        <i class="fas fa-sliders-h" aria-hidden="true"></i>
-                                    </button>
-                                    <button v-if="can('billing_providers.update')" class="btn btn-sm btn-outline-primary me-1"
-                                        type="button" aria-label="Editar proveedor" @click="goToEdit(data)">
-                                        <i class="fas fa-pen" aria-hidden="true"></i>
-                                    </button>
-                                    <button v-if="can('billing_providers.delete')" class="btn btn-sm btn-outline-danger"
-                                        type="button" aria-label="Eliminar proveedor" @click="confirmarEliminar(data)">
-                                        <i class="fas fa-trash" aria-hidden="true"></i>
-                                    </button>
-                                </template>
-                            </Column>
-                        </DataTable>
-                    </div>
-                </div>
+        <!-- DATATABLE -->
+        <div v-else class="card-body p-0">
+            <div class="table-responsive scrollbar">
+                <DataTable :value="proveedoresFiltrados" :loading="store.loading" responsiveLayout="scroll"
+                    tableStyle="min-width: 46rem" class="table table-sm mb-0 professional-table noa-table-fixed"
+                    emptyMessage="No se encontraron proveedores">
+
+                    <!-- Nombre -->
+                    <Column header="Proveedor" style="width: 34%;">
+                        <template #body="{ data }">
+                            <span class="noa-cell-strong">{{ data.name || '—' }}</span>
+                            <div class="noa-cell-sub">
+                                <i class="fal fa-at me-1" aria-hidden="true"></i>{{ data.email || 'Sin usuario' }}
+                            </div>
+                        </template>
+                    </Column>
+
+                    <!-- Ambiente -->
+                    <Column header="Ambiente" style="width: 22%;">
+                        <template #body="{ data }">
+                            <span class="noa-cell-sub">{{ ambienteDe(data) }}</span>
+                        </template>
+                    </Column>
+
+                    <!-- Envío DIAN -->
+                    <Column header="Envío DIAN" class="text-center" header-class="text-center" style="width: 14%;">
+                        <template #body="{ data }">
+                            <span class="noa-status" :class="data.send_to_dian ? 'noa-status--success' : 'noa-status--muted'">
+                                {{ data.send_to_dian ? 'Transmite' : 'Sandbox' }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Estado -->
+                    <Column header="Estado" class="text-center" header-class="text-center" style="width: 12%;">
+                        <template #body="{ data }">
+                            <span class="noa-status" :class="data.is_active ? 'noa-status--success' : 'noa-status--muted'">
+                                {{ data.is_active ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </template>
+                    </Column>
+
+                    <!-- Acciones -->
+                    <Column header="Acciones" class="noa-col-actions" header-class="noa-col-actions" style="width: 18%;"
+                        v-if="can('billing_providers.update') || can('billing_providers.delete')">
+                        <template #body="{ data }">
+                            <RowActions :actions="accionesDe(data)" :row-label="data.name || 'proveedor'" />
+                        </template>
+                    </Column>
+
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-server fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">No hay proveedores registrados</h6>
+                            <p class="text-muted small mb-3">Conecta Factus para emitir facturas electrónicas de servicios.</p>
+                            <button v-if="can('billing_providers.create')" class="btn btn-primary btn-sm" type="button" @click="goToCreate">
+                                <i class="fad fa-plus me-1" aria-hidden="true" />Conectar Factus
+                            </button>
+                        </div>
+                    </template>
+
+                    <template #loading>
+                        <NoaTableSpinner message="Cargando proveedores..." />
+                    </template>
+                </DataTable>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBillingStore } from '../store/billing.store.js';
-import { usePermissionsStore, useUserStore } from '@store';
-import { useAccessibleForm } from '@/hooks/useAccessibleForm.js';
+import { usePermissionsStore } from '@store';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
-import BaseFormActions from '@/components/BaseFormActions.vue';
-import PrimeSelect from '@/components/form/PrimeSelect.vue';
+import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
+import RowActions from '@/components/RowActions.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
 const router = useRouter();
 const store = useBillingStore();
-const userStore = useUserStore();
 const permissionsStore = usePermissionsStore();
 const can = (action) => permissionsStore.can(action);
 
-const opcionesDriver = [
-    { valor: 'nulo', etiqueta: 'Nula (sin FE, facturación interna)' },
-    { valor: 'apidian', etiqueta: 'ApiDian (emisión electrónica DIAN)' },
-];
+const isViewLoading = ref(true);
+const searchQuery = ref('');
 
-const goBack = () => router.push('/facturacion');
-const recargar = () => store.fetchProviders();
-const goToConfig = (data) => router.push(`/facturacion/proveedores/${data.uuid}/configuracion`);
+const { confirmDelete, initTooltips, destroyTooltips } = useTableActions({
+    deleteItem: (uuid) => store.eliminarProveedor(uuid),
+});
 
-const { formData, errors, isSubmitting, fieldAria, validateAndFocus, submit, reset } = useAccessibleForm(
+const proveedoresFiltrados = computed(() => {
+    const query = searchQuery.value.trim().toLowerCase();
+    if (!query) return store.providers;
+    return store.providers.filter((p) =>
+        [p.name, p.email, p.server_url].some((v) => String(v ?? '').toLowerCase().includes(query))
+    );
+});
+
+const ambienteDe = (data) => {
+    const url = String(data.server_url ?? '');
+    if (!url) return '—';
+    if (url.includes('sandbox')) return 'Sandbox';
+    return 'Producción';
+};
+
+const onSearch = () => { /* el filtrado es en cliente (computed) */ };
+const clearSearch = () => { searchQuery.value = ''; };
+const refreshTable = () => store.fetchProviders();
+
+const goToCreate = () => router.push('/facturacion/proveedores/nuevo');
+const goToEdit = (uuid) => router.push(`/facturacion/proveedores/editar/${uuid}`);
+
+const handleDelete = (item) => confirmDelete(item, {
+    title: '¿Eliminar proveedor?',
+    html: `<p class="mb-2">Se eliminará <strong>${item.name}</strong>.</p>
+           <div class="alert alert-warning small mb-0 mt-2">
+               La empresa dejará de emitir facturas electrónicas hasta conectar otro proveedor.
+           </div>`,
+    nameField: 'name',
+});
+
+const accionesDe = (data) => [
     {
-        company_uuid: '',
-        name: '',
-        driver: 'apidian',
-        server_url: '',
-        test_set_id: '',
-        send_to_dian: false,
-        client_id: '',
-        client_password: '',
+        key: 'editar',
+        label: 'Editar',
+        icon: 'far fa-pen',
+        tone: 'warning',
+        inline: true,
+        visible: can('billing_providers.update'),
+        onClick: () => goToEdit(data.uuid),
     },
     {
-        name: { required: true, label: 'Nombre' },
-        driver: { required: true, label: 'Proveedor tecnológico' },
-    }
-);
-
-const editando = computed(() => !!store.providerEnEdicion);
-const tarjetaFormulario = ref(null);
-
-const enfocarFormulario = () => {
-    nextTick(() => {
-        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        tarjetaFormulario.value?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-    });
-};
-
-const limpiarCampos = () => {
-    reset();
-    formData.driver = 'apidian';
-};
-
-const cancelarEdicion = () => {
-    store.providerEnEdicion = null;
-    limpiarCampos();
-};
-
-const goToEdit = (data) => {
-    store.providerEnEdicion = data.uuid;
-    formData.name = data.name ?? '';
-    formData.driver = data.driver ?? 'nulo';
-    formData.server_url = data.server_url ?? '';
-    formData.test_set_id = data.test_set_id ?? '';
-    formData.send_to_dian = !!data.send_to_dian;
-    formData.client_id = data.client_id ?? '';
-    formData.client_password = '';
-    enfocarFormulario();
-};
-
-const confirmarEliminar = async (data) => {
-    const acciones = useTableActions({
-        deleteItem: (uuid) => store.eliminarProveedor(uuid),
-    });
-    await acciones.confirmDelete(data, {
-        title: '¿Eliminar proveedor?',
-        html: `<p class="mb-2">Se eliminará <strong>${data.name}</strong>.</p>
-               <div class="alert alert-warning small mb-0 mt-2">
-                   Las resoluciones que lo referencien quedarán sin proveedor.
-               </div>`,
-        nameField: 'name',
-    });
-};
-
-const handleSubmit = () => submit(async () => {
-    if (!(await validateAndFocus())) return;
-
-    const esApiDian = formData.driver === 'apidian';
-
-    if (esApiDian && !formData.client_id.trim()) {
-        errors.client_id = 'El correo de login es obligatorio para iniciar sesión';
-        document.getElementById('f-client_id')?.focus();
-        return;
-    }
-
-    if (esApiDian && !formData.server_url.trim()) {
-        errors.server_url = 'Sin la URL del API, ApiDian no puede recibir los documentos';
-        document.getElementById('f-server_url')?.focus();
-        return;
-    }
-
-    if (esApiDian && !editando.value && !formData.client_password.trim()) {
-        errors.client_password = 'La contraseña es obligatoria para iniciar sesión';
-        document.getElementById('f-client_password')?.focus();
-        return;
-    }
-
-    const datos = {
-        company_uuid: formData.company_uuid || userStore.company_uuid || userStore.companies?.[0]?.uuid,
-        name: formData.name.trim(),
-        driver: formData.driver,
-        server_url: esApiDian ? formData.server_url.trim() : null,
-        test_set_id: esApiDian ? (formData.test_set_id.trim() || null) : null,
-        send_to_dian: esApiDian ? !!formData.send_to_dian : false,
-        client_id: esApiDian ? formData.client_id.trim() : null,
-        is_active: true,
-    };
-
-    // La contraseña solo viaja si se escribió; al editar sin escribirla se conserva el token.
-    if (esApiDian && formData.client_password.trim()) {
-        datos.client_password = formData.client_password.trim();
-    }
-
-    if (editando.value) {
-        await store.actualizarProveedor(store.providerEnEdicion, datos);
-        cancelarEdicion();
-    } else {
-        await store.crearProveedor(datos);
-        limpiarCampos();
-    }
-});
+        key: 'eliminar',
+        label: 'Eliminar',
+        icon: 'far fa-trash-alt',
+        tone: 'danger',
+        visible: can('billing_providers.delete'),
+        onClick: () => handleDelete(data),
+    },
+];
 
 onMounted(async () => {
-    formData.company_uuid = userStore.company_uuid || userStore.companies?.[0]?.uuid || '';
-    try { await store.fetchProviders(); } catch (_e) { /* el store ya notificó */ }
+    try {
+        await store.fetchProviders();
+    } finally {
+        isViewLoading.value = false;
+        initTooltips();
+    }
 });
+
+onUnmounted(() => destroyTooltips());
 </script>
 
 <style scoped>
-.card { border-radius: 0.75rem !important; }
-.required::after { content: " *"; color: #dc3545; font-weight: 600; }
-.leyenda {
-    float: none;
-    width: auto;
-    padding: 0;
-    margin: 0 0 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #5e6e82;
-    border-bottom: 1px solid #e3ebf6;
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
 }
-:focus-visible { outline: 2px solid #0d6efd !important; outline-offset: 2px !important; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translate3d(0, 15px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
 </style>
