@@ -262,6 +262,86 @@
                 </div>
               </div>
             </template>
+
+            <!-- ══════════════ Paso: Renovación / Desvinculación ══════════════ -->
+            <template v-else-if="esPasoRenovacion || esPasoDesvinculacion">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
+                  <i class="fad fa-file-signature text-primary" aria-hidden="true"></i>
+                </span>
+                <h2 class="h6 mb-0 fw-semibold">
+                  {{ esPasoRenovacion ? 'Requisitos de la renovación' : 'Datos de la desvinculación' }}
+                </h2>
+              </div>
+              <p class="text-muted mb-4 noa-intro">
+                Capture los datos que se imprimen en el documento. El estado del pago de derechos es informativo y no bloquea el cierre del paso.
+              </p>
+
+              <div class="row g-3">
+                <template v-if="esPasoRenovacion">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="f-old_card_number">Tarjeta de operación actual</label>
+                    <input id="f-old_card_number" v-model="pasoForm.old_card_number" class="form-control" maxlength="20" placeholder="Número de la tarjeta vigente" />
+                  </div>
+                  <div class="col-12 col-md-8 d-flex flex-wrap align-items-end gap-4">
+                    <div class="form-check">
+                      <input id="f-simit_clear" v-model="pasoForm.simit_clear" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-simit_clear">SIMIT sin comparendos pendientes</label>
+                    </div>
+                    <div class="form-check">
+                      <input id="f-soat_valid" v-model="pasoForm.soat_valid" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-soat_valid">SOAT vigente</label>
+                    </div>
+                    <div class="form-check">
+                      <input id="f-rtm_valid" v-model="pasoForm.rtm_valid" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-rtm_valid">Revisión técnico-mecánica vigente</label>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-if="esPasoDesvinculacion">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="f-paz_y_salvo">Referencia del paz y salvo</label>
+                    <input id="f-paz_y_salvo" v-model="pasoForm.paz_y_salvo" class="form-control" maxlength="100" placeholder="Ej. PYS-2026-001" />
+                  </div>
+                </template>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-radicado_number">Número de radicado</label>
+                  <input id="f-radicado_number" v-model="pasoForm.radicado_number" class="form-control" maxlength="50" placeholder="Radicado ante el Ministerio" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-resolution_number">Número de resolución</label>
+                  <input id="f-resolution_number" v-model="pasoForm.resolution_number" class="form-control" maxlength="50" placeholder="Resolución del trámite" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-payment_status">Pago de derechos</label>
+                  <PrimeSelect
+                    input-id="f-payment_status"
+                    v-model="pasoForm.payment_status"
+                    :options="opcionesPago"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Sin registrar"
+                    showClear
+                    class="w-100"
+                  />
+                  <p class="text-muted small mb-0 mt-1">Informativo: no bloquea el cierre del paso.</p>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="f-subject">Asunto del expediente</label>
+                  <input id="f-subject" v-model="pasoForm.subject" class="form-control" maxlength="255" placeholder="Referencia interna del expediente" />
+                </div>
+
+                <div v-if="puedeActualizar" class="col-12 d-flex justify-content-end">
+                  <button type="button" class="btn btn-outline-primary d-inline-flex align-items-center gap-2" :disabled="guardandoPaso" @click="guardarPaso">
+                    <i class="fas" :class="guardandoPaso ? 'fa-spinner fa-spin' : 'fa-save'" aria-hidden="true"></i>
+                    Guardar datos del paso
+                  </button>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </template>
@@ -688,6 +768,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DateInput from '@/components/form/DateInput.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import RadicacionTimeline from '../components/RadicacionTimeline.vue';
 import service, { mensajeDeError } from '../services/radicacion.service.js';
 import { fechasAutomaticas, validarFechasContrato } from '../utils/fechasContrato.js';
@@ -703,6 +784,52 @@ const cargando = ref(false);
 const cargandoDetalle = ref(true);
 const detalle = ref(null);
 const lote = ref(null);
+
+// ── Datos del paso: renovación, desvinculación y pago de derechos ──
+const pasoForm = reactive({
+  simit_clear: false,
+  soat_valid: false,
+  rtm_valid: false,
+  old_card_number: '',
+  radicado_number: '',
+  payment_status: '',
+  resolution_number: '',
+  paz_y_salvo: '',
+  subject: '',
+});
+const opcionesPago = [
+  { label: 'Pendiente', value: 'PENDIENTE' },
+  { label: 'Pagado', value: 'PAGADO' },
+  { label: 'Exonerado', value: 'EXONERADO' },
+  { label: 'No aplica', value: 'NO_APLICA' },
+];
+const guardandoPaso = ref(false);
+const esPasoRenovacion = computed(() => pasoActual.value?.paso === 'RENOVACION_TARJETA');
+const esPasoDesvinculacion = computed(() => ['DESVINCULACION_MUTUO', 'DESVINCULACION_UNILATERAL']
+  .includes(pasoActual.value?.paso));
+
+/** Copia al formulario los datos ya guardados del paso actual. */
+function hidratarPasoForm() {
+  const registro = (detalle.value?.pasos ?? []).find((p) => p.uuid === pasoActual.value?.uuid) ?? {};
+  for (const campo of Object.keys(pasoForm)) {
+    pasoForm[campo] = registro[campo] ?? (typeof pasoForm[campo] === 'boolean' ? false : '');
+  }
+}
+
+async function guardarPaso() {
+  if (!pasoActual.value?.uuid) return;
+  guardandoPaso.value = true;
+  try {
+    const r = await service.actualizarPaso(pasoActual.value.uuid, { ...pasoForm });
+    detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
+    toast('Datos del paso guardados', '', 'success');
+  } catch (e) {
+    toast('No se guardaron los datos del paso', mensajeDeError(e), 'error');
+  } finally {
+    guardandoPaso.value = false;
+  }
+}
 
 const esPasoTarjeta = computed(() => pasoActual.value?.paso === 'TARJETA_DE_OPERACION');
 const contratos = computed(() => detalle.value?.contratos ?? []);
@@ -796,6 +923,7 @@ async function cargar() {
   try {
     const r = await service.detalle(route.params.uuid);
     detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
     if (esPasoTarjeta.value) {
       for (const form of [formAdmin, formPrest]) {
         if (!form.start_date) form.start_date = hoy();
@@ -812,6 +940,7 @@ async function cerrarPaso() {
   try {
     const r = await service.avanzar(pasoActual.value.uuid);
     detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
     toast('Paso cerrado', '', 'success');
   } catch (e) { toast('No se pudo cerrar el paso', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
