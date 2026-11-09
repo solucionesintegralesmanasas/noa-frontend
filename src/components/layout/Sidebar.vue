@@ -275,6 +275,7 @@ const MENU_SECTIONS = [
         label: 'Reportes',
         items: [
             { id: 'reporte-vehiculos', label: 'Reporte de Vehículos', icon: 'fa-chart-bar', to: '/reportes/vehiculos', permissions: ['reports.vehicles.index'] },
+            { id: 'reporte-actividad-vehicular', label: 'Reporte de Actividad', icon: 'fa-clipboard-list', to: '/reportes/actividad-vehicular', permissions: ['reports.vehicle_activity.index'] },
             { id: 'calendario-vencimientos', label: 'Calendario de Vencimientos', icon: 'fa-calendar-alt', to: '/reportes/calendario', permissions: ['reports.vehicles.index'] },
         ],
     },

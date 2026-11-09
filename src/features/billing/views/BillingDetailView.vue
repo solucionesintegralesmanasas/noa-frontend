@@ -19,7 +19,7 @@
                     <div>
                         <strong class="font-monospace">{{ doc.invoice_number }}</strong>
                         <span class="badge rounded-pill ms-2" :class="claseEstado(doc.status)">{{ doc.status }}</span>
-                        <span v-if="doc.esFactura" class="badge bg-warning text-dark ms-1">Pendiente DIAN</span>
+                        <span v-if="doc.esFactura" class="badge ms-1" :class="claseEstadoElectronico">{{ etiquetaEstadoElectronico }}</span>
                     </div>
                     <div class="btn-group btn-group-sm" role="group">
                         <button v-if="can('commercial_invoices.update')" class="btn btn-falcon-default" type="button" title="Descargar PDF" aria-label="Descargar PDF" @click="descargar">
@@ -37,6 +37,10 @@
                         <dd v-if="doc.valid_until" class="col-sm-8">{{ doc.valid_until }}</dd>
                         <dt v-if="doc.due_date" class="col-sm-4">Vencimiento</dt>
                         <dd v-if="doc.due_date" class="col-sm-8">{{ doc.due_date }}</dd>
+                        <template v-if="doc.cufe">
+                            <dt class="col-sm-4">CUFE</dt>
+                            <dd class="col-sm-8 text-break small">{{ doc.cufe }}</dd>
+                        </template>
                     </dl>
 
                     <h6 class="text-muted fw-medium mt-3">Ítems</h6>
@@ -72,8 +76,8 @@
                         </template>
                     </dl>
 
-                    <div class="alert alert-warning small mt-3 mb-0">
-                        <i class="fad fa-info-circle me-1" aria-hidden="true" />Documento interno — pendiente de validación DIAN. Sin CUFE.
+                    <div v-if="doc.esFactura" class="alert small mt-3 mb-0" :class="alertaElectronica.clase">
+                        <i class="fad fa-info-circle me-1" aria-hidden="true" />{{ alertaElectronica.texto }}
                     </div>
                 </div>
             </div>
@@ -95,6 +99,9 @@
                         </button>
                     </template>
                     <template v-else>
+                        <button v-if="puedeEmitir" class="btn btn-sm btn-primary" type="button" :disabled="store.loading" @click="emitir">
+                            <i class="fad fa-paper-plane me-1" aria-hidden="true" />{{ store.loading ? 'Enviando…' : 'Enviar factura a la DIAN' }}
+                        </button>
                         <button v-if="puedePagar && can('commercial_invoices.create')" class="btn btn-sm btn-outline-success" type="button" @click="mostrarPago = true">
                             <i class="fad fa-coins me-1" aria-hidden="true" />Registrar pago
                         </button>
@@ -180,6 +187,23 @@ const saldo = computed(() => Math.max(0, Number(doc.value?.invoice_total || 0) -
 const puedePagar = computed(() => ['EMITIDA_INTERNA', 'PAGADA_PARCIAL'].includes(doc.value?.status));
 const puedeAnular = computed(() => ['BORRADOR', 'EMITIDA_INTERNA', 'PAGADA_PARCIAL'].includes(doc.value?.status));
 
+const ESTADOS_ELECTRONICOS = {
+    PENDIENTE_DIAN: { clase: 'bg-warning text-dark', etiqueta: 'Pendiente DIAN', alerta: 'warning', texto: 'Documento interno — pendiente de envío a la DIAN. Sin CUFE.' },
+    RECHAZADA_DIAN: { clase: 'bg-danger', etiqueta: 'Rechazada por la DIAN', alerta: 'danger', texto: 'La DIAN rechazó la factura. Revisa la respuesta del proveedor y vuelve a intentar el envío.' },
+    ACEPTADA_DIAN: { clase: 'bg-success', etiqueta: 'Aceptada por la DIAN', alerta: 'success', texto: 'Factura validada y aceptada por la DIAN.' },
+    VALIDADA_SIN_ENVIO: { clase: 'bg-info text-dark', etiqueta: 'Validada sin envío (sandbox)', alerta: 'info', texto: 'Validada por Factus en modo sandbox: no se transmitió a la DIAN real.' },
+};
+const estadoElectronico = computed(() => ESTADOS_ELECTRONICOS[doc.value?.electronic_status] ?? { clase: 'bg-secondary', etiqueta: 'Sin emitir', alerta: 'warning', texto: 'Documento interno — aún no se ha enviado a la DIAN. Sin CUFE.' });
+const claseEstadoElectronico = computed(() => estadoElectronico.value.clase);
+const etiquetaEstadoElectronico = computed(() => estadoElectronico.value.etiqueta);
+const alertaElectronica = computed(() => ({ clase: `alert-${estadoElectronico.value.alerta}`, texto: estadoElectronico.value.texto }));
+const puedeEmitir = computed(() =>
+    doc.value?.esFactura
+    && doc.value.status !== 'ANULADA'
+    && (!doc.value.electronic_status || ['PENDIENTE_DIAN', 'RECHAZADA_DIAN'].includes(doc.value.electronic_status))
+    && can('commercial_invoices.update')
+);
+
 const ESTADOS = {
     BORRADOR: 'bg-secondary', ENVIADA: 'bg-info', APROBADA: 'bg-success', RECHAZADA: 'bg-danger',
     VENCIDA: 'bg-danger', CONVERTIDA: 'bg-success', EMITIDA_INTERNA: 'bg-info',
@@ -228,6 +252,11 @@ const registrarPago = async () => {
 
 const anular = async () => {
     await store.anular(route.params.id);
+    await recargar();
+};
+
+const emitir = async () => {
+    await store.emitir(route.params.id);
     await recargar();
 };
 

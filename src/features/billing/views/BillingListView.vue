@@ -143,8 +143,8 @@
 
                     <Column field="status" header="Estado" style="width: 15%;" class="text-center" header-class="text-center">
                         <template #body="{ data }">
-                            <span class="noa-status" :class="statusModifier(data.status)">
-                                {{ data.status || '—' }}
+                            <span class="noa-status" :class="estadoModifier(data)">
+                                {{ estadoVisible(data) }}
                             </span>
                         </template>
                     </Column>
@@ -229,6 +229,20 @@ const statusModifier = (status) => {
             return 'noa-status--muted';
     }
 };
+
+const ESTADOS_DIAN = {
+    PENDIENTE_DIAN: { label: 'Pendiente DIAN', modifier: 'noa-status--warning' },
+    ACEPTADA_DIAN: { label: 'Aceptada DIAN', modifier: 'noa-status--success' },
+    VALIDADA_SIN_ENVIO: { label: 'Validada sin envío', modifier: 'noa-status--warning' },
+    RECHAZADA_DIAN: { label: 'Rechazada DIAN', modifier: 'noa-status--danger' },
+};
+
+const estadoDian = (data) =>
+    data.invoice_type === 'FACTURA_VENTA' ? ESTADOS_DIAN[data.electronic_status] : null;
+
+const estadoVisible = (data) => estadoDian(data)?.label ?? (data.status || '-');
+
+const estadoModifier = (data) => estadoDian(data)?.modifier ?? statusModifier(data.status);
 
 const nombreCliente = (data) => {
     const c = data.customer || {};

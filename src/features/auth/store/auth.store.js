@@ -31,8 +31,16 @@ export const useAuthStore = defineStore("auth", {
             try {
                 logger.info("Login attempt", { email: credentials.email });
 
-                // authService.login retorna { user, token }
-                const { user, token } = await authService.login(credentials);
+                // authService.login retorna { user, token } o { twoFactorRequired: true, user }
+                const result = await authService.login(credentials);
+
+                // Doble factor pendiente: no se marca autenticado todavía; la vista
+                // redirige a /two-factor para canjear el código.
+                if (result.twoFactorRequired) {
+                    return { twoFactorRequired: true, user: result.user };
+                }
+
+                const { user, token } = result;
 
                 // 1. Sincronizar Stores
                 useUserStore().setProfile(user);
@@ -58,6 +66,34 @@ export const useAuthStore = defineStore("auth", {
                 return user;
             } catch (e) {
                 logger.error("Login failed", { error: e.message });
+                throw e;
+            }
+        },
+
+        /**
+         * Canjea el código 2FA y completa el inicio de sesión.
+         */
+        async verifyTwoFactor(code) {
+            try {
+                const { user, token } = await authService.verifyTwoFactor(code);
+
+                useUserStore().setProfile(user);
+                usePermissionsStore().setUser(user);
+
+                this.isAuthenticated = true;
+                this.accessToken = token;
+                await tokenManager.setToken(token);
+
+                this.currentTenant = {
+                    id: user.tenantId || user.company_uuid,
+                    name: user.tenantName || "Default",
+                    role: user.role || "user",
+                };
+
+                logger.info("2FA verificado y sesión iniciada");
+                return user;
+            } catch (e) {
+                logger.error("Verificación 2FA fallida", { error: e.message });
                 throw e;
             }
         },

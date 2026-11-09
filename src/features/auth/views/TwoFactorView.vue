@@ -40,6 +40,8 @@
           <span v-if="errors.code" id="twofa-code-error" class="ferror" role="alert">{{ errors.code }}</span>
         </div>
 
+        <span v-if="verifyError" class="ferror" role="alert" style="margin-bottom: 0.75rem; display: block;">{{ verifyError }}</span>
+
         <button class="btn-main" @click="handleVerify" :disabled="isSubmitting">
           {{ isSubmitting ? 'Verificando...' : 'Verificar Código →' }}
         </button>
@@ -61,10 +63,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../store/auth.store.js';
 import { useFormManager } from '@/hooks/useFormManager.js';
+import { logger } from '@utils/logger.js';
 
 const router = useRouter();
+const authStore = useAuthStore();
 const isSmallMobile = ref(window.innerWidth <= 375);
+const verifyError = ref('');
 
 const { formData, errors, isSubmitting, validateAndFocus } = useFormManager(
   { code: '' },
@@ -76,15 +82,14 @@ const { formData, errors, isSubmitting, validateAndFocus } = useFormManager(
 const handleVerify = async () => {
   if (!(await validateAndFocus())) return;
 
+  verifyError.value = '';
   isSubmitting.value = true;
   try {
-    // Si tienes un método específico para el 2FA en tu store
-    // await authStore.verify2FA(formData.code);
-
-    // Mientras tanto redirige al dashboard
+    await authStore.verifyTwoFactor(formData.code);
     router.push('/dashboard');
   } catch (error) {
-    console.error('Fallo en la verificación:', error);
+    verifyError.value = error?.response?.data?.message ?? 'Código incorrecto o expirado.';
+    logger.error('Fallo en la verificación 2FA', { error: error?.message });
   } finally {
     isSubmitting.value = false;
   }
