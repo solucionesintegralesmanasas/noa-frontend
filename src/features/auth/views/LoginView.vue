@@ -136,7 +136,11 @@ const handleLogin = async () => {
   configStore.startNavigation();
 
   try {
-    await authStore.login(formData);
+    const result = await authStore.login(formData);
+    if (result?.twoFactorRequired) {
+      router.push('/two-factor');
+      return;
+    }
     router.push('/dashboard');
   } catch (error) {
     loginError.value = error?.response?.data?.message ?? 'Correo o contraseña incorrectos.';
