@@ -38,6 +38,7 @@ import { trackingRoutes } from '@/features/tracking/routes.js'
 import { vehicleDocumentsRoutes } from '@/features/vehicleDocuments/routes.js'
 import { vehicleInspectionsRoutes } from '@/features/vehicleInspections/routes.js'
 import { vehicleReportsRoutes } from '@/features/vehicleReports/routes.js'
+import { vehicleActivityReportsRoutes } from '@/features/vehicleActivityReports/routes.js'
 import { vehiclesRoutes } from '@/features/vehicles/routes.js'
 import { vehicleClassesRoutes } from '@/features/vehicleClasses/routes.js'
 import { withholdingsRoutes } from '@/features/withholdings/routes.js'
@@ -98,6 +99,7 @@ const routes = [
   ...vehicleDocumentsRoutes,
   ...vehicleInspectionsRoutes,
   ...vehicleReportsRoutes,
+  ...vehicleActivityReportsRoutes,
   ...vehiclesRoutes,
   ...vehicleClassesRoutes,
   ...withholdingsRoutes,
