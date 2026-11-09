@@ -47,6 +47,7 @@ Lectura obligatoria antes de tocar el frontend. Resume el estado real después d
 | Cliente HTTP / tenant | `npx vitest run src/services/api` |
 | Persistencia / sesión | `npx vitest run src/store src/services/security` |
 | Notificaciones | `npx vitest run src/features/notifications` |
+| Reporte de actividad vehicular | `npx vitest run src/features/vehicleActivityReports` |
 | Formularios compartidos | `npx vitest run src/components/form` |
 | Cualquier cambio | `npm run lint` + `npm run test:unit` (bloquean) y `npm run build` + `npm run test:perf` si toca peso |
 

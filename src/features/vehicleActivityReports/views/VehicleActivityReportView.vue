@@ -48,44 +48,47 @@
         </template>
     </BasePageHeader>
 
-    <!-- RANGO DE FECHAS (obligatorio) Y FILTROS OPCIONALES -->
-    <form class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.05s;" @submit.prevent="aplicar">
+    <!-- FILTROS DE CONSULTA (alineados a convención Stitch) -->
+    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.05s;">
         <div class="card-body py-2 px-3">
-            <div class="d-flex flex-wrap align-items-start gap-2">
-                <div class="d-flex align-items-center gap-2 me-1 text-muted" style="padding-top: 1.35rem;">
+            <form class="d-flex flex-wrap align-items-center gap-2" @submit.prevent="aplicar">
+                <div class="d-flex align-items-center gap-2 me-1 text-muted">
                     <i class="fad fa-filter text-primary" aria-hidden="true" />
-                    <span class="fw-semibold text-dark small text-nowrap">Filtrar por:</span>
+                    <span class="fw-semibold text-dark small text-nowrap">Rango:</span>
                 </div>
 
-                <div>
-                    <label class="form-label small mb-1" for="f-fecha-desde">Fecha desde</label>
+                <!-- Fecha Desde -->
+                <div style="min-width: 150px;">
+                    <label class="visually-hidden" for="f-fecha-desde">Fecha desde</label>
                     <DateInput
                         id="f-fecha-desde"
                         v-model="store.fechaDesde"
                         class="form-control form-control-sm"
+                        placeholder="Fecha desde"
+                        title="Fecha desde"
                         :aria-invalid="!!errores.fecha_desde"
                         :aria-describedby="errores.fecha_desde ? 'f-fecha-desde-error' : undefined"
                     />
-                    <div v-if="errores.fecha_desde" id="f-fecha-desde-error" class="text-danger small mt-1" role="alert">
-                        {{ errores.fecha_desde }}
-                    </div>
                 </div>
 
-                <div>
-                    <label class="form-label small mb-1" for="f-fecha-hasta">Fecha hasta</label>
+                <span class="text-muted small">a</span>
+
+                <!-- Fecha Hasta -->
+                <div style="min-width: 150px;">
+                    <label class="visually-hidden" for="f-fecha-hasta">Fecha hasta</label>
                     <DateInput
                         id="f-fecha-hasta"
                         v-model="store.fechaHasta"
                         class="form-control form-control-sm"
+                        placeholder="Fecha hasta"
+                        title="Fecha hasta"
                         :aria-invalid="!!errores.fecha_hasta"
                         :aria-describedby="errores.fecha_hasta ? 'f-fecha-hasta-error' : undefined"
                     />
-                    <div v-if="errores.fecha_hasta" id="f-fecha-hasta-error" class="text-danger small mt-1" role="alert">
-                        {{ errores.fecha_hasta }}
-                    </div>
                 </div>
 
-                <div style="min-width: 220px;">
+                <!-- Vehículo -->
+                <div style="min-width: 190px;">
                     <label class="visually-hidden" for="f-vehicle_uuid">Vehículo</label>
                     <PrimeSelect
                         input-id="f-vehicle_uuid"
@@ -98,7 +101,8 @@
                     />
                 </div>
 
-                <div style="min-width: 210px;">
+                <!-- Proyecto -->
+                <div v-if="can('projects.index')" style="min-width: 190px;">
                     <label class="visually-hidden" for="f-project_uuid">Proyecto</label>
                     <PrimeSelect
                         input-id="f-project_uuid"
@@ -111,24 +115,37 @@
                     />
                 </div>
 
-                <button class="btn btn-primary btn-sm px-3" type="submit" :disabled="store.loading">
-                    <i class="fad fa-magnifying-glass me-1" aria-hidden="true" />
-                    Aplicar
-                </button>
-                <button class="btn btn-falcon-default btn-sm px-3" type="button" @click="limpiar">
-                    <i class="fad fa-eraser me-1" aria-hidden="true" />
-                    Limpiar
-                </button>
+                <!-- Acciones de filtro -->
+                <div class="d-flex align-items-center gap-2 ms-sm-auto">
+                    <button class="btn btn-primary btn-sm px-3" type="submit" :disabled="store.loading">
+                        <i class="fad fa-magnifying-glass me-1" aria-hidden="true" />
+                        <span>Consultar</span>
+                    </button>
+                    <button v-if="store.fechaDesde || store.fechaHasta || store.vehicleUuid || store.projectUuid" class="btn btn-outline-secondary btn-sm px-2 px-sm-3" type="button" @click="limpiar">
+                        <i class="fad fa-eraser me-1" aria-hidden="true" />
+                        <span class="d-none d-sm-inline">Restablecer</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Errores de validación en línea compactos si ocurren -->
+            <div v-if="errores.fecha_desde || errores.fecha_hasta" class="text-danger small mt-1 d-flex align-items-center gap-1" role="alert">
+                <i class="fas fa-circle-exclamation" aria-hidden="true" />
+                <span>{{ errores.fecha_desde || errores.fecha_hasta }}</span>
             </div>
         </div>
-    </form>
+    </div>
 
-    <!-- RESULTADOS -->
-    <div class="card border-0 shadow-sm mb-3 fade-in-up" style="animation-delay: 0.1s;">
-        <div class="card-body py-1 px-3 border-bottom d-flex align-items-center justify-content-between">
+    <!-- LISTADO UNIFICADO: Toolbar + Tabla + Paginador en una sola tarjeta (.noa-list-card) -->
+    <div class="card border-0 shadow-sm noa-list-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="noa-list-toolbar py-2 px-3">
             <span v-if="!isViewLoading && hayRango" class="noa-results">
                 <i class="fas fa-filter" aria-hidden="true" />
-                {{ store.pagination.totalItems }} registro{{ store.pagination.totalItems !== 1 ? 's' : '' }}
+                {{ store.pagination.totalItems }} registro{{ store.pagination.totalItems !== 1 ? 's' : '' }} de actividad
+            </span>
+            <span v-else class="text-muted small">
+                <i class="fad fa-info-circle me-1 text-primary" aria-hidden="true" />
+                Consulta consolidada por rango de fechas
             </span>
         </div>
 
@@ -156,8 +173,9 @@
 
         <!-- AVISO: sin rango de fechas no se consulta -->
         <div v-else-if="!hayRango" class="card-body text-center py-5">
-            <i class="fad fa-calendar-lines fa-2x text-muted" aria-hidden="true" />
-            <p class="mb-0 mt-2 text-muted">Selecciona un rango de fechas para consultar</p>
+            <i class="fad fa-calendar-lines fa-2x text-muted mb-2 d-block" aria-hidden="true" />
+            <h6 class="text-muted mb-1 fw-medium">Selecciona un rango de fechas</h6>
+            <p class="mb-0 text-muted small">Ingresa la fecha inicial y final para consultar la actividad operativa de la flota.</p>
         </div>
 
         <!-- DATATABLE (Paginación Server-Side) -->
@@ -180,7 +198,14 @@
                     <!-- Vehículo -->
                     <Column field="vehicle_license_plate" header="Vehículo" style="min-width: 110px;">
                         <template #body="{ data }">
-                            <span class="noa-cell-strong font-monospace">{{ data.vehicle_license_plate || '—' }}</span>
+                            <router-link
+                                v-if="data.vehicle_uuid"
+                                :to="{ name: 'vehicles.profile', params: { id: data.vehicle_uuid } }"
+                                class="noa-cell-strong font-monospace text-primary text-decoration-none"
+                                :title="`Ver perfil de ${data.vehicle_license_plate}`">
+                                {{ data.vehicle_license_plate || '—' }}
+                            </router-link>
+                            <span v-else class="noa-cell-strong font-monospace">{{ data.vehicle_license_plate || '—' }}</span>
                         </template>
                     </Column>
 
@@ -194,7 +219,7 @@
                     <!-- Tipo -->
                     <Column field="event_type" header="Tipo" style="min-width: 140px;">
                         <template #body="{ data }">
-                            <span class="badge-subtle-primary" style="font-size: 0.72rem;">
+                            <span :class="estiloBadgeTipo(data.event_type)" style="font-size: 0.72rem; font-weight: 500;">
                                 {{ etiquetaTipo(data.event_type) }}
                             </span>
                         </template>
@@ -218,10 +243,18 @@
                     <template #loading>
                         <NoaTableSpinner message="Cargando actividad vehicular..." />
                     </template>
+
+                    <template #empty>
+                        <div class="text-center py-5">
+                            <i class="fad fa-clipboard-list fs-1 text-muted opacity-50 mb-3 d-block" aria-hidden="true" />
+                            <h6 class="text-muted mb-1 fw-medium">Sin actividad en el rango consultado</h6>
+                            <p class="text-muted small mb-0">No se encontraron eventos para los filtros y fechas seleccionados.</p>
+                        </div>
+                    </template>
                 </DataTable>
             </div>
             <ListPagination :page="store.pagination.currentPage" :per-page="store.pagination.itemsPerPage"
-                :total="store.pagination.totalItems" @change="onPageChange" />
+                :total="store.pagination.totalItems" :rows-options="[10, 25, 50, 100]" @change="onPageChange" />
         </div>
     </div>
 </template>
@@ -258,7 +291,16 @@ const ETIQUETAS_TIPO = {
     HOJA_CONTROL: 'Hoja de control',
 };
 
+const ESTILOS_BADGE_TIPO = {
+    INSPECCION: 'badge bg-info bg-opacity-10 text-info border border-info border-opacity-25',
+    MANTENIMIENTO: 'badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25',
+    COMBUSTIBLE: 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25',
+    TANQUEO: 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
+    HOJA_CONTROL: 'badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25',
+};
+
 const etiquetaTipo = (tipo) => ETIQUETAS_TIPO[tipo] ?? tipo ?? '—';
+const estiloBadgeTipo = (tipo) => ESTILOS_BADGE_TIPO[tipo] ?? 'badge bg-light text-muted border';
 
 const formatDate = (value) => {
     if (!value) return '—';
