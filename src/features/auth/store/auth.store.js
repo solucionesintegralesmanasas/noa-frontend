@@ -90,6 +90,9 @@ export const useAuthStore = defineStore("auth", {
                     role: user.role || "user",
                 };
 
+                // Garantizar persistencia inmediata de la sesión en disco (sin esperar debounce)
+                await flushAllPersistence();
+
                 logger.info("2FA verificado y sesión iniciada");
                 return user;
             } catch (e) {
