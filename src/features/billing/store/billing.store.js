@@ -157,6 +157,15 @@ export const useBillingStore = defineStore('billing', {
             }, 'Error al anular el documento');
         },
 
+        emitir(uuid) {
+            return this._run(async () => {
+                const response = await billingService.emitir(uuid);
+                const item = response?.data?.data ?? response?.data ?? response;
+                await toast('¡Éxito!', 'Factura enviada a la DIAN', 'success');
+                return item;
+            }, 'Error al enviar la factura a la DIAN');
+        },
+
         async deleteItem(uuid) {
             return this._run(async () => {
                 await billingService.delete(uuid);

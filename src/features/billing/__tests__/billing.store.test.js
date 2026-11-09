@@ -9,6 +9,7 @@ vi.mock('../services/billing.service.js', () => ({
     cambiarEstado: vi.fn(),
     convertir: vi.fn(),
     registrarPago: vi.fn(),
+    emitir: vi.fn(),
     get: vi.fn(),
     getFormOptions: vi.fn(),
   },
@@ -63,5 +64,15 @@ describe('useBillingStore', () => {
 
     expect(service.convertir).toHaveBeenCalledWith('c1', { billing_resolution_uuid: 'r1', issue_date: '2026-10-05' });
     expect(resultado.uuid).toBe('f1');
+  });
+
+  it('envía la factura a la DIAN y devuelve el documento actualizado', async () => {
+    service.emitir.mockResolvedValue({ success: true, data: { uuid: 'f1', electronic_status: 'ACEPTADA_DIAN' } });
+    const store = useBillingStore();
+
+    const resultado = await store.emitir('f1');
+
+    expect(service.emitir).toHaveBeenCalledWith('f1');
+    expect(resultado.electronic_status).toBe('ACEPTADA_DIAN');
   });
 });
