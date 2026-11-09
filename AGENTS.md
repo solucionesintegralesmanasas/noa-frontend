@@ -98,16 +98,16 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 
 ## API Layer
 
-- Axios client in `src/services/api/client.js` — singleton with tenant-aware instances.
-- Interceptors (`src/services/api/interceptors.js`) auto-inject Bearer token, log requests, handle 401.
-- `BaseService` (`src/services/api/base.service.js`) wraps CRUD + RBAC permission checks.
+- Axios client in `src/services/api/client.js` — instancia canónica única (`apiClient.global`) sin cachés ni mapas de instancias múltiples (SPEC-016).
+- Interceptors (`src/services/api/interceptors.js`) auto-inject Bearer token, inyectan dinámicamente `X-Company-UUID` por petición, log requests y handle 401.
+- `BaseService` (`src/services/api/base.service.js`) wraps CRUD + RBAC permission checks y delega en `apiClient.global` (inyectando `X-Company-UUID` por petición si el servicio tiene `tenantId` explícito vía Proxy).
 
 ## Multi-tenant
 
-- `apiClient.forTenant(tenantId)` crea una instancia Axios dedicada (cacheada) con el header `X-Company-UUID`. El backend (`SetCompanyContext`) también acepta `X-Tenant-ID`, pero el frontend envía `X-Company-UUID`.
+- Resolución dinámica de empresa activa (SPEC-016): `requestInterceptor` inyecta en cada solicitud `X-Company-UUID` directamente desde `auth.currentTenant.id` (fallback a `user.company_uuid`). Se eliminaron `apiClient.forTenant()` y los mapas de instancias cacheadas.
+- Si una solicitud provee explícitamente `X-Company-UUID` en `config.headers`, esta prevalece. El backend (`SetCompanyContext`) también acepta `X-Tenant-ID`, pero el frontend envía `X-Company-UUID`.
 - Tenant ID stored in `auth.currentTenant.id` Pinia state.
 - `BaseService` inyecta `third_party_uuid` como parámetro plano en los GET cuando el usuario es afiliado, empleado o conductor (Spatie QueryBuilder falla con filtros anidados).
-
 ## i18n
 
 - Locale files at `src/assets/locales/{es,en}.json` loaded via `import.meta.glob`.
@@ -126,13 +126,13 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - **Layouts Centralizados**: Los componentes de estructura principal (Navbar, Sidebar, Footer) deben residir estrictamente en `src/components/layout/` y conectarse a la lógica a través de hooks.
 - **Store & Plugins (Encrypted Persistence)**:
   - Módulos globales de estado en `src/store/modules/`.
-  - Los plugins de persistencia en `src/store/plugins/persistence.js` sincronizan reactivamente el estado de los stores (`auth`, `permissions`, `ui`, `user`) de forma encriptada (AES-GCM) utilizando `secureStorage` respaldado nativamente por `@capacitor/preferences`.
+  - Los plugins de persistencia en `src/store/plugins/persistence.js` sincronizan reactivamente el estado de los stores (`auth`, `permissions`, `ui`, `user`) de forma encriptada (AES-GCM) utilizando `secureStorage` respaldado nativamente por `@capacitor/preferences`. Incorporan debouncing (300 ms) por store, omisión de propiedades volátiles (`OMIT_KEYS`), comparación de serialización para no repetir ciclos criptográficos en el hilo principal y vaciado forzado (`flushAllPersistence`) en eventos críticos (SPEC-016).
   - El estado `isHydrated` se resuelve asíncronamente en pocos milisegundos tras leer la base de almacenamiento seguro, eliminando bloqueos de 2 segundos durante el bootstrap de la app.
 - **APIs & Seguridad**: Servicios API en `src/services/api/`, servicios de seguridad en `src/services/security/`.
 - **Manejo de Errores**: Manejo a través de `handleGlobalError()` que despacha eventos personalizados `app:toast`.
 - **Monitoreo**: El monitoreo de conectividad se suscribe a los eventos `online`/`offline` nativos y al endpoint `/health`.
 - **Media Utility**: `src/utils/media.js` provee la función robusta `getMediaUrl(path, fallback)` para reconstruir de forma absoluta y limpia las rutas de imágenes y archivos cargados en el storage del Backend.
-- **Notifications System**: `src/features/notifications/store/notifications.store.js` provee un estado centralizado para alertas tempranas de documentos vehiculares vencidos (SOAT, Tecnicomecánica, Licencias) manteniendo la UI reactiva y dinámica.
+- **Notifications System**: `src/features/notifications/store/notifications.store.js` provee un estado centralizado para alertas tempranas de documentos vehiculares vencidos (SOAT, Tecnicomecánica, Licencias) manteniendo la UI reactiva y dinámica. El control de alertas mostradas opera en memoria (`Map<uuid, ts>`, no-repetición de 55 min) con persistencia ligera en una sola clave JSON, eliminando lecturas bloqueantes `Preferences.get()` en el arranque móvil (SPEC-016).
 - **Importación Obligatoria de Componentes Comunes**: Los componentes compartidos como `BaseFormActions` y `BasePageHeader` no están registrados globalmente. Cada vista que los use debe importarlos explícitamente en `<script setup>` (ej. `import BaseFormActions from '@/components/BaseFormActions.vue';`).
 
 ## Accesibilidad y Formularios (obligatorio)

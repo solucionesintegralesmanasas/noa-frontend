@@ -25,6 +25,14 @@ export const requestInterceptor = async (config) => {
     const token = await tokenManager.getAccessToken();
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
+    // Multi-tenant: la empresa activa se resuelve en cada petición desde el store
+    // (sin instancias cacheadas). authStore.currentTenant.id tiene prioridad, con
+    // fallback a userStore.company_uuid si no está definido. Una cabecera explícita prevalece.
+    if (!config.headers["X-Company-UUID"]) {
+        const tenantId = storeRegistry.authStore?.currentTenant?.id || storeRegistry.userStore?.company_uuid;
+        if (tenantId) config.headers["X-Company-UUID"] = tenantId;
+    }
+
     logger.debug("📡 Request", { url: config.url, data: maskRequestData(config.data) });
     return config;
 };

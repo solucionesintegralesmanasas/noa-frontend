@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Cliente API centralizado (Axios)
  * Ubicación: src/services/api/client.js
  */
@@ -31,31 +31,17 @@ const DEFAULT_CONFIG = {
     }
 };
 
-const instances = { global: null, tenants: new Map() };
+let globalInstance = null;
 
 const apiClient = {
     /**
-     * Instancia global para servicios generales
+     * Instancia canónica única. La cabecera X-Company-UUID la resuelve
+     * dinámicamente el interceptor de solicitudes desde auth.currentTenant.id.
      */
     get global() {
-        if (!instances.global) instances.global = this._createInstance();
-        return instances.global;
+        if (!globalInstance) globalInstance = this._createInstance();
+        return globalInstance;
     },
-
-    /**
-     * Instancia dinámica para tenants (Multi-tenant)
-     */
-    forTenant(tenantId) {
-        if (!tenantId) throw new Error("Tenant ID requerido");
-
-        if (!instances.tenants.has(tenantId)) {
-            instances.tenants.set(tenantId, this._createInstance({
-                headers: { "X-Company-UUID": tenantId }
-            }));
-        }
-        return instances.tenants.get(tenantId);
-    },
-
     /**
      * Factoría de instancias con interceptores unificados
      */

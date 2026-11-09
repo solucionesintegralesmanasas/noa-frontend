@@ -41,9 +41,18 @@ export const usePermissionsStore = defineStore("permissions", {
             this.isLoaded = true;
         },
 
+        buildAbilities() {
+            this.roles = Array.isArray(this.roles) ? this.roles : Object.values(this.roles || {});
+            this.permissions = Array.isArray(this.permissions) ? this.permissions : Object.values(this.permissions || {});
+
+            rbac.setUser({ ...(this.user || {}), roles: this.roles, permissions: this.permissions });
+            this.abilities = defineAbilities({ roles: this.roles, permissions: this.permissions });
+            this.isLoaded = true;
+        },
+
         async load() {
             if (this.isLoaded) return;
-            const { authService } = await import("@services/api/auth.service.js");
+            const { authService } = await import("@/features/auth/services/auth.service.js");
             const { user } = await authService.getProfile();
             this.setUser(user);
         },

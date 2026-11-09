@@ -35,9 +35,37 @@ export class BaseService {
     }
 
     _getInstance() {
-        return this.tenantId ? apiClient.forTenant(this.tenantId) : apiClient.global;
-    }
+        const instancia = apiClient.global;
+        if (!this.tenantId) return instancia;
 
+        // Empresa explícita del servicio: viaja como cabecera por petición (sin instancias Axios cacheadas).
+        const tenantId = this.tenantId;
+        return new Proxy(instancia, {
+            apply(target, thisArg, args) {
+                const cfg = args[0] || {};
+                const headers = { "X-Company-UUID": tenantId, ...(cfg.headers || {}) };
+                return Reflect.apply(target, thisArg, [{ ...cfg, headers }]);
+            },
+            get(target, prop, receiver) {
+                const orig = Reflect.get(target, prop, receiver);
+                if (typeof orig === 'function') {
+                    if (['get', 'delete', 'head', 'options'].includes(prop)) {
+                        return (url, cfg = {}) => orig.call(target, url, {
+                            ...cfg,
+                            headers: { "X-Company-UUID": tenantId, ...(cfg.headers || {}) }
+                        });
+                    }
+                    if (['post', 'put', 'patch'].includes(prop)) {
+                        return (url, data, cfg = {}) => orig.call(target, url, data, {
+                            ...cfg,
+                            headers: { "X-Company-UUID": tenantId, ...(cfg.headers || {}) }
+                        });
+                    }
+                }
+                return orig;
+            }
+        });
+    }
     /**
      * Obtiene el contexto del usuario actual (Empresa y Tercero) 
      * validando si es SUPERADMIN (retorna null para omitir filtros).
