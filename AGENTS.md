@@ -73,6 +73,7 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - **Laravel Sanctum** PAT-based auth. Token stored encrypted (AES-GCM, WebCrypto API + PBKDF2) in `secureStorage` (`@capacitor/preferences`).
 - Login flow: `authService.login()` → returns `{ user, token }` → stores in Pinia + Token Manager.
 - 401 responses trigger `auth:unauthorized` custom event, token wipe, and redirect to `/login`.
+- **Renovación automática de sesión (2026-11-10):** ante un 401, el interceptor renueva el access token (8 h) con la cookie HTTP-only `refresh_token` (30 días) y reintenta la petición original una sola vez; varios 401 simultáneos comparten una única renovación. Si el refresh falla, limpia la sesión y redirige a login. Exige `withCredentials` en el cliente Axios y `supports_credentials=true` en `config/cors.php`; el logout no intenta renovar.
 - Encryption key comes from `VITE_ENCRYPTION_KEY` var.
 - Logger masks sensitive fields (`token`, `password`, `secret`, `authorization`, `otp`).
 - **Autenticación 2FA & Perfil**: El módulo de seguridad expone flujos interactivos para activar/desactivar 2FA mediante códigos TOTP QR dinámicos procedentes del backend laravel. El panel de configuración e historial de sesión reside unificado dentro de `UserProfileView.vue` bajo la ruta `/profile?tab=security`.

@@ -6,6 +6,7 @@ import { logger } from "@utils/logger.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { maskRequestData, maskResponseData } from "@utils/mask.js";
 import { handleGlobalError, isCancelError } from "@utils/error-handler.js";
+import axios from "axios";
 
 /**
  * Registry de stores para romper dependencia circular sin dynamic import.
@@ -16,6 +17,30 @@ export const storeRegistry = { authStore: null, userStore: null, permissionsStor
 
 // Flag para evitar cascada de 401 → logout → /logout → 401
 let _isHandling401 = false;
+
+// Renovación en vuelo compartida: varios 401 simultáneos esperan el mismo
+// refresh en lugar de pedir un token por cada petición.
+let _refreshPromise = null;
+
+/**
+ * Pide un access token nuevo usando la cookie HTTP-only del refresh token.
+ * Devuelve el token renovado o rechaza si el refresh no es válido.
+ */
+function refreshAccessToken(baseURL) {
+    if (!_refreshPromise) {
+        _refreshPromise = axios
+            .post(`${baseURL || ""}refresh-token`, null, { withCredentials: true })
+            .then(async (response) => {
+                const token = response.data?.data?.access_token ?? response.data?.access_token;
+                if (!token) throw new Error("La renovación no devolvió access token");
+                await tokenManager.setToken(token);
+                if (storeRegistry.authStore) storeRegistry.authStore.accessToken = token;
+                return token;
+            })
+            .finally(() => { _refreshPromise = null; });
+    }
+    return _refreshPromise;
+}
 
 // Interceptor de Request
 export const requestInterceptor = async (config) => {
@@ -53,6 +78,25 @@ export const responseInterceptor = {
 
         if (response?.status === 401) {
             if (_isHandling401) return Promise.reject(error);
+
+            // Token de acceso vencido: se renueva con el refresh token de 30 días
+            // y se reintenta la petición original una sola vez. El logout no se
+            // renueva: debe cerrar la sesión aunque el token ya haya vencido.
+            const original = error.config || {};
+            if (!original._reintentado && !url.includes('/logout') && !url.includes('/refresh-token')) {
+                original._reintentado = true;
+                try {
+                    const token = await refreshAccessToken(original.baseURL);
+                    original.headers = {
+                        ...(original.headers?.toJSON?.() ?? original.headers ?? {}),
+                        Authorization: `Bearer ${token}`,
+                    };
+                    return axios.request(original);
+                } catch {
+                    // Sin refresh válido: se cierra la sesión como antes.
+                }
+            }
+
             _isHandling401 = true;
 
             try {
