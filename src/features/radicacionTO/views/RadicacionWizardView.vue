@@ -236,10 +236,13 @@
                   <i class="fad fa-file-export text-secondary" aria-hidden="true"></i>
                   <h3 class="h6 mb-0 fw-semibold">Archivos TXT — Portal TO RUNT</h3>
                 </div>
+                <p v-if="puedeActualizar && !todosFirmados" class="text-muted small mb-2" role="note">
+                  Firme ambos contratos para habilitar la generación de los TXT.
+                </p>
                 <div v-if="puedeActualizar" class="d-flex flex-wrap gap-2">
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('ADMIN_FLOTA')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -247,7 +250,7 @@
                   </button>
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('PRESTACION')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -412,8 +415,10 @@
                   :options="opcionesAccion"
                   option-label="label"
                   option-value="value"
+                  append-to="self"
                   class="w-100"
                 />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
               </div>
 
               <div class="col-md-4">
@@ -589,8 +594,10 @@
                   :options="opcionesAccion"
                   option-label="label"
                   option-value="value"
+                  append-to="self"
                   class="w-100"
                 />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
               </div>
 
               <div class="col-md-4">
@@ -1017,7 +1024,7 @@ async function txt(origin) {
   try {
     const r = await service.generarTxt(pasoActual.value.uuid, origin);
     lote.value = r.data?.data ?? r.data;
-  } catch { toast('Revise requisitos antes del TXT', '', 'error'); }
+  } catch (e) { toast('No se pudo generar el TXT', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
 }
 
