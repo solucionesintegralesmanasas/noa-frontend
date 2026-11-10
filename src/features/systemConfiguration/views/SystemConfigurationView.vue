@@ -78,6 +78,14 @@
                                 <li class="nav-item w-auto w-lg-100" role="presentation">
                                     <button
                                         class="nav-link text-start d-flex align-items-center gap-2 py-2.5 px-3 w-100"
+                                        id="contracts-tab" data-bs-toggle="pill" data-bs-target="#contracts-pane" type="button" role="tab">
+                                        <i class="fad fa-file-signature fs-5"></i>
+                                        <span>Datos para Contratos</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item w-auto w-lg-100" role="presentation">
+                                    <button
+                                        class="nav-link text-start d-flex align-items-center gap-2 py-2.5 px-3 w-100"
                                         id="fees-tab" data-bs-toggle="pill" data-bs-target="#fees-pane" type="button" role="tab">
                                         <i class="fad fa-usd-circle fs-5"></i>
                                         <span>Tarifas de Plataforma</span>
@@ -842,6 +850,138 @@
                             </div>
                         </div>
 
+                        <!-- PANE: DATOS PARA CONTRATOS -->
+                        <div class="tab-pane fade" id="contracts-pane" role="tabpanel" tabindex="0">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body p-2 p-md-3 p-lg-4">
+                                    <h5 class="fw-medium text-primary mb-3 d-flex align-items-center gap-2">
+                                        <i class="fad fa-file-signature"></i>
+                                        Datos de la empresa para contratos
+                                    </h5>
+                                    <p class="text-muted small mb-4">
+                                        Estos datos identifican a <strong>{{ datosEmpresa.business_name || 'la empresa activa' }}</strong>
+                                        en los contratos de prestación de servicios y de administración de flota.
+                                        Son independientes del registro de Empresas: se guardan en la configuración
+                                        del sistema y no modifican la ficha de la empresa.
+                                    </p>
+
+                                    <fieldset :disabled="!puedeEditarEmpresa" class="row g-3">
+                                        <div class="col-md-8">
+                                            <label class="form-label required" for="f-empresa_business_name">Razón social</label>
+                                            <input id="f-empresa_business_name" v-model="datosEmpresa.business_name"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.business_name }"
+                                                :aria-invalid="!!erroresEmpresa.business_name"
+                                                :aria-describedby="erroresEmpresa.business_name ? 'f-empresa_business_name-error' : undefined"
+                                                type="text" maxlength="200" autocomplete="organization" />
+                                            <div v-if="erroresEmpresa.business_name" id="f-empresa_business_name-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.business_name }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label required" for="f-empresa_document_number">NIT</label>
+                                            <input id="f-empresa_document_number" v-model="datosEmpresa.document_number"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.document_number }"
+                                                :aria-invalid="!!erroresEmpresa.document_number"
+                                                :aria-describedby="erroresEmpresa.document_number ? 'f-empresa_document_number-error' : undefined"
+                                                type="text" maxlength="20" />
+                                            <div v-if="erroresEmpresa.document_number" id="f-empresa_document_number-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.document_number }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label required" for="f-empresa_email">Correo electrónico</label>
+                                            <input id="f-empresa_email" v-model="datosEmpresa.email"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.email }"
+                                                :aria-invalid="!!erroresEmpresa.email"
+                                                :aria-describedby="erroresEmpresa.email ? 'f-empresa_email-error' : undefined"
+                                                type="email" maxlength="100" autocomplete="email" />
+                                            <div v-if="erroresEmpresa.email" id="f-empresa_email-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.email }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label required" for="f-empresa_phone">Teléfono</label>
+                                            <input id="f-empresa_phone" v-model="datosEmpresa.phone"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.phone }"
+                                                :aria-invalid="!!erroresEmpresa.phone"
+                                                :aria-describedby="erroresEmpresa.phone ? 'f-empresa_phone-error' : undefined"
+                                                type="tel" maxlength="20" autocomplete="tel" />
+                                            <div v-if="erroresEmpresa.phone" id="f-empresa_phone-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.phone }}
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label required" for="f-empresa_address">Dirección</label>
+                                            <input id="f-empresa_address" v-model="datosEmpresa.address"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.address }"
+                                                :aria-invalid="!!erroresEmpresa.address"
+                                                :aria-describedby="erroresEmpresa.address ? 'f-empresa_address-error' : undefined"
+                                                type="text" maxlength="200" autocomplete="street-address" />
+                                            <div v-if="erroresEmpresa.address" id="f-empresa_address-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.address }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label required" for="f-empresa_legal_representative_name">Nombres del representante legal</label>
+                                            <input id="f-empresa_legal_representative_name" v-model="datosEmpresa.legal_representative_name"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.legal_representative_name }"
+                                                :aria-invalid="!!erroresEmpresa.legal_representative_name"
+                                                :aria-describedby="erroresEmpresa.legal_representative_name ? 'f-empresa_legal_representative_name-error' : undefined"
+                                                type="text" maxlength="255" />
+                                            <div v-if="erroresEmpresa.legal_representative_name" id="f-empresa_legal_representative_name-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.legal_representative_name }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label required" for="f-empresa_legal_representative_last_name">Apellidos del representante legal</label>
+                                            <input id="f-empresa_legal_representative_last_name" v-model="datosEmpresa.legal_representative_last_name"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.legal_representative_last_name }"
+                                                :aria-invalid="!!erroresEmpresa.legal_representative_last_name"
+                                                :aria-describedby="erroresEmpresa.legal_representative_last_name ? 'f-empresa_legal_representative_last_name-error' : undefined"
+                                                type="text" maxlength="255" />
+                                            <div v-if="erroresEmpresa.legal_representative_last_name" id="f-empresa_legal_representative_last_name-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.legal_representative_last_name }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label required" for="f-empresa_legal_representative_document_number">Documento del representante legal</label>
+                                            <input id="f-empresa_legal_representative_document_number" v-model="datosEmpresa.legal_representative_document_number"
+                                                class="form-control" :class="{ 'is-invalid': erroresEmpresa.legal_representative_document_number }"
+                                                :aria-invalid="!!erroresEmpresa.legal_representative_document_number"
+                                                :aria-describedby="erroresEmpresa.legal_representative_document_number ? 'f-empresa_legal_representative_document_number-error' : undefined"
+                                                type="text" maxlength="20" />
+                                            <div v-if="erroresEmpresa.legal_representative_document_number" id="f-empresa_legal_representative_document_number-error"
+                                                class="invalid-feedback d-block" role="alert">
+                                                {{ erroresEmpresa.legal_representative_document_number }}
+                                            </div>
+                                        </div>
+                                    </fieldset>
+
+                                    <div v-if="!puedeEditarEmpresa" class="alert alert-info small mt-3 mb-0" role="status">
+                                        <i class="fas fa-lock me-1" aria-hidden="true"></i>
+                                        No tienes permiso para editar estos datos; se muestran en solo lectura.
+                                    </div>
+
+                                    <div v-if="puedeEditarEmpresa" class="d-flex justify-content-end mt-3">
+                                        <button type="button" class="btn btn-primary px-4 rounded-pill shadow-sm"
+                                            :disabled="guardandoEmpresa" @click="guardarDatosEmpresa">
+                                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"
+                                                v-show="guardandoEmpresa"></span>
+                                            <i class="fad fa-save me-1" v-show="!guardandoEmpresa"></i>
+                                            Guardar datos de la empresa
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- PANE: TARIFAS DE PLATAFORMA -->
                         <div class="tab-pane fade" id="fees-pane" role="tabpanel" tabindex="0">
                             <div class="card border-0 shadow-sm">
@@ -978,6 +1118,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store.js';
 import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
 import companiesService from '@/features/companies/services/companies.service.js';
+import { usePermissionsStore } from '@/store/modules/permissions.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import Swal from 'sweetalert2';
@@ -994,6 +1135,20 @@ const identityPreviews = reactive({
 });
 
 const vehicleClasses = ref([]);
+
+// --- DATOS DE LA EMPRESA PARA CONTRATOS (mismo registro que el módulo Empresas) ---
+const datosEmpresa = reactive({
+    business_name: '',
+    document_number: '',
+    email: '',
+    phone: '',
+    address: '',
+    legal_representative_name: '',
+    legal_representative_last_name: '',
+    legal_representative_document_number: '',
+});
+const erroresEmpresa = reactive({});
+const guardandoEmpresa = ref(false);
 
 // --- PRESENTACIÓN POR DOCUMENTO PDF ---
 // Claves alineadas con PdfService::PDF_CLAVES del backend.
@@ -1034,6 +1189,8 @@ const normalizarPdfBranding = (valor) => {
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const systemConfigStore = useSystemConfigurationStore();
+const permissionsStore = usePermissionsStore();
+const puedeEditarEmpresa = computed(() => permissionsStore.can('system_configurations.update'));
 
 /**
  * Resuelve el UUID de la empresa activa cruzando los stores locales y la API.
@@ -1610,6 +1767,77 @@ const handleSubmit = async () => {
     }
 };
 
+// --- DATOS DE LA EMPRESA PARA CONTRATOS ---
+const CAMPOS_OBLIGATORIOS_EMPRESA = {
+    business_name: 'La razón social es obligatoria',
+    document_number: 'El NIT es obligatorio',
+    email: 'El correo electrónico es obligatorio',
+    phone: 'El teléfono es obligatorio',
+    address: 'La dirección es obligatoria',
+    legal_representative_name: 'Los nombres del representante legal son obligatorios',
+    legal_representative_last_name: 'Los apellidos del representante legal son obligatorios',
+    legal_representative_document_number: 'El documento del representante legal es obligatorio',
+};
+
+const validarDatosEmpresa = () => {
+    Object.keys(erroresEmpresa).forEach((campo) => delete erroresEmpresa[campo]);
+
+    for (const [campo, mensaje] of Object.entries(CAMPOS_OBLIGATORIOS_EMPRESA)) {
+        if (!String(datosEmpresa[campo] ?? '').trim()) erroresEmpresa[campo] = mensaje;
+    }
+
+    if (!erroresEmpresa.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datosEmpresa.email.trim())) {
+        erroresEmpresa.email = 'Ingrese un correo electrónico válido';
+    }
+
+    return Object.keys(erroresEmpresa).length === 0;
+};
+
+const guardarDatosEmpresa = async () => {
+    if (!validarDatosEmpresa()) {
+        const primerError = document.querySelector('#contracts-pane [aria-invalid="true"]');
+        primerError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        primerError?.focus();
+        return;
+    }
+
+    guardandoEmpresa.value = true;
+    try {
+        const companyUuid = await getOrFetchCompanyUuid();
+        if (!companyUuid) throw new Error('No se identificó el contexto de empresa activa.');
+
+        const payload = {
+            contract_company_name: datosEmpresa.business_name.trim(),
+            contract_company_nit: datosEmpresa.document_number.trim(),
+            contract_company_email: datosEmpresa.email.trim(),
+            contract_company_phone: datosEmpresa.phone.trim(),
+            contract_company_address: datosEmpresa.address.trim(),
+            contract_company_rep_name: datosEmpresa.legal_representative_name.trim(),
+            contract_company_rep_last_name: datosEmpresa.legal_representative_last_name.trim(),
+            contract_company_rep_document: datosEmpresa.legal_representative_document_number.trim(),
+        };
+
+        await systemConfigStore.saveConfig(companyUuid, payload);
+        Object.assign(datosEmpresa, {
+            business_name: payload.contract_company_name,
+            document_number: payload.contract_company_nit,
+            email: payload.contract_company_email,
+            phone: payload.contract_company_phone,
+            address: payload.contract_company_address,
+            legal_representative_name: payload.contract_company_rep_name,
+            legal_representative_last_name: payload.contract_company_rep_last_name,
+            legal_representative_document_number: payload.contract_company_rep_document,
+        });
+    } catch (error) {
+        logger.error('Error al guardar los datos de la empresa para contratos', {
+            status: error?.response?.status ?? null,
+            message: error?.message,
+        });
+    } finally {
+        guardandoEmpresa.value = false;
+    }
+};
+
 // --- CICLO DE VIDA ---
 onMounted(async () => {
     isViewLoading.value = true;
@@ -1674,6 +1902,18 @@ onMounted(async () => {
                 if (data.ministry_logo_url) identityPreviews.ministry_logo = data.ministry_logo_url;
                 if (data.super_logo_url) identityPreviews.super_logo = data.super_logo_url;
                 if (data.letterhead_url) identityPreviews.letterhead = data.letterhead_url;
+
+                // Datos de la empresa para contratos (independientes de Empresas).
+                Object.assign(datosEmpresa, {
+                    business_name: data.contract_company_name || '',
+                    document_number: data.contract_company_nit || '',
+                    email: data.contract_company_email || '',
+                    phone: data.contract_company_phone || '',
+                    address: data.contract_company_address || '',
+                    legal_representative_name: data.contract_company_rep_name || '',
+                    legal_representative_last_name: data.contract_company_rep_last_name || '',
+                    legal_representative_document_number: data.contract_company_rep_document || '',
+                });
             }
         }
     } catch (e) {
