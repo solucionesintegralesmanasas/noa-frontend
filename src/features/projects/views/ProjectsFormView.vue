@@ -246,6 +246,7 @@ import DateInput from '@/components/form/DateInput.vue';
 import BaseFormActions from '@/components/BaseFormActions.vue';
 import { getMediaUrl } from '@/utils/media.js';
 import { parsearFechaFlexible } from '@/utils/date.js';
+import { validarAsignaciones } from '../utils/assignments.js';
 
 // --- STORES Y ROUTER ---
 const route = useRoute();
@@ -364,37 +365,8 @@ const validateForm = () => {
         }
     }
 
-    const validAssignments = [];
-    const driversSeen = {};
-    const vehiclesSeen = {};
-
-    formData.assignments.forEach((row, index) => {
-        const label = `Fila ${index + 1}`;
-        if (!row.third_party_uuid || !row.vehicle_uuid) {
-            errors.assignments = errors.assignments || [];
-            errors.assignments.push(`${label}: selecciona conductor y vehículo.`);
-            return;
-        }
-
-        if (driversSeen[row.third_party_uuid]) {
-            errors.assignments = errors.assignments || [];
-            errors.assignments.push(`${label}: el conductor ya fue asignado a este proyecto.`);
-        } else {
-            driversSeen[row.third_party_uuid] = true;
-            validAssignments.push({
-                third_party_uuid: row.third_party_uuid,
-                vehicle_uuid: row.vehicle_uuid,
-                is_active: row.is_active !== false,
-            });
-        }
-
-        if (vehiclesSeen[row.vehicle_uuid]) {
-            errors.assignments = errors.assignments || [];
-            errors.assignments.push(`${label}: el vehículo ya fue asignado a este proyecto.`);
-        } else {
-            vehiclesSeen[row.vehicle_uuid] = true;
-        }
-    });
+    const { errores, validAssignments } = validarAsignaciones(formData.assignments);
+    if (errores.length) errors.assignments = errores;
 
     return { errors, validAssignments };
 };
