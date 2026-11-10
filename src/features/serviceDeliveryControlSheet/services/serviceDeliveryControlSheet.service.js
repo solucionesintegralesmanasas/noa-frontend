@@ -32,6 +32,16 @@ class ServiceDeliveryControlSheetService extends BaseService {
     }
 
     /**
+     * Vehículos con asignación activa en el proyecto que aún no tienen
+     * ninguna hoja de control (alta pendiente, SPEC-009).
+     * @param {string} projectUuid - UUID del proyecto.
+     * @returns {Promise<Object>} Lista de vehículos sin hojas.
+     */
+    assignedWithoutSheets(projectUuid) {
+        return this._request('GET', '/assigned-without-sheets', { params: { project_uuid: projectUuid } });
+    }
+
+    /**
      * Obtiene el resumen global de todos los proyectos activos con sus
      * métricas de evidencia para el switcher de tarjetas.
      * @param {string|null} companyUuid - UUID de la empresa.
