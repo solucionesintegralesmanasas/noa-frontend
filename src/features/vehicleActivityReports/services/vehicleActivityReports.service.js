@@ -92,7 +92,7 @@ class VehicleActivityReportsService extends BaseService {
         };
 
         const [vehiculos, proyectos] = await Promise.all([
-            fetchSafe('vehicles/list'),
+            fetchSafe('fleet-management/vehicles/list'),
             fetchSafe('projects/list'),
         ]);
 
