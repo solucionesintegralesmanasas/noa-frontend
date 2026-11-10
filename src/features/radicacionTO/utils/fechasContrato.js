@@ -61,7 +61,7 @@ export function fechasAutomaticas(form) {
  */
 export function validarFechasContrato(form) {
   const errores = {};
-  if (!form.contract_number?.trim()) errores.contract_number = 'El número de contrato es obligatorio.';
+  // El número de contrato ya no se captura: lo asigna el consecutivo del backend.
   if (!form.issue_date) errores.issue_date = 'La fecha de emisión es obligatoria.';
   if (!form.start_date) errores.start_date = 'La fecha de inicio es obligatoria.';
   const dias = Number(form.duration);
