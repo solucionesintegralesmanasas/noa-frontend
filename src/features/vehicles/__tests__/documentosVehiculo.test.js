@@ -37,9 +37,9 @@ describe('estadoDocumento', () => {
     expect(estadoDocumento(doc(fechaMas(200)))).toBe('vigente');
   });
 
-  it('sin fecha o con fecha inválida no rompe y queda vigente', () => {
+  it('sin fecha queda vigente (si status vigente) y con fecha inválida queda vencido por fail-closed', () => {
     expect(estadoDocumento({ status: 'VIGENTE' })).toBe('vigente');
-    expect(estadoDocumento(doc('no-es-fecha'))).toBe('vigente');
+    expect(estadoDocumento(doc('no-es-fecha'))).toBe('vencido');
   });
 
   it('en tarjetas solo manda la fecha: ignora status VENCIDO', () => {
