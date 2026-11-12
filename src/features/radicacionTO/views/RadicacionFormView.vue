@@ -161,6 +161,61 @@
                   <span>Opcional. Se usa como referencia interna del expediente para trazabilidad jurídica.</span>
                 </p>
               </div>
+
+              <!-- Field: Empresa de origen (solo cambio de empresa) -->
+              <div v-if="formData.link_type === 'CAMBIO_DE_EMPRESA'" class="col-12 col-md-6">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label required rad-field-label mb-0" for="f-origin_company_uuid">
+                    Empresa de origen
+                  </label>
+                </div>
+                <PrimeSelect
+                  :input-id="'f-origin_company_uuid'"
+                  v-model="formData.origin_company_uuid"
+                  :options="empresasOrigen"
+                  option-label="label"
+                  option-value="value"
+                  placeholder="Seleccione la empresa que libera el cupo"
+                  showClear
+                  filter
+                  :loading="cargandoEmpresas"
+                  class="w-100 rad-control"
+                  :invalid="!!errors.origin_company_uuid"
+                  :aria-invalid="!!errors.origin_company_uuid"
+                  :aria-describedby="errors.origin_company_uuid ? 'f-origin_company_uuid-error' : undefined"
+                />
+                <div v-if="errors.origin_company_uuid" class="invalid-feedback d-block" id="f-origin_company_uuid-error" role="alert">
+                  {{ errors.origin_company_uuid }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Empresa de la que sale el vehículo; allí se libera el cupo de capacidad transportadora.
+                </p>
+              </div>
+
+              <!-- Field: Paz y salvo (solo desvinculación) -->
+              <div v-if="esDesvinculacion" class="col-12 col-md-6">
+                <div class="rad-label-row d-flex align-items-center mb-1">
+                  <label class="form-label rad-field-label mb-0" for="f-paz_y_salvo">
+                    Referencia del paz y salvo
+                  </label>
+                </div>
+                <input
+                  id="f-paz_y_salvo"
+                  type="text"
+                  autocomplete="off"
+                  class="form-control rad-control"
+                  v-model="formData.paz_y_salvo"
+                  placeholder="Ej. PYS-2026-001"
+                  :aria-invalid="!!errors.paz_y_salvo"
+                  :aria-describedby="errors.paz_y_salvo ? 'f-paz_y_salvo-error' : undefined"
+                />
+                <div v-if="errors.paz_y_salvo" class="invalid-feedback d-block" id="f-paz_y_salvo-error" role="alert">
+                  {{ errors.paz_y_salvo }}
+                </div>
+                <p v-else class="rad-help-text mb-0 mt-1">
+                  Opcional. Se imprime en el acta de desvinculación.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -401,6 +456,15 @@
               </span>
             </div>
 
+            <div
+              v-if="estadoCupo && !estadoCupo.listo && estadoCupo.alerta"
+              class="alert alert-warning d-flex align-items-center gap-2 mb-3"
+              role="alert"
+            >
+              <i class="fas fa-triangle-exclamation flex-shrink-0" aria-hidden="true"></i>
+              <span>{{ estadoCupo.descripcion }}</span>
+            </div>
+
             <div class="rad-checklist-card border rounded-3 overflow-hidden bg-white shadow-sm">
               <ul class="list-unstyled mb-0 rad-checklist-divide">
                 <li
@@ -493,8 +557,9 @@ import DateInput from '@/components/form/DateInput.vue';
 import { useAccessibleForm } from '@/hooks/useAccessibleForm.js';
 import service, { mensajeDeError } from '../services/radicacion.service.js';
 import vehiclesService from '@/features/vehicles/services/vehicles.service.js';
+import companiesService from '@/features/companies/services/companies.service.js';
 import systemConfigurationService from '@/features/systemConfiguration/services/systemConfiguration.service.js';
-import { useUserStore } from '@store';
+import { usePermissionsStore, useUserStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import { dateUtils } from '@/utils/date.js';
 import { logger } from '@/utils/logger.js';
@@ -514,6 +579,8 @@ const { formData, errors, isSubmitting, validateAndFocus, submit } = useAccessib
     city_uuid: '',
     territorial_director_name: '',
     territorial_name: '',
+    origin_company_uuid: '',
+    paz_y_salvo: '',
   },
   {
     link_type: { required: true, label: 'Tipo de trámite' },
@@ -529,6 +596,68 @@ const vehiculos = ref([]);
 const vehiculosMapa = ref({});
 const vehiculoPerfil = ref(null);
 const ciudades = ref([]);
+const empresasOrigen = ref([]);
+const cargandoEmpresas = ref(false);
+const cupoInfo = ref(null);
+const consultandoCupo = ref(false);
+
+const esDesvinculacion = computed(
+  () => formData.link_type === 'DESVINCULACION_MUTUO' || formData.link_type === 'DESVINCULACION_UNILATERAL',
+);
+
+/** Vinculaciones que consumen un cupo en la empresa receptora. */
+const requiereCupo = computed(
+  () => formData.link_type === 'NUEVO_VEHICULO' || formData.link_type === 'CAMBIO_DE_EMPRESA',
+);
+
+async function cargarEmpresasOrigen() {
+  const permissionsStore = usePermissionsStore();
+  const userStore = useUserStore();
+  const propias = (userStore.companies ?? []).map((c) => ({
+    label: c.business_name ?? c.name ?? c.uuid,
+    value: c.uuid,
+  }));
+  empresasOrigen.value = propias;
+  if (!permissionsStore.can('companies.index')) return;
+
+  cargandoEmpresas.value = true;
+  try {
+    const r = await companiesService.list({ per_page: 500 });
+    const pag = r?.data ?? {};
+    const items = pag.data ?? [];
+    if (items.length) {
+      empresasOrigen.value = items.map((c) => ({
+        label: c.business_name ?? c.name ?? c.uuid,
+        value: c.uuid,
+      }));
+    }
+  } catch (e) {
+    logger.warn('No se cargaron las empresas de origen');
+  } finally {
+    cargandoEmpresas.value = false;
+  }
+}
+
+/**
+ * Pre-chequeo informativo del cupo de capacidad transportadora. El backend
+ * valida igual al crear; aquí solo se muestra el estado antes de radicar.
+ */
+async function consultarCupo() {
+  cupoInfo.value = null;
+  if (!requiereCupo.value || !formData.vehicle_uuid) return;
+  consultandoCupo.value = true;
+  try {
+    const r = await service.cuposDisponibles({
+      vehicle_uuid: formData.vehicle_uuid,
+      link_type: formData.link_type,
+    });
+    cupoInfo.value = r.data?.data ?? r.data ?? null;
+  } catch (e) {
+    logger.warn('No se pudo consultar el cupo disponible');
+  } finally {
+    consultandoCupo.value = false;
+  }
+}
 
 const vehiculoDetalle = computed(() => {
   if (!formData.vehicle_uuid) return null;
@@ -631,6 +760,31 @@ const estadoDocPolizas = computed(() => {
   return { vigente: true, texto: 'Pólizas RCC y RCE (corporativas / individuales)' };
 });
 
+const estadoCupo = computed(() => {
+  if (!requiereCupo.value) return null;
+  if (!formData.vehicle_uuid) {
+    return { listo: false, alerta: true, texto: 'Requiere vehículo', descripcion: 'Seleccione el vehículo para consultar su capacidad.' };
+  }
+  if (consultandoCupo.value) {
+    return { listo: false, alerta: false, texto: 'Consultando…', descripcion: 'Verificando la capacidad transportadora de la empresa.' };
+  }
+  if (!cupoInfo.value) {
+    return { listo: true, alerta: false, texto: 'Verificación al guardar', descripcion: 'Verificación automática de resolución habilitante y cupo disponible para la clase de vehículo.' };
+  }
+  if (!cupoInfo.value.capacidad_configurada) {
+    return { listo: false, alerta: true, texto: 'Sin capacidad', descripcion: 'La empresa no tiene capacidad transportadora configurada para este tipo de vehículo.' };
+  }
+  if (!cupoInfo.value.cupo_disponible) {
+    return { listo: false, alerta: true, texto: 'Sin cupo', descripcion: 'No quedan cupos disponibles de capacidad transportadora para este tipo de vehículo.' };
+  }
+  return {
+    listo: true,
+    alerta: false,
+    texto: `Cupo disponible (${cupoInfo.value.current_capacity} de ${cupoInfo.value.authorized_capacity})`,
+    descripcion: 'Capacidad verificada para la clase de vehículo.',
+  };
+});
+
 const etapasExpediente = computed(() => {
   const tipo = formData.link_type;
   if (tipo === 'RENOVACION') {
@@ -662,15 +816,16 @@ const etapasExpediente = computed(() => {
     ];
   }
 
+  const cupo = estadoCupo.value;
   const pasosComunes = [
     {
       codigo: 'CAPACIDAD_TRANSPORTADORA',
       titulo: 'Certificación de Capacidad Transportadora y Cupo Disponible',
-      descripcion: 'Verificación automática de resolución habilitante y cupo disponible para la clase de vehículo.',
+      descripcion: cupo?.descripcion ?? 'Verificación automática de resolución habilitante y cupo disponible para la clase de vehículo.',
       icono: 'fa-check',
-      listo: true,
-      alerta: false,
-      estadoTexto: 'Automatizado ✓',
+      listo: cupo ? cupo.listo : true,
+      alerta: cupo ? cupo.alerta : false,
+      estadoTexto: cupo?.texto ?? 'Automatizado ✓',
     },
     {
       codigo: 'CARTA_DE_ACEPTACION',
@@ -710,9 +865,19 @@ const etapasExpediente = computed(() => {
 });
 
 watch(
+  () => formData.link_type,
+  (tipo) => {
+    if (tipo !== 'CAMBIO_DE_EMPRESA') formData.origin_company_uuid = '';
+    if (!esDesvinculacion.value) formData.paz_y_salvo = '';
+    consultarCupo();
+  },
+);
+
+watch(
   () => formData.vehicle_uuid,
   async (uuid) => {
     vehiculoPerfil.value = null;
+    consultarCupo();
     if (!uuid) return;
     try {
       const res = await vehiclesService.getProfile(uuid);
@@ -799,6 +964,16 @@ async function guardar() {
     toast('Revise los datos del formulario', '', 'warning');
     return;
   }
+  if (formData.link_type === 'CAMBIO_DE_EMPRESA' && !formData.origin_company_uuid) {
+    errors.origin_company_uuid = 'La empresa de origen es obligatoria para el cambio de empresa';
+    document.getElementById('f-origin_company_uuid')?.focus();
+    toast('Revise los datos del formulario', '', 'warning');
+    return;
+  }
+  if (requiereCupo.value && cupoInfo.value && !cupoInfo.value.cupo_disponible) {
+    toast('Sin cupo disponible', 'La empresa no tiene cupos de capacidad transportadora para este vehículo.', 'error');
+    return;
+  }
   await submit(async () => {
     try {
       const r = await service.crearExpediente({ ...formData });
@@ -826,7 +1001,7 @@ async function guardar() {
 
 onMounted(async () => {
   await cargarCodigoTramite();
-  await cargarListas();
+  await Promise.all([cargarListas(), cargarEmpresasOrigen()]);
 });
 </script>
 

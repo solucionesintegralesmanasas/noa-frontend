@@ -243,21 +243,12 @@ const MENU_SECTIONS = [
                 activeWhen: (path) => {
                     if (path === '/facturacion') return true;
                     if (path.startsWith('/facturacion/facturas') || path.startsWith('/facturacion/cotizaciones')) return true;
-                    const rutasHermanas = ['/facturacion/proveedores', '/facturacion/documentos-electronicos', '/facturacion/configuracion', '/facturacion/resoluciones'];
+                    const rutasHermanas = ['/facturacion/proveedores', '/facturacion/resoluciones'];
                     return path.startsWith('/facturacion/') && !rutasHermanas.some((ruta) => path === ruta || path.startsWith(`${ruta}/`));
                 },
             },
-            { id: 'documentos-electronicos', label: 'Documentos Electrónicos', icon: 'fa-paper-plane', to: '/facturacion/documentos-electronicos', permissions: ['electronic_documents.index'] },
             { id: 'resoluciones-facturacion', label: 'Resoluciones de Facturación', icon: 'fa-scroll', to: '/facturacion/resoluciones', permissions: ['billing_resolutions.index'] },
             { id: 'proveedores-facturacion', label: 'Proveedores de Facturación', icon: 'fa-server', to: '/facturacion/proveedores', permissions: ['billing_providers.index'], exact: true },
-            {
-                id: 'configuracion-apidian',
-                label: 'Configuración API DIAN',
-                icon: 'fa-sliders-h',
-                to: '/facturacion/configuracion',
-                permissions: ['billing_providers.update'],
-                activeWhen: (path) => path === '/facturacion/configuracion' || (path.startsWith('/facturacion/proveedores/') && path.endsWith('/configuracion')),
-            },
             { id: 'cuotas-administracion', label: 'Cuotas de Administración', icon: 'fa-file-invoice-dollar', to: '/pagos-de-administracion', permissions: ['affiliate_admin_charges.index'] },
         ],
     },
@@ -284,6 +275,7 @@ const MENU_SECTIONS = [
         label: 'Reportes',
         items: [
             { id: 'reporte-vehiculos', label: 'Reporte de Vehículos', icon: 'fa-chart-bar', to: '/reportes/vehiculos', permissions: ['reports.vehicles.index'] },
+            { id: 'reporte-actividad-vehicular', label: 'Reporte de Actividad', icon: 'fa-clipboard-list', to: '/reportes/actividad-vehicular', permissions: ['reports.vehicle_activity.index'] },
             { id: 'calendario-vencimientos', label: 'Calendario de Vencimientos', icon: 'fa-calendar-alt', to: '/reportes/calendario', permissions: ['reports.vehicles.index'] },
         ],
     },

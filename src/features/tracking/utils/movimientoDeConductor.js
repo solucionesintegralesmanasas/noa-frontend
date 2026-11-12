@@ -30,10 +30,14 @@ function aRadianes(grados) {
 /** Marca de tiempo en ms del punto, o null si no la trae. */
 export function marcaDeTiempo(punto) {
     const valor = punto?.recorded_at ?? punto?.created_at ?? null;
-    if (valor == null) return null;
+    if (valor == null || typeof valor === 'symbol') return null;
 
-    const tiempo = new Date(valor).getTime();
-    return Number.isFinite(tiempo) ? tiempo : null;
+    try {
+        const tiempo = new Date(valor).getTime();
+        return Number.isFinite(tiempo) ? tiempo : null;
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -41,13 +45,30 @@ export function marcaDeTiempo(punto) {
  * recorded_at }. Devuelve null si las coordenadas no son usables.
  */
 export function normalizarPunto(punto) {
-    const lat = Number(punto?.latitude ?? punto?.lat);
-    const lng = Number(punto?.longitude ?? punto?.lng ?? punto?.lon);
+    if (!punto || typeof punto !== 'object') return null;
+    const rawLat = punto.latitude ?? punto.lat;
+    const rawLng = punto.longitude ?? punto.lng ?? punto.lon;
+
+    if (
+        rawLat == null || rawLng == null ||
+        typeof rawLat === 'symbol' || typeof rawLng === 'symbol' ||
+        (rawLat && typeof rawLat === 'object' && !Array.isArray(rawLat)) ||
+        (rawLng && typeof rawLng === 'object' && !Array.isArray(rawLng)) ||
+        typeof rawLat === 'boolean' || typeof rawLng === 'boolean' ||
+        Array.isArray(rawLat) || Array.isArray(rawLng) ||
+        (typeof rawLat === 'string' && rawLat.trim() === '') ||
+        (typeof rawLng === 'string' && rawLng.trim() === '')
+    ) {
+        return null;
+    }
+
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
 
-    const heading = punto?.heading == null ? NaN : Number(punto.heading);
+    const heading = punto.heading == null || punto.heading === '' || typeof punto.heading === 'boolean' ? NaN : Number(punto.heading);
 
     return {
         latitude: lat,
@@ -77,10 +98,17 @@ export function puntoDeConductor(driver) {
 
 /** Distancia en metros entre dos puntos (haversine). */
 export function distanciaEntrePuntos(desde, hasta) {
-    const lat1 = aRadianes(Number(desde?.latitude));
-    const lat2 = aRadianes(Number(hasta?.latitude));
+    const latNum1 = Number(desde?.latitude);
+    const latNum2 = Number(hasta?.latitude);
+    const lngNum1 = Number(desde?.longitude);
+    const lngNum2 = Number(hasta?.longitude);
+    if (!Number.isFinite(latNum1) || !Number.isFinite(latNum2) || !Number.isFinite(lngNum1) || !Number.isFinite(lngNum2)) {
+        return 0;
+    }
+    const lat1 = aRadianes(latNum1);
+    const lat2 = aRadianes(latNum2);
     const dLat = lat2 - lat1;
-    const dLng = aRadianes(Number(hasta?.longitude) - Number(desde?.longitude));
+    const dLng = aRadianes(lngNum2 - lngNum1);
 
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
     return 2 * RADIO_TIERRA_M * Math.asin(Math.min(1, Math.sqrt(a)));
@@ -88,9 +116,16 @@ export function distanciaEntrePuntos(desde, hasta) {
 
 /** Rumbo en grados (0–360, norte = 0) desde un punto hacia otro. */
 export function rumboEntrePuntos(desde, hasta) {
-    const lat1 = aRadianes(Number(desde?.latitude));
-    const lat2 = aRadianes(Number(hasta?.latitude));
-    const dLng = aRadianes(Number(hasta?.longitude) - Number(desde?.longitude));
+    const latNum1 = Number(desde?.latitude);
+    const latNum2 = Number(hasta?.latitude);
+    const lngNum1 = Number(desde?.longitude);
+    const lngNum2 = Number(hasta?.longitude);
+    if (!Number.isFinite(latNum1) || !Number.isFinite(latNum2) || !Number.isFinite(lngNum1) || !Number.isFinite(lngNum2)) {
+        return 0;
+    }
+    const lat1 = aRadianes(latNum1);
+    const lat2 = aRadianes(latNum2);
+    const dLng = aRadianes(lngNum2 - lngNum1);
 
     const y = Math.sin(dLng) * Math.cos(lat2);
     const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
@@ -104,10 +139,32 @@ export function rumboEntrePuntos(desde, hasta) {
  * Interpolación lineal suficiente a la escala de una cuadra urbana.
  */
 export function posicionInterpolada(desde, hasta, t) {
-    const avance = Math.min(1, Math.max(0, Number(t) || 0));
+    if (!desde || !hasta || typeof desde !== 'object' || typeof hasta !== 'object') return [0, 0];
+    let avance = 0;
+    try {
+        if (typeof t !== 'symbol') {
+            const numT = Number(t);
+            avance = Number.isFinite(numT) ? Math.min(1, Math.max(0, numT)) : 0;
+        }
+    } catch {
+        avance = 0;
+    }
+    const toNum = (v) => {
+        if (v == null || typeof v === 'symbol' || (typeof v === 'object' && !Array.isArray(v))) return 0;
+        try {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : 0;
+        } catch {
+            return 0;
+        }
+    };
+    const latD = toNum(desde.latitude);
+    const lngD = toNum(desde.longitude);
+    const latH = toNum(hasta.latitude);
+    const lngH = toNum(hasta.longitude);
     return [
-        Number(desde.latitude) + (Number(hasta.latitude) - Number(desde.latitude)) * avance,
-        Number(desde.longitude) + (Number(hasta.longitude) - Number(desde.longitude)) * avance,
+        latD + (latH - latD) * avance,
+        lngD + (lngH - lngD) * avance,
     ];
 }
 
@@ -134,6 +191,7 @@ export function duracionDeTransicion(desde, hasta) {
  * Devuelve una lista nueva (el store de Pinia espera reasignación).
  */
 export function agregarPuntoAEstela(estela, punto, tope = TOPE_PUNTOS_ESTELA) {
+    if (typeof tope === 'number' && tope <= 0) return [];
     const limpio = normalizarPunto(punto);
     if (!limpio) return Array.isArray(estela) ? estela : [];
 
@@ -149,10 +207,12 @@ export function agregarPuntoAEstela(estela, punto, tope = TOPE_PUNTOS_ESTELA) {
             && Number(ultimo.longitude) === limpio.longitude) {
             return base;
         }
+        const maxTope = Math.max(1, Number(tope) || TOPE_PUNTOS_ESTELA);
         const lista = [...base, limpio];
-        return lista.length > tope ? lista.slice(-tope) : lista;
+        return lista.length > maxTope ? lista.slice(-maxTope) : lista;
     }
 
+    const maxTope = Math.max(1, Number(tope) || TOPE_PUNTOS_ESTELA);
     const indice = base.findIndex((p) => {
         const otra = marcaDeTiempo(p);
         return otra !== null && otra >= hora;
@@ -161,7 +221,7 @@ export function agregarPuntoAEstela(estela, punto, tope = TOPE_PUNTOS_ESTELA) {
     if (indice !== -1 && marcaDeTiempo(base[indice]) === hora) return base;
 
     const lista = indice === -1 ? [...base, limpio] : [...base.slice(0, indice), limpio, ...base.slice(indice)];
-    return lista.length > tope ? lista.slice(-tope) : lista;
+    return lista.length > maxTope ? lista.slice(-maxTope) : lista;
 }
 
 /**
@@ -203,6 +263,7 @@ export function viajeActual(puntos, umbralMs = UMBRAL_VIAJE_MS) {
 /** Fecha local YYYY-MM-DD (nunca UTC: a las 7 p.m. de Bogotá el día ya cambió). */
 export function fechaLocalDe(instante = new Date()) {
     const fecha = instante instanceof Date ? instante : new Date(instante);
+    if (Number.isNaN(fecha.getTime())) return '';
     const dia = String(fecha.getDate()).padStart(2, '0');
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     return `${fecha.getFullYear()}-${mes}-${dia}`;

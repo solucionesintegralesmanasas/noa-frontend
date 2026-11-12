@@ -108,10 +108,8 @@
             :selected-project-uuid="store.projectFilter"
             :loading="store.loading"
             :can-create-project="permissionsStore.can('projects.create')"
-            :can-edit-sheets="permissions.edit"
             @select="onProjectCardSelect"
             @create-project="goToCreateProject"
-            @edit-project-sheets="openBulkUpdateModal"
         />
 
         <!-- LISTADO: cabecera contextual del proyecto + toolbar + tabla + paginador en una sola tarjeta -->
@@ -141,11 +139,11 @@
                         v-if="permissions.edit && selectedProject.uuid"
                         type="button"
                         class="btn btn-primary btn-project-action shadow-xs"
-                        title="Actualizar fechas o ruta de todas las hojas de control abiertas del proyecto"
+                        title="Modificar fechas de vigencia de las hojas de control del proyecto"
                         @click="openBulkUpdateModal(selectedProject)"
                     >
                         <i class="fad fa-calendar-edit" aria-hidden="true" />
-                        <span>Actualizar General</span>
+                        <span>Modificar Fechas</span>
                     </button>
                     <button
                         v-if="permissions.pdf"
@@ -176,6 +174,16 @@
                     >
                         <i class="fad fa-edit" aria-hidden="true" />
                         <span>Editar Proyecto</span>
+                    </button>
+                    <button
+                        v-if="permissions.projectProfile && selectedProject.uuid"
+                        type="button"
+                        class="btn btn-success btn-project-action shadow-xs"
+                        title="Gestionar conductores y vehículos asignados al proyecto"
+                        @click="showAssignmentsModal = true"
+                    >
+                        <i class="fad fa-users-cog" aria-hidden="true" />
+                        <span>Gestionar Asignaciones</span>
                     </button>
                 </div>
             </div>
@@ -247,11 +255,11 @@
                         v-if="permissions.edit && !(store.viewMode === 'projects' && selectedProject)"
                         type="button"
                         class="btn btn-primary btn-project-action shadow-xs"
-                        title="Actualizar fechas o ruta de todas las hojas de control abiertas de un proyecto"
+                        title="Modificar fechas de vigencia de las hojas de control de un proyecto"
                         @click="openBulkUpdateModal(selectedProject)"
                     >
                         <i class="fad fa-calendar-edit" aria-hidden="true" />
-                        <span>Actualizar General</span>
+                        <span>Modificar Fechas</span>
                     </button>
                     <button
                         v-if="permissions.pdf && !(store.viewMode === 'projects' && selectedProject)"
@@ -665,12 +673,13 @@
         </div>
     </div>
 
-    <!-- DIÁLOGO ÚNICO DE REPORTES: rango, vehículo, conductor, día y mensual en PDF y Excel (solo cerradas) -->
+    <!-- DIÁLOGO ÚNICO DE REPORTES: rango, vehículo, conductor, día, mensual y proyecto en PDF y Excel (solo cerradas) -->
     <ServiceReportsDialog
         v-model:visible="showReportsDialog"
         :vehicles="reportVehicles"
         :drivers="reportDrivers"
         :project="selectedProject"
+        :projects="reportProjects"
     />
 
     <!-- DIÁLOGO DE ACTUALIZACIÓN GENERAL DE HOJAS DEL PROYECTO -->
@@ -685,7 +694,7 @@
         <template #header>
             <div class="d-flex align-items-center gap-2">
                 <i class="fad fa-calendar-edit text-primary fs-4" aria-hidden="true"></i>
-                <h5 class="mb-0 fw-bold">Actualización General de Hojas de Control</h5>
+                <h5 class="mb-0 fw-bold">Modificar Fechas de Hojas de Control</h5>
             </div>
         </template>
         <div class="p-1">
@@ -764,6 +773,15 @@
             </div>
         </div>
     </Dialog>
+
+    <!-- Modal Gestionar Asignaciones -->
+    <ProjectAssignmentsModal
+        v-model:visible="showAssignmentsModal"
+        :project-uuid="selectedProject?.uuid"
+        :project-name="selectedProject?.project_name"
+        :can-create="permissions.create"
+        @saved="onAssignmentsSaved"
+    />
 </template>
 
 <script setup>
@@ -785,13 +803,16 @@ import DateInput from '@/components/form/DateInput.vue';
 import Dialog from 'primevue/dialog';
 import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
 import ProjectSwitcherCards from '../components/ProjectSwitcherCards.vue';
+import ProjectAssignmentsModal from '../components/ProjectAssignmentsModal.vue';
 import {
     formatRango as formatRangoHook,
     diasHijos as diasHijosHook,
     recorridosCount as recorridosCountHook,
     recorridosTexto as recorridosTextoHook,
     esCerrado,
-    resumenDiasInfo
+    resumenDiasInfo,
+    tieneKm,
+    formatKmValor
 } from '../hooks/useServiceList.js';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -825,6 +846,7 @@ const selectedProject = computed(() => {
 
 const showReportsDialog = ref(false);
 const showBulkUpdateDialog = ref(false);
+const showAssignmentsModal = ref(false);
 const bulkUpdating = ref(false);
 const bulkUpdateError = ref('');
 const bulkUpdateForm = reactive({
@@ -835,6 +857,7 @@ const bulkUpdateForm = reactive({
 });
 const reportVehicles = computed(() => store.catalogs.vehicles ?? []);
 const reportDrivers = computed(() => store.catalogs.drivers ?? []);
+const reportProjects = computed(() => (store.projects?.length ? store.projects : (store.projectsOverview ?? [])));
 const downloadingDaily = ref(null);
 const sharingLink = ref(null);
 
@@ -880,6 +903,12 @@ const goToProjectEdit = (uuid) => router.push(`/proyectos/editar/${uuid}`);
 
 const openProjectReport = () => {
     showReportsDialog.value = true;
+};
+
+const onAssignmentsSaved = async () => {
+    // Recargar proyectos y items después de guardar asignaciones
+    await store.loadProjectsOverview(userStore.company_uuid);
+    await store.fetchItems();
 };
 
 const normalizarFechaInput = (fecha) => (fecha ? String(fecha).slice(0, 10) : '');

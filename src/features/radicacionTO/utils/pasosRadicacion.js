@@ -34,9 +34,24 @@ export const tipos = {
   DESVINCULACION_UNILATERAL: 'Desvinculación unilateral',
 };
 
-export const etiquetaPaso = (valor) => pasos[valor] ?? valor;
-export const etiquetaPasoCorta = (valor) => pasosCortos[valor] ?? valor;
-export const etiquetaTipo = (valor) => tipos[valor] ?? valor;
+export const etiquetaPaso = (valor) => {
+  if (valor && typeof valor === 'string' && Object.prototype.hasOwnProperty.call(pasos, valor)) {
+    return pasos[valor];
+  }
+  return valor;
+};
+export const etiquetaPasoCorta = (valor) => {
+  if (valor && typeof valor === 'string' && Object.prototype.hasOwnProperty.call(pasosCortos, valor)) {
+    return pasosCortos[valor];
+  }
+  return valor;
+};
+export const etiquetaTipo = (valor) => {
+  if (valor && typeof valor === 'string' && Object.prototype.hasOwnProperty.call(tipos, valor)) {
+    return tipos[valor];
+  }
+  return valor;
+};
 
 export const colorEstado = (estado) =>
   estado === 'COMPLETADO' ? 'bg-success' : estado === 'EN_PROCESO' ? 'bg-primary' : 'bg-secondary';
@@ -53,8 +68,10 @@ export const expedienteCompletado = (expediente) => expediente?.global_status ==
  * traiga como EN_PROCESO (expedientes creados antes de exigir el orden de pasos).
  */
 export const normalizarLinea = (linea = []) => {
-  const primero = linea.findIndex((p) => p.estado !== 'COMPLETADO');
-  return linea.map((p, i) => {
+  const lista = Array.isArray(linea) ? linea : [];
+  const primero = lista.findIndex((p) => p && p.estado !== 'COMPLETADO');
+  return lista.map((p, i) => {
+    if (!p || typeof p !== 'object') return p;
     if (p.estado === 'COMPLETADO') return p;
     return { ...p, estado: i === primero ? 'EN_PROCESO' : 'PENDIENTE' };
   });
@@ -75,7 +92,13 @@ export const tiposDeTramite = [
  * Porcentaje de avance (0-100) a partir del texto "completados/total" que devuelve el backend.
  */
 export const porcentajeAvance = (avance) => {
-  const [hechos, total] = String(avance ?? '').split('/').map(Number);
+  let texto = '';
+  try {
+    texto = String(avance ?? '');
+  } catch {
+    return 0;
+  }
+  const [hechos, total] = texto.split('/').map(Number);
   if (!Number.isFinite(hechos) || !Number.isFinite(total) || total <= 0) return 0;
-  return Math.min(100, Math.round((hechos / total) * 100));
+  return Math.max(0, Math.min(100, Math.round((hechos / total) * 100)));
 };

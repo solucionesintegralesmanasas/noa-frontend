@@ -4,6 +4,53 @@
 - **name**: solo-espanol
 - **description**: IDIOMA: Activa SOLO cuando detectes que el usuario se comunica en español. TODAS las respuestas, explicaciones, análisis, sugerencias y comentarios en código deben estar estrictamente en ESPAÑOL. Prohíbe terminantemente el uso de inglés u otros idiomas en la comunicación humana.
 
+## Mapa de Contexto Vigente (actualizado 2026-11-09, tras SPEC-010 → SPEC-016)
+
+Lectura obligatoria antes de tocar el frontend. Resume el estado real después del rediseño de rendimiento, alcance y cliente HTTP de noviembre. Si una sección vieja de este archivo choca con este mapa, **manda este mapa**. Las specs viven en el backend: `../noa-backend/docs/specs/SPEC-0xx-*.md` (la SPEC-016 es la de este repo); la guía de métricas en `docs/metrics/` y las cifras comparables en `../noa-backend/docs/metrics/cifras-vigentes.md`.
+
+### Principios vigentes del frontend (no revertir sin una spec nueva)
+
+1. **Un solo cliente HTTP.** `apiClient.global` es la única instancia Axios (`src/services/api/client.js`); no existen `forTenant()` ni mapas de instancias por empresa. El `requestInterceptor` inyecta `Authorization` y `X-Company-UUID` **en cada petición**: `authStore.currentTenant.id` primero, `userStore.company_uuid` solo como respaldo, y una cabecera explícita en la llamada prevalece (p. ej. `ctxCompanyUuid` de FUEC o un superadmin con varias empresas). `BaseService` con `tenantId` envía la cabecera por petición sobre la misma instancia. Un cambio de empresa se refleja en la petición siguiente sin recrear nada. Prueba: `src/services/api/__tests__/client.test.js`.
+2. **Sin cachés propias de datos.** El backend ya responde en vivo (sin caché en dashboard, notificaciones ni mapas): el frontend no agrega caché de respuestas ni «optimizaciones» que oculten datos viejos. Lo único que se persiste son sesión, permisos, perfil y preferencias de UI (cifrado).
+3. **Persistencia cifrada con debounce.** `src/store/plugins/persistence.js`: escritura diferida de 300 ms **por store**, lista de exclusión por store (`OMIT_KEYS`: `auth` y `user_profile` omiten `isHydrated`; `permissions` omite además `isLoaded` y `abilities`; `ui` omite `isLoading`, `isOpen` y `activeTab`), comparación con la última cadena serializada (si no cambió, no cifra) y `flushAllPersistence()` forzado en `pagehide`, `visibilitychange: hidden`, login y canje 2FA. `cancelPendingPersistence()` se usa en logout/limpieza para que una escritura tardía no recree claves tras `secureStorage.clear()`. Prueba: `persistence.test.js`.
+4. **Alertas de vencimiento en memoria.** `notifications.store.js` guarda un `Map<uuid, timestamp>` a nivel de módulo (regla de no repetición de 55 min, purga a 24 h) y lo persiste en **una sola clave** de Preferences (`expiry_alerts_shown_map`, lectura única al arrancar, escritura diferida); las claves antiguas `expiry_alert_shown_*` se borran una vez en segundo plano (`expiry_alerts_legacy_cleaned`). Prohibido volver a `Preferences.keys()` + `get` por alerta.
+5. **El filtro del frontend NO es un control de seguridad.** El backend aísla por `AlcanceDelActor` (empresa/sede/afiliado/conductor, falla cerrado). `BaseService` solo agrega `third_party_uuid` a los GET como comodidad y únicamente con el rol `AFILIADO`; un recurso ajeno responde 404/403 aunque la pantalla lo pida. Un conductor ve **solo** los vehículos asignados a él (lista vacía si no tiene asignaciones).
+6. **Contratos de API estables.** Las optimizaciones del backend (SPEC-010 a 015) no cambiaron ningún payload: no hay que adaptar vistas por ellas. `BaseService._request` devuelve el cuerpo `{ success, message, data }`; un listado paginado está en `r.data` y sus filas en `r.data.data`.
+7. **Permisos primero.** Una pantalla que llama a un endpoint con `permission:` propio condiciona la llamada con `permissionsStore.can('<permiso>')` y oculta el botón; un 403 en consola es un error de la vista.
+8. **Todo cambio visual o de arranque se mide** (`npm run test:perf`, Lighthouse contra `preview`) antes y después.
+
+### Specs que afectan al frontend
+
+| Spec | Efecto en `noa-frontend-tsb` |
+| --- | --- |
+| 016 | Cliente HTTP único, persistencia con debounce, alertas en memoria (implementada 2026-11-09: `b39c14c`, `43aeb51`) |
+| 013 | Ninguno en código; define cómo el backend resuelve el alcance a partir del token + `X-Company-UUID` (la cabecera de empresa debe ser siempre correcta) |
+| 010, 011, 012, 014, 015 | Ninguno: optimizaciones del backend con contrato JSON intacto (dashboard, reporte de vehículos, planillas PCP, notificaciones, mapas del PDF) |
+| 008, 009 | Listados reutilizables y hojas de control por proyecto (ver secciones propias abajo) |
+
+### Lo que YA NO existe (no reintroducir)
+
+`apiClient.forTenant()` y `instances.tenants` · el módulo `assistant` / `BubbleChat` y el hook `useChatPolling.js` (eliminados por retiro de chat IA del backend) · jQuery, Select2, `primeicons`, `signature_pad` · `useForm.js`, `useSelect2.js`, `router/guards.js` · pantallas y servicios de **ApiDian** (configuración básica y documentos electrónicos genéricos; la facturación electrónica es solo **Factus**) · `Preferences.keys()` por alerta de vencimiento · lecturas bloqueantes de almacenamiento nativo en el arranque.
+
+### Mapa rápido de `src/`
+
+`features/<módulo>/{routes.js,views/,store/,services/,__tests__/}` (cada feature registra sus rutas; 40 módulos, ver "Módulos y Features") · `components/{form,layout,mobile}` y listados compartidos (`RowActions`, `ListPagination`, `BasePageHeader`, `BaseFormActions`) · `hooks/` (formularios accesibles, tablas, orden server-side, realtime) · `services/api/` (cliente, interceptores, `BaseService`) y `services/security/` (`secure-storage`, `token-manager`, RBAC) · `store/{modules,plugins}` (Pinia: `auth`, `permissions`, `user`, `config` + persistencia) · `router/{index.js,guards/{auth,2fa,permissions}.js}` · `utils/` (fechas, logger enmascarado, toasts, `modoConductor`, formateadores de catálogos) · `assets/styles/components/_data-list.css` (estilos de listados, cargado con el componente, no en `main.js`).
+
+### Flujo de login con doble factor (2026-11-09, `beba147`, `43aeb51`)
+
+`authService.login()` detecta `status = two_factor_required`; el `auth.store` guarda el **token de desafío** (habilidad `2fa:challenge`, 10 min, no es un token de sesión) y redirige a `/two-factor` (`TwoFactorView.vue`, ruta `two-factor`). La vista canjea el código contra `POST /2fa/verify`; solo entonces llega el par acceso+refresco, el store completa la sesión y llama `flushAllPersistence()` para que el token quede persistido de inmediato. El interceptor de respuesta **no** trata como sesión caída un 401 de `/login` ni de `/refresh-token` (los gestiona la vista) y evita la cascada 401 → logout → 401 (`_isHandling401`, 3 s). El guard `2fa.js` exige 2FA solo en rutas con `meta.requires2FA` y usuarios con `has2FA` que no lo hayan omitido. Barra de navegación: se apaga en `finally` de `LoginView.handleLogin` y en `router.afterEach`/`onError`.
+
+### Qué prueba correr según el área
+
+| Área | Comando |
+| --- | --- |
+| Cliente HTTP / tenant | `npx vitest run src/services/api` |
+| Persistencia / sesión | `npx vitest run src/store src/services/security` |
+| Notificaciones | `npx vitest run src/features/notifications` |
+| Reporte de actividad vehicular | `npx vitest run src/features/vehicleActivityReports` |
+| Formularios compartidos | `npx vitest run src/components/form` |
+| Cualquier cambio | `npm run lint` + `npm run test:unit` (bloquean) y `npm run build` + `npm run test:perf` si toca peso |
+
 ## Stack
 
 - **Core:** Vue 3 (`<script setup>` SFCs, version `^3.5.34`)
@@ -72,7 +119,10 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 
 - **Laravel Sanctum** PAT-based auth. Token stored encrypted (AES-GCM, WebCrypto API + PBKDF2) in `secureStorage` (`@capacitor/preferences`).
 - Login flow: `authService.login()` → returns `{ user, token }` → stores in Pinia + Token Manager.
-- 401 responses trigger `auth:unauthorized` custom event, token wipe, and redirect to `/login`.
+- 401 responses trigger `auth:unauthorized` custom event, token wipe, and redirect to `/login` (excepto `/login` y `/refresh-token`, que resuelve la propia vista; ver "Flujo de login con doble factor").
+- **Renovación automática de sesión (2026-11-10):** ante un 401, el interceptor renueva el access token (8 h) con la cookie HTTP-only `refresh_token` (30 días) y reintenta la petición original una sola vez; varios 401 simultáneos comparten una única renovación. Si el refresh falla, limpia la sesión y redirige a login. Exige `withCredentials` en el cliente Axios y `supports_credentials=true` en `config/cors.php`; el logout no intenta renovar.
+- Con 2FA activo el login devuelve un **token de desafío** (no de sesión) que se canjea en `/two-factor`; la persistencia se vacía de inmediato al completar la sesión y se cancela en logout (`cancelPendingPersistence`).
+- Sesión y permisos persisten cifrados con debounce (SPEC-016); no escribir `secureStorage` directo desde las vistas.
 - Encryption key comes from `VITE_ENCRYPTION_KEY` var.
 - Logger masks sensitive fields (`token`, `password`, `secret`, `authorization`, `otp`).
 - **Autenticación 2FA & Perfil**: El módulo de seguridad expone flujos interactivos para activar/desactivar 2FA mediante códigos TOTP QR dinámicos procedentes del backend laravel. El panel de configuración e historial de sesión reside unificado dentro de `UserProfileView.vue` bajo la ruta `/profile?tab=security`.
@@ -98,16 +148,16 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 
 ## API Layer
 
-- Axios client in `src/services/api/client.js` — singleton with tenant-aware instances.
-- Interceptors (`src/services/api/interceptors.js`) auto-inject Bearer token, log requests, handle 401.
-- `BaseService` (`src/services/api/base.service.js`) wraps CRUD + RBAC permission checks.
+- Axios client in `src/services/api/client.js` — instancia canónica única (`apiClient.global`) sin cachés ni mapas de instancias múltiples (SPEC-016).
+- Interceptors (`src/services/api/interceptors.js`) auto-inject Bearer token, inyectan dinámicamente `X-Company-UUID` por petición, log requests y handle 401.
+- `BaseService` (`src/services/api/base.service.js`) wraps CRUD + RBAC permission checks y delega en `apiClient.global` (inyectando `X-Company-UUID` por petición si el servicio tiene `tenantId` explícito vía Proxy).
 
 ## Multi-tenant
 
-- `apiClient.forTenant(tenantId)` crea una instancia Axios dedicada (cacheada) con el header `X-Company-UUID`. El backend (`SetCompanyContext`) también acepta `X-Tenant-ID`, pero el frontend envía `X-Company-UUID`.
+- Resolución dinámica de empresa activa (SPEC-016): `requestInterceptor` inyecta en cada solicitud `X-Company-UUID` directamente desde `auth.currentTenant.id` (fallback a `user.company_uuid`). Se eliminaron `apiClient.forTenant()` y los mapas de instancias cacheadas.
+- Si una solicitud provee explícitamente `X-Company-UUID` en `config.headers`, esta prevalece. El backend (`SetCompanyContext`) también acepta `X-Tenant-ID`, pero el frontend envía `X-Company-UUID`.
 - Tenant ID stored in `auth.currentTenant.id` Pinia state.
 - `BaseService` inyecta `third_party_uuid` como parámetro plano en los GET cuando el usuario es afiliado, empleado o conductor (Spatie QueryBuilder falla con filtros anidados).
-
 ## i18n
 
 - Locale files at `src/assets/locales/{es,en}.json` loaded via `import.meta.glob`.
@@ -126,13 +176,13 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - **Layouts Centralizados**: Los componentes de estructura principal (Navbar, Sidebar, Footer) deben residir estrictamente en `src/components/layout/` y conectarse a la lógica a través de hooks.
 - **Store & Plugins (Encrypted Persistence)**:
   - Módulos globales de estado en `src/store/modules/`.
-  - Los plugins de persistencia en `src/store/plugins/persistence.js` sincronizan reactivamente el estado de los stores (`auth`, `permissions`, `ui`, `user`) de forma encriptada (AES-GCM) utilizando `secureStorage` respaldado nativamente por `@capacitor/preferences`.
+  - Los plugins de persistencia en `src/store/plugins/persistence.js` sincronizan reactivamente el estado de los stores (`auth`, `permissions`, `ui`, `user`) de forma encriptada (AES-GCM) utilizando `secureStorage` respaldado nativamente por `@capacitor/preferences`. Incorporan debouncing (300 ms) por store, omisión de propiedades volátiles (`OMIT_KEYS`), comparación de serialización para no repetir ciclos criptográficos en el hilo principal y vaciado forzado (`flushAllPersistence`) en eventos críticos (SPEC-016).
   - El estado `isHydrated` se resuelve asíncronamente en pocos milisegundos tras leer la base de almacenamiento seguro, eliminando bloqueos de 2 segundos durante el bootstrap de la app.
 - **APIs & Seguridad**: Servicios API en `src/services/api/`, servicios de seguridad en `src/services/security/`.
 - **Manejo de Errores**: Manejo a través de `handleGlobalError()` que despacha eventos personalizados `app:toast`.
 - **Monitoreo**: El monitoreo de conectividad se suscribe a los eventos `online`/`offline` nativos y al endpoint `/health`.
 - **Media Utility**: `src/utils/media.js` provee la función robusta `getMediaUrl(path, fallback)` para reconstruir de forma absoluta y limpia las rutas de imágenes y archivos cargados en el storage del Backend.
-- **Notifications System**: `src/features/notifications/store/notifications.store.js` provee un estado centralizado para alertas tempranas de documentos vehiculares vencidos (SOAT, Tecnicomecánica, Licencias) manteniendo la UI reactiva y dinámica.
+- **Notifications System**: `src/features/notifications/store/notifications.store.js` provee un estado centralizado para alertas tempranas de documentos vehiculares vencidos (SOAT, Tecnicomecánica, Licencias) manteniendo la UI reactiva y dinámica. El control de alertas mostradas opera en memoria (`Map<uuid, ts>`, no-repetición de 55 min) con persistencia ligera en una sola clave JSON, eliminando lecturas bloqueantes `Preferences.get()` en el arranque móvil (SPEC-016).
 - **Importación Obligatoria de Componentes Comunes**: Los componentes compartidos como `BaseFormActions` y `BasePageHeader` no están registrados globalmente. Cada vista que los use debe importarlos explícitamente en `<script setup>` (ej. `import BaseFormActions from '@/components/BaseFormActions.vue';`).
 
 ## Accesibilidad y Formularios (obligatorio)
@@ -149,11 +199,11 @@ Reglas cerradas en las fases 1-3 (2026-09-15). Verificables con `npm run test:a1
 - **Iconos decorativos:** `aria-hidden="true"`. Botones icon-only: `aria-label` en español.
 - **Prohibido:** `role="button"` en `router-link`, `<a>` sin `href`, `href="#"`, `javascript:void(0)`, `aria-label` en inglés, `console.*` directo (usar `logger`), imports directos de `sweetalert2` (usar `utils/toast.js`).
 
-## Estado del Proyecto y Medición (2026-09-15, actualizado 2026-11-03)
+## Estado del Proyecto y Medición (2026-09-15, actualizado 2026-11-09)
 
 - **Fases 1-3 cerradas:** a11y estructural global, los 25 `*FormView` migrados, dashboard con accesibilidad 100.
 - **Rendimiento P0-P2 cerrado:** primeicons y SweetAlert2 fuera del arranque, FontAwesome JS eliminado (−1.2 MB), jQuery/Select2 eliminados (−148 kB) y 28 vistas migradas al wrapper `PrimeSelect`.
-- **Medición vigente (2026-11-03):** `totalJS` ~2854 kB · `inicialJS` **429.8 kB** (límite 750 kB) · `totalCSS` **266.9 kB** (límite 350 kB) · `vendor-primevue` **225.4 kB** (límite 250 kB) · `indexJS` **128.4 kB** (límite 150 kB). Todas las vistas diferidas < 150 kB. Presupuesto de peso estricto validado con `npm run test:perf` y compilación Vite en ~2.18 s. Reportes en `docs/metrics/` (`a11y-*`, `perf-*`, `lighthouse-<env>-<device>-*` y `lighthouse.md`).
+- **Medición vigente (2026-11-09, `docs/metrics/perf-2026-11-09.json`, build `CCurwmuV`):** `totalJS` 3364.5 kB · `inicialJS` **432.7 kB** (límite 750 kB) · `totalCSS` **279 kB** (límite 350 kB) · `vendor-primevue` **225.4 kB** (límite 250 kB) · `indexJS` **129.3 kB** (límite 150 kB) · 211 chunks JS (13 iniciales); todas las vistas diferidas < 150 kB (la mayor, `ThirdPartiesFormView`, 114 kB) · `publicInicialJS` 634 kB + `publicInicialCSS` 1066 kB. La SPEC-016 no movió el peso apreciablemente (430 → 433 kB inicial). Presupuesto de peso validado con `npm run test:perf`. Reportes en `docs/metrics/` (`a11y-*`, `perf-*`, `lighthouse-<env>-<device>-*` y `lighthouse.md`; último a11y 2026-11-09).
 - **Lighthouse producción (2026-09-23, tarde):** Perf 69–85, LCP 2,4–3,1 s, TBT 0 ms. El cuello son bytes y latencia de API, no JS bloqueante. Local (`vite preview`, 2026-09-29): login desktop 95; conductor móvil 65 con LCP 6 s.
 - **Plan de rendimiento:** `PLAN-ARQUITECTURA-RENDIMIENTO-NOA.md` fue retirado del backend (2026-10-15, `aea765c`); el backlog y las cifras viven en SPEC-004 y en el AGENTS del backend. Medir siempre en producción o `preview`, nunca contra `localhost:5173`.
 - **Perfil autenticado para Lighthouse (2026-10-05):** `--profile="C:\Users\trans_nn1on\lighthouse-profile"` NO retiene la sesión en las corridas headless del script (las privadas caen a `#/login?redirect=...` aunque el perfil tenga token): las páginas privadas se miden manual en DevTools (protocolo de `docs/metrics/lighthouse.md`, 3 corridas, guardar JSON). El script solo sirve para públicas (`login`, `conductor`). Perfil creado con `--user-data-dir` apuntando ahí; no navegar a otros sitios con él.
@@ -168,9 +218,17 @@ Reglas cerradas en las fases 1-3 (2026-09-15). Verificables con `npm run test:a1
   - **Reporte de vehículos (`VehicleReportView` y `vehicleReports.store`):** Barra superior de filtros de consulta con criterio principal (Documentos, Convenio, Sede operativa, Tarjeta de operación, Afiliado, Conductor, Proyecto, Mantenimiento), vencimientos rápidos (vencidas, hoy, por vencer 5d, +15d), vinculación/propiedad (Empresa / Terceros), persistencia y restauración completa en la URL de todos los subfiltros (`doc_type`, `doc_status`, `agreement_status`, `card_status`, `mtto_status`, `filter_value`, `ownership_type`), indicador de sede y badge Propio/Tercero bajo la placa, y pastilla "Exento · Particular" en RCC/RCE y Tarjeta de Operación para vehículos particulares.
   - **Navbar y alertas (`Navbar.vue`):** Soporte de toggle (abrir/cerrar) en los accesos directos de alertas (empresa y terceros) cuando el menú ya está abierto en esa sección, sincronizado con los eventos Bootstrap `shown.bs.dropdown` y `hidden.bs.dropdown`. Prueba: `NavbarNotificationsToggle.test.js` (3).
   - **Configuración de proveedores de facturación (`billing.store.js` y `BillingProviderConfigView.vue`):** Validación de UUID centralizada en `billingProviderConfigService._validarUuid` y watcher reactivo de `uuid` para recarga limpia. Prueba: `billingProviderConfig.test.js`.
+- **Novedades 2026-11-05/09:**
+  - **SPEC-016 cerrada:** cliente HTTP único, `X-Company-UUID` por petición, persistencia con debounce y alertas en memoria (ver "Mapa de Contexto Vigente"). `MaintenanceForecastView.vue`, `VehicleInspectionListView.vue` y `notifications.store.js` migraron de `forTenant` a `apiClient.global`; `notifications.store.js` ya toma el tenant de la misma fuente que el resto (D1). El interceptor deja pasar sin limpiar sesión los 401 de `/login` y `/refresh-token`.
+  - **2FA con token de desafío** (`TwoFactorView`, `/two-factor`) y persistencia inmediata tras el canje.
+  - **Facturación:** Factus sustituye a ApiDian; emisión manual a la DIAN desde el detalle de la factura.
+  - **Reporte de actividad vehicular** (`features/vehicleActivityReports`) y **reporte de hojas de control por proyecto** con vehículos acotados; la acción «Editar» de las tarjetas de proyecto pasó a «Modificar fechas» (`f802404`).
+  - **Radicación TO:** origen, pre-chequeo de cupo y datos del paso en el wizard (`2c9c87d`).
+  - **FUEC:** planillas cerradas ordenadas de forma descendente y kilometraje formateado (`35d8dac`); renovación con `renewed_from_uuid` y sin botón en el visor PDF.
+  - **Métricas:** `perf-2026-11-05/09.json` y `a11y-2026-11-09.json` en `docs/metrics/`.
 - **Novedades 2026-10-20:** la barra de navegación se colgaba al ~85% en el PRIMER login (se encendía en `LoginView.handleLogin` y `endNavigation()` solo se llamaba en el catch): ahora se apaga en el `finally` para éxito, fallo y 2FA, y hay salvaguarda en `router.afterEach`/`router.onError` (`src/router/index.js`) que la apaga tras cualquier navegación. Pruebas: `NavProgressBar.test.js` (3) y `LoginView.barra.test.js` (2, mocks de `vue-router`/`auth.store.js`). Config de vitest: `transformAssetUrls: false` en el plugin Vue para que los `<img src="/...">` del template no se conviertan en imports de archivos al correr en Node.
 - **Humo de carga por rol (`scripts/roles-smoke.js`, 2026-10-20):** arnés de Puppeteer (basado en `perf-fuec.js`) que inicia sesión por pantalla con usuarios de prueba y visita rutas por rol, marcando redirecciones de guards, HTTP>=400, errores de consola, barra colgada (>2 s) y capturas en `docs/metrics/roles-smoke/<usuario>/`; reporte JSON en `docs/metrics/roles-smoke-<fecha>.json` (sin versionar como el resto de métricas). Usuarios en la BD local (contraseña = número de documento): combinado AFILIADO+CONDUCTOR `prueba.aficond@example.test`/`900000101`, EMPLEADO+COORDINADOR_CALI `prueba.emplcoord@example.test`/`900000102`, empleado puro `/900000103`, conductor puro `900000201`. Hallazgos: **(1)** el combinado veía la flota de TODA la empresa en `/vehiculos` (bug del backend `VehicleService`, corregido allí); **(2)** cualquier EMPLEADO con tercero vinculado (p. ej. un coordinador de sede creado desde terceros) viajaba con `third_party_uuid=suyo` en TODOS los GET de `base.service` y sus listados quedaban en 0: ahora el filtro se inyecta solo con el rol AFILIADO (`BaseService.parametrosDeLectura`, prueba en `src/services/api/__tests__/BaseService.filtroAfiliado.test.js`, 4 casos); **(3)** el combinado SIEMPRE aterriza en `/dashboard/conductor` (el guard prioriza CONDUCTOR sobre los demás roles: `src/router/guards/auth.js`) — decisión de UX pendiente; **(4)** las rutas sin permiso redirigen a `/401` correctamente; auditoría `authz` del backend solo registra denegaciones esperadas (`third-parties.index`, `projects.list`, `administration.*` para el combinado y el coordinador: habría que decidir permisos antes de activar enforce).
-- **Novedades 2026-10-15/19:** facturación y protección por permisos en rutas/vistas llegaron con el merge `10e68ca`; catálogos con guard de roles; puerta de licencia desactivada (`LICENSE_REQUIRED = false` en `src/router/index.js:179`, con comentario de reactivación; el guard queda como no-op de ~150 líneas — `LicenseInput.vue` quedó huérfano, decidir si se elimina); `deploy.yml` eliminado de CI (quedan `ci.yml` + `appflow.yml`, con `VITE_API_BASE_URL` provista por `7921327` para tests sin `.env` versionado); asistente de chat restaurado sin backend (ver módulo `assistant`); billing agregó 3 `type="date"` nativos a la deuda conocida. Verificado el 2026-10-19: radicaciónTO/licencia coherentes con el backend v1.0.0 (radicación 30/30 vitest, backend 62 pruebas en verde).
+- **Novedades 2026-10-15/19:** facturación y protección por permisos en rutas/vistas llegaron con el merge `10e68ca`; catálogos con guard de roles; puerta de licencia desactivada (`LICENSE_REQUIRED = false` en `src/router/index.js:179`, con comentario de reactivación; el guard queda como no-op de ~150 líneas — `LicenseInput.vue` quedó huérfano, decidir si se elimina); `deploy.yml` eliminado de CI (quedan `ci.yml` + `appflow.yml`, con `VITE_API_BASE_URL` provista por `7921327` para tests sin `.env` versionado); asistente de chat restaurado sin backend (**retirado de nuevo el 2026-10-20**, ver "Lo que YA NO existe"); billing agregó 3 `type="date"` nativos a la deuda conocida. Verificado el 2026-10-19: radicaciónTO/licencia coherentes con el backend v1.0.0 (radicación 30/30 vitest, backend 62 pruebas en verde).
 
 ## Módulos y Features del Sistema (`src/features/`)
 
@@ -178,9 +236,10 @@ Listado de submódulos de negocio disponibles y activos en la aplicación:
 
 - **`affiliateAdminCharges`**: Gestión de cobros de afiliación y cuotas de administración mensual de vehículos.
 - **`auth`**: Autenticación, inicio de sesión y gestión de credenciales.
-- **`assistant`**: Asistente de chat con burbuja flotante (restaurado `e77a83a`). **Defecto abierto:** llama a `/chat/sessions` y `/chat/messages/{uuid}/feedback`, rutas que el backend eliminó el 2026-10-02 (`5723016`); 404 garantizado hasta portar el module del backend o retirar la feature de nuevo.
+- **`fuelManagement`** / **`fuelRequests`**: Control de combustible y kilometraje (estado de flota semaforizado) y solicitudes de tanqueo con código QR de redención.
+- **`vehicleActivityReports`**: Reporte de actividad vehicular (`/reportes/actividad-vehicular`, permiso `reports.vehicle_activity.index`): inspecciones, mantenimiento, combustible, tanqueos y hojas de control consolidados por rango de fechas, con filtros por vehículo y proyecto y exportación Excel/PDF (`9f3a0e4`; el catálogo de vehículos usa `fleet-management/vehicles/list`, `15702fd`).
 - **`bankDetails`**: Configuración de cuentas y detalles bancarios de los actores.
-- **`billing`**: Facturación comercial (cotizaciones, facturas internas, notas crédito/débito, resoluciones de facturación, **proveedores tecnológicos ApiDian** —el formulario pide solo nombre, URL y **correo + contraseña de login**; al guardar el backend inicia sesión y guarda el token, que se renueva solo si ApiDian responde 401— con **configuración básica ApiDian** en `/facturacion/proveedores/:uuid/configuracion` —empresa, software, certificado, resoluciones, ambiente y webhook— y **documentos electrónicos genéricos** —soporte, equivalentes POS, nómina 102, eventos RADIAN, con registro, emisión, estado DIAN y borrado con salvaguardas—). Vistas en `/facturacion` + `/facturacion/proveedores` + `/facturacion/proveedores/:uuid/configuracion` + `/facturacion/documentos-electronicos`; rutas protegidas con `meta.permissions` + `permissionsStore.can(...)`; el fetch de catálogos del formulario (`getFormOptions`) degrada a lista vacía pero deja `logger.warn`. Los permisos `electronic_documents.*` se sembraron en la base local por SQL (NO con el seeder, regla vigente) y van en `PermissionSeeder`/`RoleSeeder` para bases nuevas.
+- **`billing`**: Facturación comercial (cotizaciones, facturas internas, notas crédito/débito, resoluciones de facturación y **proveedores tecnológicos Factus**: el formulario pide nombre, URL del servidor y credenciales OAuth2 —`client_id`, `client_secret`, correo y contraseña del portal—; el backend guarda los tokens cifrados y los renueva solo). **Emisión manual a la DIAN (2026-11-09, `9884dcf`):** crear una factura la deja en `PENDIENTE_DIAN`; el botón «Emitir» de `BillingDetailView` (`puedeEmitir`, `billing.store.emitir` → `POST /{uuid}/emitir`) la transmite, y los estados electrónicos (`ACEPTADA_DIAN`, `VALIDADA_SIN_ENVIO`, …) se ven en listado y detalle; el PDF trae QR de validación y CUFE (lo genera el backend). Vistas en `/facturacion` + `/facturacion/proveedores`; rutas protegidas con `meta.permissions` + `permissionsStore.can(...)`; el fetch de catálogos del formulario (`getFormOptions`) degrada a lista vacía pero deja `logger.warn`. **ApiDian y sus pantallas de configuración básica y documentos electrónicos genéricos se retiraron** (backend `d96fab5`).
 - **`branches`**: Gestión de sucursales u oficinas de las empresas transportadoras.
 - **`businessCollaborationAgreements`**: Convenios de colaboración empresarial y contratos entre entidades.
 - **`companies`**: Configuración de empresas operadoras (multi-tenant context).
@@ -405,6 +464,7 @@ Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo 
 - Mensajes directos en español, en una sola línea, formato `tipo(scope): descripción corta`.
 - Sin cuerpo ni bullets, salvo que el cambio lo exija para entenderse. Cuando lo exija: un cuerpo breve (una o dos frases, o tres puntos como máximo), nunca el listado de archivos o de cambios punto por punto.
 - **Cuándo commitear:** solo después de revisar el código, mediante una skill de revisión (`/code-review`) o una revisión propia contra los estándares de este archivo, o cuando el usuario lo solicite explícitamente. No commitear código sin revisar; si la revisión encuentra hallazgos, se corrigen antes de commitear y las métricas de rendimiento/a11y se miden antes y después.
+- **Propuesta previa de commits obligatoria:** después de cada revisión de código o del uso de cualquier skill relacionada con revisar código (como `/code-review`), se debe recomendar la propuesta concreta de commits antes de crearlos: el nombre recomendado (si corresponde a un único commit atómico) o la secuencia de múltiples commits con sus respectivos nombres y alcances si los cambios tocan distintas responsabilidades. Se debe **esperar siempre la confirmación o selección explícita del usuario antes de crear o ejecutar cualquier commit**. Prohibido terminantemente commitear sin permiso expreso del usuario.
 - **Sin commits de relleno:** los ajustes de `AGENTS.md` que documentan un cambio van en el mismo commit de ese cambio (nada de commits `docs` separados para este archivo ni correcciones sucesivas de la misma prosa), y la instalación o actualización de skills va en un único commit.
 - Tipos: feat, fix, refactor, perf, style, docs, test, build, ci, chore.
 

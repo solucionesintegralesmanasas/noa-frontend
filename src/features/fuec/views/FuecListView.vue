@@ -202,10 +202,9 @@
                         <i class="fad fa-file-pdf text-danger" aria-hidden="true"></i>
                         <span>PDF</span>
                     </button>
-                    <button v-if="can('fuec.update')" class="mc-btn-secondary" type="button" @click="goToEdit(item.uuid)">
-                        <i class="fad fa-edit text-warning" aria-hidden="true"></i>
-                        <span>Editar</span>
-                    </button>
+                    <div class="ms-auto d-flex align-items-center">
+                        <RowActions :actions="accionesDe(item)" :row-label="item.consecutive_number || 'FUEC'" :max-linea="0" />
+                    </div>
                 </template>
             </MobileCard>
         </div>
@@ -245,6 +244,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import { useFuecStore } from '../store/fuec.store.js';
 import { nombreArchivoFuec } from '../utils/nombreArchivoFuec.js';
+import { RUTA_FUEC_CREAR, rutaRenovarFuec } from '../utils/rutasFuec.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
@@ -282,7 +282,8 @@ const onPageChange = async ({ page, first, rows }) => {
     await store.setPage(targetPage);
 };
 
-const goToCreate = () => router.push('/extracto-de-contrato/crear');
+const goToCreate = () => router.push(RUTA_FUEC_CREAR);
+const goToRenew = (uuid) => router.push(rutaRenovarFuec(uuid));
 const goToEdit = (uuid) => router.push(`/extracto-de-contrato/editar/${uuid}`);
 const goToDetail = (uuid) => router.push(`/extracto-de-contrato/perfil/${uuid}`);
 
@@ -294,6 +295,7 @@ const handleDelete = (item) => confirmDelete(item, {
 const accionesDe = (data) => [
     { key: 'perfil', label: 'Ver detalle', icon: 'far fa-eye', tone: 'primary', inline: true, visible: can('fuec.profile'), onClick: () => goToDetail(data.uuid) },
     { key: 'pdf', label: 'Descargar PDF', icon: 'far fa-file-pdf', tone: 'neutral', inline: true, onClick: () => downloadPdfServer(data) },
+    { key: 'renovar', label: 'Renovar', icon: 'far fa-sync-alt', tone: 'primary', visible: can('fuec.renew'), onClick: () => goToRenew(data.uuid) },
     { key: 'editar', label: 'Editar', icon: 'far fa-pen', tone: 'warning', visible: can('fuec.update'), onClick: () => goToEdit(data.uuid) },
     { key: 'eliminar', label: 'Eliminar', icon: 'far fa-trash-alt', tone: 'danger', visible: can('fuec.delete'), onClick: () => handleDelete(data) },
 ];

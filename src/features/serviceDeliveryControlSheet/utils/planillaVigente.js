@@ -9,10 +9,19 @@
  */
 
 /** Fecha (YYYY-MM-DD) de una planilla diaria. */
-export const fechaDeDia = (planilla) => String(planilla?.service_date || '').substring(0, 10);
+export const fechaDeDia = (planilla) => {
+    let str = '';
+    try {
+        if (typeof planilla?.service_date === 'string') str = planilla.service_date;
+        else if (planilla?.service_date && typeof planilla.service_date !== 'symbol') str = String(planilla.service_date);
+    } catch {
+        return '';
+    }
+    return str.substring(0, 10);
+};
 
 /** Una planilla está abierta mientras no se haya cerrado. */
-export const estaAbierta = (planilla) => planilla?.is_active == 1 || planilla?.is_active === true;
+export const estaAbierta = (planilla) => planilla?.is_active === true || planilla?.is_active === 1 || planilla?.is_active === '1';
 
 /** ¿La planilla corresponde al día vigente? */
 export const esDiaVigente = (planilla, hoy) => {
@@ -58,7 +67,7 @@ export const estadoDiaPlanilla = (planilla, hoy) => {
 export const seleccionarPlanillaVigente = (servicio, dias, hoy) => {
     if (!servicio) return null;
     const lista = Array.isArray(dias) ? dias : [];
-    if (!lista.length) return esDiaVigente(servicio, hoy) ? servicio : null;
+    if (!lista.length) return esDiaVigente(servicio, hoy) && estaAbierta(servicio) ? servicio : null;
     const deHoy = lista.find((dia) => esDiaVigente(dia, hoy));
     return deHoy && estaAbierta(deHoy) ? deHoy : null;
 };

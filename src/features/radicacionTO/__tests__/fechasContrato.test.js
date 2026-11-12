@@ -83,10 +83,10 @@ describe('validarFechasContrato', () => {
     expect(validarFechasContrato(form).end_date).toBeTruthy();
   });
 
-  it('exige número de contrato y duración mínima', () => {
-    const form = { contract_number: '   ', issue_date: '2026-10-02', start_date: '2026-10-02', end_date: '2026-10-03', duration: 0 };
+  it('exige duración mínima sin pedir número de contrato', () => {
+    const form = { issue_date: '2026-10-02', start_date: '2026-10-02', end_date: '2026-10-03', duration: 0 };
     const errores = validarFechasContrato(form);
-    expect(errores.contract_number).toBeTruthy();
+    expect(errores.contract_number).toBeUndefined();
     expect(errores.duration).toBeTruthy();
   });
 

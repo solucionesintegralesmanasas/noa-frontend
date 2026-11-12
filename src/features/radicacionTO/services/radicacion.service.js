@@ -32,7 +32,11 @@ class RadicacionService extends BaseService {
   crearExpediente(data) { return this._request('POST', '/expediente', { data }); }
   expedientes(params = {}) { return this._request('GET', '/expedientes', { params }); }
   siguienteCodigo(params = {}) { return this._request('GET', '/next-code', { params }); }
+  /** Consulta informativa del cupo de capacidad transportadora antes de radicar. */
+  cuposDisponibles(params = {}) { return this._request('GET', '/cupos-disponibles', { params }); }
   detalle(uuid) { return this._request('GET', `/${uuid}/detalle`); }
+  /** Captura los datos del paso (renovación, paz y salvo, pago) antes de avanzarlo. */
+  actualizarPaso(uuid, data) { return this._request('PUT', `/${uuid}`, { data }); }
   avanzar(hijoUuid) { return this._request('POST', `/${hijoUuid}/avanzar`); }
   async listarCiudades() {
     try {

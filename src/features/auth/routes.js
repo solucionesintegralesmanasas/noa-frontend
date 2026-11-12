@@ -17,7 +17,7 @@ export const authRoutes = [
         path: "/two-factor",
         name: "two-factor",
         component: () => import("./views/TwoFactorView.vue"),
-        meta: { layout: "auth", auth: true, requires2FA: true, title: "Verificación 2FA" }
+        meta: { layout: "auth", public: true, title: "Verificación 2FA" }
     },
     {
         path: '/profile',

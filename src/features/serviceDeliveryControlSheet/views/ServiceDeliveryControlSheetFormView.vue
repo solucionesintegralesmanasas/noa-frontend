@@ -679,8 +679,10 @@ const cargarAsignacionesDelProyecto = async () => {
 };
 
 // Al elegir (o limpiar) proyecto: recargar asignaciones y sugerir fechas.
-watch(() => formData.project_uuid, () => {
-    cargarAsignacionesDelProyecto();
+watch(() => formData.project_uuid, async () => {
+    // Forzar limpieza para asegurar que la siguiente carga sea fresca
+    store.projectDetail = null;
+    await cargarAsignacionesDelProyecto();
 });
 
 // Al cambiar a tipo externo, autocompletar responsable con conductor manual

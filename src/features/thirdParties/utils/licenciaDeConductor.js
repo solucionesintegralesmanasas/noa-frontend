@@ -13,7 +13,9 @@
  *   en el documento y la licencia lo acompañe).
  * - Licencia distinta del documento anterior (la tecleó el usuario): no se toca.
  */
-export function licenciaDesdeDocumento({ documento, licenciaActual, documentoAnterior }) {
+export function licenciaDesdeDocumento(params = {}) {
+    if (!params || typeof params !== "object") return null;
+    const { documento, licenciaActual, documentoAnterior } = params;
     const docNuevo = String(documento ?? '').trim();
     const licencia = licenciaActual == null ? '' : String(licenciaActual);
     const docPrevio = documentoAnterior == null ? '' : String(documentoAnterior);

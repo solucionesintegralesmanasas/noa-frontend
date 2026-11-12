@@ -236,10 +236,13 @@
                   <i class="fad fa-file-export text-secondary" aria-hidden="true"></i>
                   <h3 class="h6 mb-0 fw-semibold">Archivos TXT — Portal TO RUNT</h3>
                 </div>
+                <p v-if="puedeActualizar && !todosFirmados" class="text-muted small mb-2" role="note">
+                  Firme ambos contratos para habilitar la generación de los TXT.
+                </p>
                 <div v-if="puedeActualizar" class="d-flex flex-wrap gap-2">
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('ADMIN_FLOTA')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -247,7 +250,7 @@
                   </button>
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('PRESTACION')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -259,6 +262,86 @@
                     <i class="fas fa-terminal me-1" aria-hidden="true"></i>Contenido generado
                   </label>
                   <pre class="bg-light border rounded-2 p-3 small" style="white-space: pre-wrap; word-break: break-all; max-height: 280px; overflow-y: auto;">{{ lote.content }}</pre>
+                </div>
+              </div>
+            </template>
+
+            <!-- ══════════════ Paso: Renovación / Desvinculación ══════════════ -->
+            <template v-else-if="esPasoRenovacion || esPasoDesvinculacion">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
+                  <i class="fad fa-file-signature text-primary" aria-hidden="true"></i>
+                </span>
+                <h2 class="h6 mb-0 fw-semibold">
+                  {{ esPasoRenovacion ? 'Requisitos de la renovación' : 'Datos de la desvinculación' }}
+                </h2>
+              </div>
+              <p class="text-muted mb-4 noa-intro">
+                Capture los datos que se imprimen en el documento. El estado del pago de derechos es informativo y no bloquea el cierre del paso.
+              </p>
+
+              <div class="row g-3">
+                <template v-if="esPasoRenovacion">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="f-old_card_number">Tarjeta de operación actual</label>
+                    <input id="f-old_card_number" v-model="pasoForm.old_card_number" class="form-control" maxlength="20" placeholder="Número de la tarjeta vigente" />
+                  </div>
+                  <div class="col-12 col-md-8 d-flex flex-wrap align-items-end gap-4">
+                    <div class="form-check">
+                      <input id="f-simit_clear" v-model="pasoForm.simit_clear" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-simit_clear">SIMIT sin comparendos pendientes</label>
+                    </div>
+                    <div class="form-check">
+                      <input id="f-soat_valid" v-model="pasoForm.soat_valid" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-soat_valid">SOAT vigente</label>
+                    </div>
+                    <div class="form-check">
+                      <input id="f-rtm_valid" v-model="pasoForm.rtm_valid" class="form-check-input" type="checkbox" />
+                      <label class="form-check-label" for="f-rtm_valid">Revisión técnico-mecánica vigente</label>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-if="esPasoDesvinculacion">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="f-paz_y_salvo">Referencia del paz y salvo</label>
+                    <input id="f-paz_y_salvo" v-model="pasoForm.paz_y_salvo" class="form-control" maxlength="100" placeholder="Ej. PYS-2026-001" />
+                  </div>
+                </template>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-radicado_number">Número de radicado</label>
+                  <input id="f-radicado_number" v-model="pasoForm.radicado_number" class="form-control" maxlength="50" placeholder="Radicado ante el Ministerio" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-resolution_number">Número de resolución</label>
+                  <input id="f-resolution_number" v-model="pasoForm.resolution_number" class="form-control" maxlength="50" placeholder="Resolución del trámite" />
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="f-payment_status">Pago de derechos</label>
+                  <PrimeSelect
+                    input-id="f-payment_status"
+                    v-model="pasoForm.payment_status"
+                    :options="opcionesPago"
+                    option-label="label"
+                    option-value="value"
+                    placeholder="Sin registrar"
+                    showClear
+                    class="w-100"
+                  />
+                  <p class="text-muted small mb-0 mt-1">Informativo: no bloquea el cierre del paso.</p>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="f-subject">Asunto del expediente</label>
+                  <input id="f-subject" v-model="pasoForm.subject" class="form-control" maxlength="255" placeholder="Referencia interna del expediente" />
+                </div>
+
+                <div v-if="puedeActualizar" class="col-12 d-flex justify-content-end">
+                  <button type="button" class="btn btn-outline-primary d-inline-flex align-items-center gap-2" :disabled="guardandoPaso" @click="guardarPaso">
+                    <i class="fas" :class="guardandoPaso ? 'fa-spinner fa-spin' : 'fa-save'" aria-hidden="true"></i>
+                    Guardar datos del paso
+                  </button>
                 </div>
               </div>
             </template>
@@ -294,22 +377,53 @@
         <div class="modal-body px-4 py-4">
           <form id="form-admin" @submit.prevent="crearContratoAdmin" novalidate>
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label required noa-label" for="admin-numero">Número de contrato</label>
+              <div class="col-12">
+                <div class="border rounded-2 bg-light p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-building text-secondary" aria-hidden="true"></i>
+                    <span class="noa-card-title">Datos registrados de la empresa</span>
+                  </div>
+                  <div class="row g-2 noa-meta">
+                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresa.razon_social || '—' }}</strong></div>
+                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresa.nit || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresa.direccion || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresa.telefono || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresa.representante_legal || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresa.correo || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-numero">Número de contrato</label>
                 <input
                   id="admin-numero"
-                  v-model="formAdmin.contract_number"
-                  class="form-control"
+                  class="form-control bg-light"
                   type="text"
-                  autocomplete="off"
-                  placeholder="Ej. CA-2026-001"
-                  :class="{ 'is-invalid': erroresAdmin.contract_number }"
-                  :aria-invalid="!!erroresAdmin.contract_number"
-                  :aria-describedby="erroresAdmin.contract_number ? 'admin-numero-error' : undefined"
+                  readonly
+                  aria-readonly="true"
+                  :value="siguienteContrato || 'Se asigna al guardar'"
                 />
-                <div v-if="erroresAdmin.contract_number" id="admin-numero-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresAdmin.contract_number }}
-                </div>
+                <div class="form-text">Consecutivo compartido por ambos contratos de la empresa.</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-accion">Tipo de acción</label>
+                <PrimeSelect
+                  input-id="admin-accion"
+                  v-model="formAdmin.type_of_action"
+                  :options="opcionesAccion"
+                  option-label="label"
+                  option-value="value"
+                  append-to="self"
+                  class="w-100"
+                />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-tipo">Tipo de contrato</label>
+                <input id="admin-tipo" class="form-control bg-light" type="text" readonly aria-readonly="true" value="1 — Por vinculación y administración de flotas" />
               </div>
 
               <div class="col-md-6">
@@ -442,22 +556,53 @@
         <div class="modal-body px-4 py-4">
           <form id="form-prest" @submit.prevent="crearContratoPrestacion" novalidate>
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label required noa-label" for="prest-numero">Número de contrato</label>
+              <div class="col-12">
+                <div class="border rounded-2 bg-light p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-building text-secondary" aria-hidden="true"></i>
+                    <span class="noa-card-title">Datos registrados de la empresa</span>
+                  </div>
+                  <div class="row g-2 noa-meta">
+                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresa.razon_social || '—' }}</strong></div>
+                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresa.nit || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresa.direccion || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresa.telefono || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresa.representante_legal || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresa.correo || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-numero">Número de contrato</label>
                 <input
                   id="prest-numero"
-                  v-model="formPrest.contract_number"
-                  class="form-control"
+                  class="form-control bg-light"
                   type="text"
-                  autocomplete="off"
-                  placeholder="Ej. CP-2026-001"
-                  :class="{ 'is-invalid': erroresPrest.contract_number }"
-                  :aria-invalid="!!erroresPrest.contract_number"
-                  :aria-describedby="erroresPrest.contract_number ? 'prest-numero-error' : undefined"
+                  readonly
+                  aria-readonly="true"
+                  :value="siguienteContrato || 'Se asigna al guardar'"
                 />
-                <div v-if="erroresPrest.contract_number" id="prest-numero-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresPrest.contract_number }}
-                </div>
+                <div class="form-text">Consecutivo compartido por ambos contratos de la empresa.</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-accion">Tipo de acción</label>
+                <PrimeSelect
+                  input-id="prest-accion"
+                  v-model="formPrest.type_of_action"
+                  :options="opcionesAccion"
+                  option-label="label"
+                  option-value="value"
+                  append-to="self"
+                  class="w-100"
+                />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-tipo">Tipo de contrato</label>
+                <input id="prest-tipo" class="form-control bg-light" type="text" readonly aria-readonly="true" value="2 — Por prestación de servicio" />
               </div>
 
               <div class="col-md-6">
@@ -688,6 +833,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DateInput from '@/components/form/DateInput.vue';
+import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import RadicacionTimeline from '../components/RadicacionTimeline.vue';
 import service, { mensajeDeError } from '../services/radicacion.service.js';
 import { fechasAutomaticas, validarFechasContrato } from '../utils/fechasContrato.js';
@@ -704,7 +850,60 @@ const cargandoDetalle = ref(true);
 const detalle = ref(null);
 const lote = ref(null);
 
+// ── Datos del paso: renovación, desvinculación y pago de derechos ──
+const pasoForm = reactive({
+  simit_clear: false,
+  soat_valid: false,
+  rtm_valid: false,
+  old_card_number: '',
+  radicado_number: '',
+  payment_status: '',
+  resolution_number: '',
+  paz_y_salvo: '',
+  subject: '',
+});
+const opcionesPago = [
+  { label: 'Pendiente', value: 'PENDIENTE' },
+  { label: 'Pagado', value: 'PAGADO' },
+  { label: 'Exonerado', value: 'EXONERADO' },
+  { label: 'No aplica', value: 'NO_APLICA' },
+];
+const guardandoPaso = ref(false);
+const esPasoRenovacion = computed(() => pasoActual.value?.paso === 'RENOVACION_TARJETA');
+const esPasoDesvinculacion = computed(() => ['DESVINCULACION_MUTUO', 'DESVINCULACION_UNILATERAL']
+  .includes(pasoActual.value?.paso));
+
+/** Copia al formulario los datos ya guardados del paso actual. */
+function hidratarPasoForm() {
+  const registro = (detalle.value?.pasos ?? []).find((p) => p.uuid === pasoActual.value?.uuid) ?? {};
+  for (const campo of Object.keys(pasoForm)) {
+    pasoForm[campo] = registro[campo] ?? (typeof pasoForm[campo] === 'boolean' ? false : '');
+  }
+}
+
+async function guardarPaso() {
+  if (!pasoActual.value?.uuid) return;
+  guardandoPaso.value = true;
+  try {
+    const r = await service.actualizarPaso(pasoActual.value.uuid, { ...pasoForm });
+    detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
+    toast('Datos del paso guardados', '', 'success');
+  } catch (e) {
+    toast('No se guardaron los datos del paso', mensajeDeError(e), 'error');
+  } finally {
+    guardandoPaso.value = false;
+  }
+}
+
 const esPasoTarjeta = computed(() => pasoActual.value?.paso === 'TARJETA_DE_OPERACION');
+const empresa = computed(() => detalle.value?.empresa ?? {});
+const siguienteContrato = computed(() => detalle.value?.siguiente_contrato ?? '');
+const opcionesAccion = [
+  { label: 'Crear (C)', value: 'C' },
+  { label: 'Modificar (M)', value: 'M' },
+  { label: 'Eliminar (E)', value: 'E' },
+];
 const contratos = computed(() => detalle.value?.contratos ?? []);
 const contratoAdmin = computed(() => contratos.value.find((c) => c.origen === 'ADMIN_FLOTA') ?? null);
 const contratoPrest = computed(() => contratos.value.find((c) => c.origen === 'PRESTACION') ?? null);
@@ -755,12 +954,12 @@ const hoy = () => {
 
 const formAdmin = reactive({
   company_uuid: '', procedure_uuid: '', vehicle_uuid: '', third_party_uuid: '',
-  contract_number: '', issue_date: '', start_date: '', end_date: '',
+  type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
   duration: 365, valuation_amount: 0,
 });
 const formPrest = reactive({
   company_uuid: '', procedure_uuid: '', vehicle_uuid: '', third_party_uuid: '',
-  contract_number: '', issue_date: '', start_date: '', end_date: '',
+  type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
   duration: 365, valuation_amount: 0, coverage: 'NACIONAL', object_description: '',
 });
 const erroresAdmin = reactive({});
@@ -773,7 +972,7 @@ watch(() => [formPrest.start_date, formPrest.duration], () => fechasAutomaticas(
 
 const vaciarAdmin = () => {
   Object.assign(formAdmin, {
-    contract_number: '', issue_date: '', start_date: '', end_date: '',
+    type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
     duration: 365, valuation_amount: 0,
   });
   formAdmin.start_date = hoy();
@@ -782,7 +981,7 @@ const vaciarAdmin = () => {
 
 const vaciarPrest = () => {
   Object.assign(formPrest, {
-    contract_number: '', issue_date: '', start_date: '', end_date: '',
+    type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
     duration: 365, valuation_amount: 0, object_description: '',
   });
   formPrest.start_date = hoy();
@@ -796,6 +995,7 @@ async function cargar() {
   try {
     const r = await service.detalle(route.params.uuid);
     detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
     if (esPasoTarjeta.value) {
       for (const form of [formAdmin, formPrest]) {
         if (!form.start_date) form.start_date = hoy();
@@ -812,6 +1012,7 @@ async function cerrarPaso() {
   try {
     const r = await service.avanzar(pasoActual.value.uuid);
     detalle.value = r.data?.data ?? r.data;
+    hidratarPasoForm();
     toast('Paso cerrado', '', 'success');
   } catch (e) { toast('No se pudo cerrar el paso', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
@@ -823,7 +1024,7 @@ async function txt(origin) {
   try {
     const r = await service.generarTxt(pasoActual.value.uuid, origin);
     lote.value = r.data?.data ?? r.data;
-  } catch { toast('Revise requisitos antes del TXT', '', 'error'); }
+  } catch (e) { toast('No se pudo generar el TXT', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
 }
 
@@ -839,7 +1040,8 @@ async function crearContratoAdmin() {
       company_uuid: detalle.value.expediente.company_uuid,
       vehicle_uuid: detalle.value.expediente.vehicle_uuid,
       third_party_uuid: detalle.value.expediente.third_party_uuid,
-      contract_number: formAdmin.contract_number.trim(),
+      type_of_action: formAdmin.type_of_action,
+      contract_type: '1',
       issue_date: formAdmin.issue_date,
       start_date: formAdmin.start_date,
       end_date: formAdmin.end_date,
@@ -867,7 +1069,8 @@ async function crearContratoPrestacion() {
       company_uuid: detalle.value.expediente.company_uuid,
       vehicle_uuid: detalle.value.expediente.vehicle_uuid,
       third_party_uuid: detalle.value.expediente.third_party_uuid,
-      contract_number: formPrest.contract_number.trim(),
+      type_of_action: formPrest.type_of_action,
+      contract_type: '2',
       issue_date: formPrest.issue_date,
       start_date: formPrest.start_date,
       end_date: formPrest.end_date,

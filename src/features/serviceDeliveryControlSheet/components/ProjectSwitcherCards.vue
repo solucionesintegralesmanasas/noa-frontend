@@ -111,17 +111,6 @@
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                            <button
-                                v-if="canEditSheets"
-                                type="button"
-                                class="btn btn-falcon-default btn-xs px-2 py-0.5 d-inline-flex align-items-center gap-1 shadow-xs"
-                                title="Actualizar fechas o ruta de todas las hojas de este proyecto"
-                                :aria-label="`Editar hojas del proyecto ${proj.project_name}`"
-                                @click.stop="$emit('edit-project-sheets', proj)"
-                            >
-                                <i class="far fa-pen text-warning fs-10" aria-hidden="true"></i>
-                                <span>Editar</span>
-                            </button>
                             <span class="badge badge-subtle-primary rounded-pill fs-11 flex-shrink-0">
                                 {{ proj.assignments_count || 0 }} veh.
                             </span>
@@ -223,7 +212,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['select', 'create-project', 'edit-project-sheets']);
+const emit = defineEmits(['select', 'create-project']);
 
 const filtroTarjetas = ref('todos'); // 'todos' | 'pendientes' | 'al_dia'
 const paginaActual = ref(1);

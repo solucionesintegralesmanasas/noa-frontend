@@ -20,13 +20,15 @@
                     <form @submit.prevent="handleSubmit" class="row g-3" novalidate>
 
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <label class="form-label required" for="enabling_resolution_uuid">Resolución
+                            <label class="form-label required" for="f-enabling_resolution_uuid">Resolución
                                 Habilitante</label>
                             <PrimeSelect :input-id="'f-enabling_resolution_uuid'"
                                 v-model="formData.enabling_resolution_uuid"
                                 :options="store.catalogs.enabling_resolutions" option-value="uuid"
                                 option-label="resolution_number" placeholder="Seleccione una resolución..." showClear
-                                filter class="w-100" :invalid="!!validationErrors.enabling_resolution_uuid" />
+                                filter class="w-100" :invalid="!!validationErrors.enabling_resolution_uuid"
+                                :aria-invalid="!!validationErrors.enabling_resolution_uuid"
+                                :aria-describedby="validationErrors.enabling_resolution_uuid ? 'f-enabling_resolution_uuid-error' : undefined" />
                             <div v-if="validationErrors.enabling_resolution_uuid" class="invalid-feedback d-block"
                                 id="f-enabling_resolution_uuid-error" role="alert">
                                 {{ validationErrors.enabling_resolution_uuid }}
@@ -48,13 +50,15 @@
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <label class="form-label required" for="statusSelect">
+                            <label class="form-label required" for="f-status">
                                 Estado de Habilitación
                             </label>
                             <PrimeSelect :input-id="'f-status'" v-model="formData.status"
                                 :options="[{ label: 'Habilitado', value: '1' }, { label: 'Deshabilitado', value: '0' }]"
                                 option-label="label" option-value="value" class="w-100"
-                                :invalid="!!validationErrors.status" />
+                                :invalid="!!validationErrors.status"
+                                :aria-invalid="!!validationErrors.status"
+                                :aria-describedby="validationErrors.status ? 'f-status-error' : undefined" />
                             <div v-if="validationErrors.status" class="invalid-feedback d-block" id="f-status-error"
                                 role="alert">
                                 {{ validationErrors.status }}
@@ -64,36 +68,42 @@
 
 
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <label class="form-label required" for="authorized_capacity">
+                            <label class="form-label required" for="f-authorized_capacity">
                                 Capacidad Autorizada
                             </label>
-                            <input id="authorized_capacity" v-model.number="formData.authorized_capacity"
+                            <input id="f-authorized_capacity" v-model.number="formData.authorized_capacity"
                                 class="form-control" :class="{ 'is-invalid': validationErrors.authorized_capacity }"
-                                type="number" placeholder="0" min="0" />
+                                type="number" placeholder="0" min="0"
+                                :aria-invalid="!!validationErrors.authorized_capacity"
+                                :aria-describedby="validationErrors.authorized_capacity ? 'f-authorized_capacity-error' : undefined" />
                             <div v-if="validationErrors.authorized_capacity" class="invalid-feedback d-block"
                                 id="f-authorized_capacity-error" role="alert">
                                 {{ validationErrors.authorized_capacity }}
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <label class="form-label required" for="current_capacity">
+                            <label class="form-label required" for="f-current_capacity">
                                 Capacidad Operativa Actual
                             </label>
-                            <input id="current_capacity" v-model.number="formData.current_capacity" class="form-control"
+                            <input id="f-current_capacity" v-model.number="formData.current_capacity" class="form-control"
                                 :class="{ 'is-invalid': validationErrors.current_capacity }" type="number"
-                                placeholder="0" min="0" />
+                                placeholder="0" min="0"
+                                :aria-invalid="!!validationErrors.current_capacity"
+                                :aria-describedby="validationErrors.current_capacity ? 'f-current_capacity-error' : undefined" />
                             <div v-if="validationErrors.current_capacity" class="invalid-feedback d-block"
                                 id="f-current_capacity-error" role="alert">
                                 {{ validationErrors.current_capacity }}
                             </div>
                         </div>
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <label class="form-label required" for="minimum_own_capacity">
+                            <label class="form-label required" for="f-minimum_own_capacity">
                                 Capacidad Mínima Propia
                             </label>
-                            <input id="minimum_own_capacity" v-model.number="formData.minimum_own_capacity"
+                            <input id="f-minimum_own_capacity" v-model.number="formData.minimum_own_capacity"
                                 class="form-control" :class="{ 'is-invalid': validationErrors.minimum_own_capacity }"
-                                type="number" placeholder="0" min="0" />
+                                type="number" placeholder="0" min="0"
+                                :aria-invalid="!!validationErrors.minimum_own_capacity"
+                                :aria-describedby="validationErrors.minimum_own_capacity ? 'f-minimum_own_capacity-error' : undefined" />
                             <div v-if="validationErrors.minimum_own_capacity" class="invalid-feedback d-block"
                                 id="f-minimum_own_capacity-error" role="alert">
                                 {{ validationErrors.minimum_own_capacity }}

@@ -28,7 +28,7 @@ export function estadoDocumento(doc, { esTarjeta = false } = {}) {
     const vence = expiryDe(doc, esTarjeta);
     if (!vence) return 'vigente';
     const fin = new Date(vence);
-    if (Number.isNaN(fin.getTime())) return 'vigente';
+    if (Number.isNaN(fin.getTime())) return 'vencido';
     const ahora = new Date();
     if (fin <= ahora) return 'vencido';
     if (fin.getTime() - ahora.getTime() <= UMBRAL_POR_VENCER_MS) return 'por-vencer';

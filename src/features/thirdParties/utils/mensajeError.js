@@ -5,7 +5,14 @@
 export function mensajeErrorValidacion(error, porDefecto = 'No se pudo guardar') {
     const unir = (campo, msgs) => {
         const lista = Array.isArray(msgs) ? msgs : [msgs];
-        return `${String(campo).replace(/_/g, ' ')}: ${lista.join(' ')}`;
+        const formateados = lista.map((m) => {
+            if (typeof m === "string") return m;
+            if (m && typeof m === "object") return m.message || m.error || m.nested || JSON.stringify(m);
+            try { return String(m); } catch { return ""; }
+        }).filter(Boolean);
+        let nombreCampo = "campo";
+        try { nombreCampo = String(campo).replace(/_/g, " "); } catch {}
+        return `${nombreCampo}: ${formateados.join(" ")}`;
     };
     const data = error?.response?.data;
     const detalles = data?.error?.details;

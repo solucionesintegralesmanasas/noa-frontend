@@ -32,8 +32,10 @@ export const esVehiculoParticular = (vehiculo) =>
  * @param {{particular?: boolean}} [contexto]
  * @returns {Array}
  */
-export const pasosAplicables = (contexto = {}) =>
-    WIZARD_STEPS.filter((s) => !(contexto.particular && s.soloPublico));
+export const pasosAplicables = (contexto = {}) => {
+    const ctx = contexto || {};
+    return WIZARD_STEPS.filter((s) => !(ctx.particular && s.soloPublico));
+};
 
 /**
  * Documento más reciente de un tipo: mayor fecha de vencimiento y, a igual fecha, el último
@@ -45,10 +47,28 @@ export const pasosAplicables = (contexto = {}) =>
  * @returns {Object|null}
  */
 export const masReciente = (docs, coincide, campoVence = 'expiry_date') => {
-    const marca = (d) => new Date(d?.[campoVence] ?? 0).getTime() || 0;
-    const creado = (d) => new Date(d?.created_at ?? 0).getTime() || 0;
-    return (docs ?? [])
-        .filter(coincide)
+    const lista = Array.isArray(docs) ? docs : [];
+    const fnCoincide = typeof coincide === 'function' ? coincide : () => true;
+    const toTime = (v) => {
+        if (v == null || typeof v === 'symbol') return 0;
+        try {
+            const t = new Date(v).getTime();
+            return Number.isFinite(t) ? t : 0;
+        } catch {
+            return 0;
+        }
+    };
+    const campo = typeof campoVence === 'string' && campoVence ? campoVence : 'expiry_date';
+    const marca = (d) => {
+        if (!d || typeof d !== 'object') return 0;
+        try { return toTime(d[campo]); } catch { return 0; }
+    };
+    const creado = (d) => {
+        if (!d || typeof d !== 'object') return 0;
+        try { return toTime(d.created_at); } catch { return 0; }
+    };
+    return lista
+        .filter(fnCoincide)
         .sort((a, b) => marca(b) - marca(a) || creado(b) - creado(a))[0] ?? null;
 };
 
@@ -64,10 +84,35 @@ export const masReciente = (docs, coincide, campoVence = 'expiry_date') => {
  * @returns {Object|null}
  */
 export const elegirPolizaViva = (docs, tipo) => {
-    const clave = (tipo ?? '').toUpperCase();
-    const esTipo = (d) => (d.document_type ?? '').toUpperCase() === clave;
-    const vivas = (docs ?? []).filter((d) => (d.status ?? '').toUpperCase() !== 'INACTIVA' && esTipo(d));
-    const vigentes = vivas.filter((d) => ['VIGENTE', 'SI'].includes((d.status ?? '').toUpperCase()));
+    let clave = '';
+    try {
+        if (typeof tipo === 'string') clave = tipo.toUpperCase();
+        else if (typeof tipo !== 'symbol' && tipo != null) clave = String(tipo).toUpperCase();
+    } catch { clave = ''; }
+    const lista = Array.isArray(docs) ? docs : [];
+    const esTipo = (d) => {
+        if (!d || typeof d !== 'object') return false;
+        try {
+            return String(d.document_type ?? '').toUpperCase() === clave;
+        } catch {
+            return false;
+        }
+    };
+    const vivas = lista.filter((d) => {
+        if (!d || typeof d !== 'object') return false;
+        try {
+            return String(d.status ?? '').toUpperCase() !== 'INACTIVA' && esTipo(d);
+        } catch {
+            return false;
+        }
+    });
+    const vigentes = vivas.filter((d) => {
+        try {
+            return ['VIGENTE', 'SI'].includes(String(d?.status ?? '').toUpperCase());
+        } catch {
+            return false;
+        }
+    });
     return masReciente(vigentes.length > 0 ? vigentes : vivas, () => true);
 };
 
@@ -174,7 +219,8 @@ export function useDocumentWizard() {
 
     const getSessionDone = (vehicleUuid) => {
         try {
-            return JSON.parse(sessionStorage.getItem(sessionKey(vehicleUuid))) ?? [];
+            const val = JSON.parse(sessionStorage.getItem(sessionKey(vehicleUuid)));
+            return Array.isArray(val) ? val : [];
         } catch {
             return [];
         }
