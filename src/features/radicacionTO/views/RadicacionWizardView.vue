@@ -236,10 +236,13 @@
                   <i class="fad fa-file-export text-secondary" aria-hidden="true"></i>
                   <h3 class="h6 mb-0 fw-semibold">Archivos TXT — Portal TO RUNT</h3>
                 </div>
+                <p v-if="puedeActualizar && !todosFirmados" class="text-muted small mb-2" role="note">
+                  Firme ambos contratos para habilitar la generación de los TXT.
+                </p>
                 <div v-if="puedeActualizar" class="d-flex flex-wrap gap-2">
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('ADMIN_FLOTA')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -247,7 +250,7 @@
                   </button>
                   <button
                     class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
-                    :disabled="cargando"
+                    :disabled="cargando || !todosFirmados"
                     @click="txt('PRESTACION')"
                   >
                     <i class="fas fa-file-lines" aria-hidden="true"></i>
@@ -374,22 +377,53 @@
         <div class="modal-body px-4 py-4">
           <form id="form-admin" @submit.prevent="crearContratoAdmin" novalidate>
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label required noa-label" for="admin-numero">Número de contrato</label>
+              <div class="col-12">
+                <div class="border rounded-2 bg-light p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-building text-secondary" aria-hidden="true"></i>
+                    <span class="noa-card-title">Datos registrados de la empresa</span>
+                  </div>
+                  <div class="row g-2 noa-meta">
+                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresa.razon_social || '—' }}</strong></div>
+                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresa.nit || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresa.direccion || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresa.telefono || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresa.representante_legal || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresa.correo || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-numero">Número de contrato</label>
                 <input
                   id="admin-numero"
-                  v-model="formAdmin.contract_number"
-                  class="form-control"
+                  class="form-control bg-light"
                   type="text"
-                  autocomplete="off"
-                  placeholder="Ej. CA-2026-001"
-                  :class="{ 'is-invalid': erroresAdmin.contract_number }"
-                  :aria-invalid="!!erroresAdmin.contract_number"
-                  :aria-describedby="erroresAdmin.contract_number ? 'admin-numero-error' : undefined"
+                  readonly
+                  aria-readonly="true"
+                  :value="siguienteContrato || 'Se asigna al guardar'"
                 />
-                <div v-if="erroresAdmin.contract_number" id="admin-numero-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresAdmin.contract_number }}
-                </div>
+                <div class="form-text">Consecutivo compartido por ambos contratos de la empresa.</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-accion">Tipo de acción</label>
+                <PrimeSelect
+                  input-id="admin-accion"
+                  v-model="formAdmin.type_of_action"
+                  :options="opcionesAccion"
+                  option-label="label"
+                  option-value="value"
+                  append-to="self"
+                  class="w-100"
+                />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="admin-tipo">Tipo de contrato</label>
+                <input id="admin-tipo" class="form-control bg-light" type="text" readonly aria-readonly="true" value="1 — Por vinculación y administración de flotas" />
               </div>
 
               <div class="col-md-6">
@@ -522,22 +556,53 @@
         <div class="modal-body px-4 py-4">
           <form id="form-prest" @submit.prevent="crearContratoPrestacion" novalidate>
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label required noa-label" for="prest-numero">Número de contrato</label>
+              <div class="col-12">
+                <div class="border rounded-2 bg-light p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-building text-secondary" aria-hidden="true"></i>
+                    <span class="noa-card-title">Datos registrados de la empresa</span>
+                  </div>
+                  <div class="row g-2 noa-meta">
+                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresa.razon_social || '—' }}</strong></div>
+                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresa.nit || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresa.direccion || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresa.telefono || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresa.representante_legal || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresa.correo || '—' }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-numero">Número de contrato</label>
                 <input
                   id="prest-numero"
-                  v-model="formPrest.contract_number"
-                  class="form-control"
+                  class="form-control bg-light"
                   type="text"
-                  autocomplete="off"
-                  placeholder="Ej. CP-2026-001"
-                  :class="{ 'is-invalid': erroresPrest.contract_number }"
-                  :aria-invalid="!!erroresPrest.contract_number"
-                  :aria-describedby="erroresPrest.contract_number ? 'prest-numero-error' : undefined"
+                  readonly
+                  aria-readonly="true"
+                  :value="siguienteContrato || 'Se asigna al guardar'"
                 />
-                <div v-if="erroresPrest.contract_number" id="prest-numero-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresPrest.contract_number }}
-                </div>
+                <div class="form-text">Consecutivo compartido por ambos contratos de la empresa.</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-accion">Tipo de acción</label>
+                <PrimeSelect
+                  input-id="prest-accion"
+                  v-model="formPrest.type_of_action"
+                  :options="opcionesAccion"
+                  option-label="label"
+                  option-value="value"
+                  append-to="self"
+                  class="w-100"
+                />
+                <div class="form-text">M = Modificar · C = Crear · E = Eliminar</div>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label noa-label" for="prest-tipo">Tipo de contrato</label>
+                <input id="prest-tipo" class="form-control bg-light" type="text" readonly aria-readonly="true" value="2 — Por prestación de servicio" />
               </div>
 
               <div class="col-md-6">
@@ -832,6 +897,13 @@ async function guardarPaso() {
 }
 
 const esPasoTarjeta = computed(() => pasoActual.value?.paso === 'TARJETA_DE_OPERACION');
+const empresa = computed(() => detalle.value?.empresa ?? {});
+const siguienteContrato = computed(() => detalle.value?.siguiente_contrato ?? '');
+const opcionesAccion = [
+  { label: 'Crear (C)', value: 'C' },
+  { label: 'Modificar (M)', value: 'M' },
+  { label: 'Eliminar (E)', value: 'E' },
+];
 const contratos = computed(() => detalle.value?.contratos ?? []);
 const contratoAdmin = computed(() => contratos.value.find((c) => c.origen === 'ADMIN_FLOTA') ?? null);
 const contratoPrest = computed(() => contratos.value.find((c) => c.origen === 'PRESTACION') ?? null);
@@ -882,12 +954,12 @@ const hoy = () => {
 
 const formAdmin = reactive({
   company_uuid: '', procedure_uuid: '', vehicle_uuid: '', third_party_uuid: '',
-  contract_number: '', issue_date: '', start_date: '', end_date: '',
+  type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
   duration: 365, valuation_amount: 0,
 });
 const formPrest = reactive({
   company_uuid: '', procedure_uuid: '', vehicle_uuid: '', third_party_uuid: '',
-  contract_number: '', issue_date: '', start_date: '', end_date: '',
+  type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
   duration: 365, valuation_amount: 0, coverage: 'NACIONAL', object_description: '',
 });
 const erroresAdmin = reactive({});
@@ -900,7 +972,7 @@ watch(() => [formPrest.start_date, formPrest.duration], () => fechasAutomaticas(
 
 const vaciarAdmin = () => {
   Object.assign(formAdmin, {
-    contract_number: '', issue_date: '', start_date: '', end_date: '',
+    type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
     duration: 365, valuation_amount: 0,
   });
   formAdmin.start_date = hoy();
@@ -909,7 +981,7 @@ const vaciarAdmin = () => {
 
 const vaciarPrest = () => {
   Object.assign(formPrest, {
-    contract_number: '', issue_date: '', start_date: '', end_date: '',
+    type_of_action: 'C', issue_date: '', start_date: '', end_date: '',
     duration: 365, valuation_amount: 0, object_description: '',
   });
   formPrest.start_date = hoy();
@@ -952,7 +1024,7 @@ async function txt(origin) {
   try {
     const r = await service.generarTxt(pasoActual.value.uuid, origin);
     lote.value = r.data?.data ?? r.data;
-  } catch { toast('Revise requisitos antes del TXT', '', 'error'); }
+  } catch (e) { toast('No se pudo generar el TXT', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
 }
 
@@ -968,7 +1040,8 @@ async function crearContratoAdmin() {
       company_uuid: detalle.value.expediente.company_uuid,
       vehicle_uuid: detalle.value.expediente.vehicle_uuid,
       third_party_uuid: detalle.value.expediente.third_party_uuid,
-      contract_number: formAdmin.contract_number.trim(),
+      type_of_action: formAdmin.type_of_action,
+      contract_type: '1',
       issue_date: formAdmin.issue_date,
       start_date: formAdmin.start_date,
       end_date: formAdmin.end_date,
@@ -996,7 +1069,8 @@ async function crearContratoPrestacion() {
       company_uuid: detalle.value.expediente.company_uuid,
       vehicle_uuid: detalle.value.expediente.vehicle_uuid,
       third_party_uuid: detalle.value.expediente.third_party_uuid,
-      contract_number: formPrest.contract_number.trim(),
+      type_of_action: formPrest.type_of_action,
+      contract_type: '2',
       issue_date: formPrest.issue_date,
       start_date: formPrest.start_date,
       end_date: formPrest.end_date,

@@ -175,6 +175,16 @@
                         <i class="fad fa-edit" aria-hidden="true" />
                         <span>Editar Proyecto</span>
                     </button>
+                    <button
+                        v-if="permissions.projectProfile && selectedProject.uuid"
+                        type="button"
+                        class="btn btn-success btn-project-action shadow-xs"
+                        title="Gestionar conductores y vehículos asignados al proyecto"
+                        @click="showAssignmentsModal = true"
+                    >
+                        <i class="fad fa-users-cog" aria-hidden="true" />
+                        <span>Gestionar Asignaciones</span>
+                    </button>
                 </div>
             </div>
 
@@ -763,6 +773,14 @@
             </div>
         </div>
     </Dialog>
+
+    <!-- Modal Gestionar Asignaciones -->
+    <ProjectAssignmentsModal
+        v-model:visible="showAssignmentsModal"
+        :project-uuid="selectedProject?.uuid"
+        :project-name="selectedProject?.project_name"
+        @saved="onAssignmentsSaved"
+    />
 </template>
 
 <script setup>
@@ -784,6 +802,7 @@ import DateInput from '@/components/form/DateInput.vue';
 import Dialog from 'primevue/dialog';
 import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
 import ProjectSwitcherCards from '../components/ProjectSwitcherCards.vue';
+import ProjectAssignmentsModal from '../components/ProjectAssignmentsModal.vue';
 import {
     formatRango as formatRangoHook,
     diasHijos as diasHijosHook,
@@ -826,6 +845,7 @@ const selectedProject = computed(() => {
 
 const showReportsDialog = ref(false);
 const showBulkUpdateDialog = ref(false);
+const showAssignmentsModal = ref(false);
 const bulkUpdating = ref(false);
 const bulkUpdateError = ref('');
 const bulkUpdateForm = reactive({
@@ -882,6 +902,12 @@ const goToProjectEdit = (uuid) => router.push(`/proyectos/editar/${uuid}`);
 
 const openProjectReport = () => {
     showReportsDialog.value = true;
+};
+
+const onAssignmentsSaved = async () => {
+    // Recargar proyectos y items después de guardar asignaciones
+    await store.loadProjectsOverview(userStore.company_uuid);
+    await store.fetchItems();
 };
 
 const normalizarFechaInput = (fecha) => (fecha ? String(fecha).slice(0, 10) : '');

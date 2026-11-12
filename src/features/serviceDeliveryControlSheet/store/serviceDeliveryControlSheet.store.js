@@ -133,6 +133,17 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
                 return null;
             }
         },
+
+        /**
+         * Vehículos con asignación activa en el proyecto que aún no tienen
+         * hojas de control (alta pendiente, SPEC-009).
+         * @param {string} projectUuid - UUID del proyecto.
+         * @returns {Promise<Array>} Lista de vehículos sin hojas.
+         */
+        async loadAssignedWithoutSheets(projectUuid) {
+            const response = await serviceDeliveryControlSheetService.assignedWithoutSheets(projectUuid);
+            return response?.data ?? response ?? [];
+        },
         loadFormOptions(companyUuid, thirdPartyUuid = null) { return this.loadCatalogs(companyUuid, thirdPartyUuid); },
         setProjectFilter(uuid) { this.projectFilter = uuid || ''; this.pagination.currentPage = 1; return this.fetchItems(); },
 

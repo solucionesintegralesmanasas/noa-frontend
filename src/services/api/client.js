@@ -24,6 +24,9 @@ const getBaseUrl = () => {
 const DEFAULT_CONFIG = {
     baseURL: getBaseUrl(),
     timeout: env.API_TIMEOUT || 30000,
+    // Necesario para que el login guarde la cookie HTTP-only del refresh token
+    // y para enviarla al renovar el access token.
+    withCredentials: true,
     headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",

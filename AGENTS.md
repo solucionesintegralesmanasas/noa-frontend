@@ -120,6 +120,7 @@ CI/CD nativo (`.github/workflows/appflow.yml`): builds en Appflow — Android de
 - **Laravel Sanctum** PAT-based auth. Token stored encrypted (AES-GCM, WebCrypto API + PBKDF2) in `secureStorage` (`@capacitor/preferences`).
 - Login flow: `authService.login()` → returns `{ user, token }` → stores in Pinia + Token Manager.
 - 401 responses trigger `auth:unauthorized` custom event, token wipe, and redirect to `/login` (excepto `/login` y `/refresh-token`, que resuelve la propia vista; ver "Flujo de login con doble factor").
+- **Renovación automática de sesión (2026-11-10):** ante un 401, el interceptor renueva el access token (8 h) con la cookie HTTP-only `refresh_token` (30 días) y reintenta la petición original una sola vez; varios 401 simultáneos comparten una única renovación. Si el refresh falla, limpia la sesión y redirige a login. Exige `withCredentials` en el cliente Axios y `supports_credentials=true` en `config/cors.php`; el logout no intenta renovar.
 - Con 2FA activo el login devuelve un **token de desafío** (no de sesión) que se canjea en `/two-factor`; la persistencia se vacía de inmediato al completar la sesión y se cancela en logout (`cancelPendingPersistence`).
 - Sesión y permisos persisten cifrados con debounce (SPEC-016); no escribir `secureStorage` directo desde las vistas.
 - Encryption key comes from `VITE_ENCRYPTION_KEY` var.

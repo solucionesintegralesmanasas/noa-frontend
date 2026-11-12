@@ -632,7 +632,7 @@ import { logger } from '@/utils/logger.js';
 import { ROL_POR_DEFECTO_POR_TIPO, normalizarRolesDelPerfil, rolPorDefectoPara } from '../utils/thirdPartyRoles.js';
 import { licenciaDesdeDocumento } from '../utils/licenciaDeConductor.js';
 import { esRolReservado, rolesVisibles } from '../../auth/utils/rolesPrivilegiados.js';
-import { elegirLicencia } from '@/utils/driverLicense.js';
+import { elegirLicencia, afiliadoDeLicencias } from '@/utils/driverLicense.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
@@ -1341,11 +1341,10 @@ onMounted(async () => {
 
                             // El afiliado propietario no es columna del tercero: viaja en
                             // owners_drivers, serializado en la licencia como
-                            // owner_driver.third_party_uuid. Sin él el campo «Afiliado
-                            // Asignado» queda vacío al editar y guardar lo sobrescribe.
-                            const afiliadoPrevio = licencia.owner_driver?.third_party_uuid
-                                ?? licencia.ownerDriver?.third_party_uuid
-                                ?? null;
+                            // owner_driver.third_party_uuid. Se resuelve entre todas las
+                            // licencias porque, al renovar, la ACTIVA puede apuntar al
+                            // propio conductor y la vieja conservar al afiliado real.
+                            const afiliadoPrevio = afiliadoDeLicencias(licencias, store.catalogs.affiliate);
                             if (afiliadoPrevio && !formData.partyTypes.includes('is_affiliate')) {
                                 formData.affiliate_uuid = afiliadoPrevio;
                             }
