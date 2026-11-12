@@ -58,8 +58,9 @@ describe('planillaVigente', () => {
         expect(seleccionarPlanillaVigente(servicio, dias, HOY)).toBeNull();
     });
 
-    it('la hoja única solo se opera el día de su fecha', () => {
+    it('la hoja única solo se opera el día de su fecha y si está abierta', () => {
         expect(seleccionarPlanillaVigente(dia(HOY), [], HOY)?.service_date).toBe(HOY);
+        expect(seleccionarPlanillaVigente(dia(HOY, false), [], HOY)).toBeNull();
         expect(seleccionarPlanillaVigente(dia('2026-11-02'), [], HOY)).toBeNull();
         expect(seleccionarPlanillaVigente(null, [], HOY)).toBeNull();
     });

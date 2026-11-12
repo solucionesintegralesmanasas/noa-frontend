@@ -779,6 +779,7 @@
         v-model:visible="showAssignmentsModal"
         :project-uuid="selectedProject?.uuid"
         :project-name="selectedProject?.project_name"
+        :can-create="permissions.create"
         @saved="onAssignmentsSaved"
     />
 </template>

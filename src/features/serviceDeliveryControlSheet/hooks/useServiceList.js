@@ -4,7 +4,12 @@
  */
 export function formatRango(fecha) {
     if (!fecha) return '';
-    const texto = String(fecha).trim();
+    let texto = '';
+    try {
+        texto = String(fecha).trim();
+    } catch {
+        return '';
+    }
     const m = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (!m) return texto;
     return `${m[3]}/${m[2]}/${m[1]}`;
@@ -26,16 +31,38 @@ export function diasHijos(data, soloCerradas = true) {
 }
 
 export function recorridosCount(data) {
+    if (!data || typeof data !== 'object') return 0;
     if (Array.isArray(data.routes)) return data.routes.length;
-    if (data.routes_total) return Number(data.routes_total);
+    if (data.routes_total) return Number(data.routes_total) || 0;
     return data.daily_route ? 1 : 0;
 }
 
 export function recorridosTexto(data) {
+    if (!data || typeof data !== 'object') return '';
     if (Array.isArray(data.routes) && data.routes.length) {
-        return data.routes.map((r) => `${r.origin || ''} - ${r.destination || ''}`.trim().replace(/^- | -$/g, '')).filter(Boolean).join(' · ');
+        const tramos = data.routes
+            .filter((r) => r && typeof r === 'object')
+            .map((r) => {
+                let origen = '';
+                let destino = '';
+                try {
+                    if (typeof r.origin === 'string') origen = r.origin;
+                    else if (r.origin && typeof r.origin !== 'symbol') origen = String(r.origin);
+                } catch {}
+                try {
+                    if (typeof r.destination === 'string') destino = r.destination;
+                    else if (r.destination && typeof r.destination !== 'symbol') destino = String(r.destination);
+                } catch {}
+                return `${origen} - ${destino}`.trim().replace(/^- | -$/g, '');
+            })
+            .filter(Boolean);
+        return tramos.join(' · ');
     }
-    return data.daily_route || '';
+    if (typeof data.daily_route === 'string') return data.daily_route;
+    if (data.daily_route && typeof data.daily_route !== 'symbol') {
+        try { return String(data.daily_route); } catch { return ''; }
+    }
+    return '';
 }
 
 export function esCerrado(data) {
@@ -115,7 +142,11 @@ export function formatKm(inicial, final) {
 }
 
 export function tieneKm(val) {
-    return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
+    if (typeof val === 'boolean' || Array.isArray(val) || typeof val === 'symbol') return false;
+    if (val === null || val === undefined) return false;
+    if (typeof val === 'string' && val.trim() === '') return false;
+    const num = Number(val);
+    return Number.isFinite(num);
 }
 
 export function formatKmValor(val) {
@@ -135,16 +166,21 @@ export function formatKmValor(val) {
  */
 export function paginaDestino(evento = {}, filasActuales = 10) {
     if (!evento || typeof evento !== 'object') return null;
-    const filas = Number(evento.rows) > 0 ? Number(evento.rows) : Number(filasActuales);
-    if (!Number.isFinite(filas) || filas <= 0) return null;
+    const filasEvent = typeof evento.rows !== 'boolean' && !Array.isArray(evento.rows) && evento.rows !== '' ? Number(evento.rows) : NaN;
+    const filasBase = typeof filasActuales !== 'boolean' && !Array.isArray(filasActuales) && filasActuales !== '' ? Number(filasActuales) : NaN;
+    const filas = Number.isFinite(filasEvent) && filasEvent > 0 ? filasEvent : (Number.isFinite(filasBase) && filasBase > 0 ? filasBase : 10);
 
-    if (evento.page !== undefined && evento.page !== null) {
+    if (evento.page !== undefined && evento.page !== null && !Array.isArray(evento.page) && typeof evento.page !== 'boolean' && evento.page !== '') {
         const destino = Number(evento.page);
         if (!Number.isFinite(destino) || destino < 0) return null;
-        return destino + 1;
+        return Math.floor(destino) + 1;
     }
 
-    const first = Number(evento.first);
-    if (!Number.isFinite(first) || first < 0) return null;
-    return Math.floor(first / filas) + 1;
+    if (evento.first !== undefined && evento.first !== null && !Array.isArray(evento.first) && typeof evento.first !== 'boolean' && evento.first !== '') {
+        const first = Number(evento.first);
+        if (!Number.isFinite(first) || first < 0) return null;
+        return Math.floor(first / filas) + 1;
+    }
+
+    return null;
 }

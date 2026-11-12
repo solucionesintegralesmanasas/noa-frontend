@@ -84,7 +84,7 @@
                 <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
                     <button type="button" class="btn btn-falcon-default btn-sm" @click="closeModal">Cerrar</button>
                     <button
-                        v-if="assignedWithoutSheets.length > 0"
+                        v-if="assignedWithoutSheets.length > 0 && canCreate"
                         type="button"
                         class="btn btn-primary btn-sm"
                         :disabled="saving"
@@ -102,15 +102,16 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { defineProps, defineEmits } from 'vue';
 import Dialog from 'primevue/dialog';
 import { useServiceDeliveryControlSheetStore } from '../store/serviceDeliveryControlSheet.store.js';
 import { toast } from '@/utils/toast.js';
+import { logger } from '@/utils/logger.js';
 
 const props = defineProps({
     visible: { type: Boolean, default: false },
     projectUuid: { type: String, default: '' },
     projectName: { type: String, default: '' },
+    canCreate: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['update:visible', 'saved']);
@@ -135,13 +136,14 @@ const loadData = async () => {
     error.value = '';
 
     try {
-        const detail = await store.loadProjectDetail(props.projectUuid);
+        const [detail, sinHoja] = await Promise.all([
+            store.loadProjectDetail(props.projectUuid),
+            store.loadAssignedWithoutSheets(props.projectUuid),
+        ]);
         projectDetail.value = detail;
-
-        const sinHoja = await store.loadAssignedWithoutSheets(props.projectUuid);
         assignedWithoutSheets.value = Array.isArray(sinHoja) ? sinHoja : [];
     } catch (err) {
-        console.error('Error loading pending sheets:', err);
+        logger.error('Error loading pending sheets:', { err });
         error.value = err?.response?.data?.message || err?.message || 'Error al cargar los vehículos pendientes';
     } finally {
         loading.value = false;
@@ -184,7 +186,7 @@ const crearHojas = async () => {
         emit('saved');
         await loadData();
     } catch (err) {
-        console.error('Error creando hojas pendientes:', err);
+        logger.error('Error creando hojas pendientes:', { err });
         const details = err?.response?.data?.error?.details;
         if (Array.isArray(details) && details[0]?.messages?.[0]) {
             await toast('Error', details[0].messages[0], 'error');
