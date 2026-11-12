@@ -37,15 +37,29 @@ function marcaDeTiempo(driver) {
  * ocultarlo por un campo ausente sería peor que mostrar un punto congelado.
  */
 export function conductorVigente(driver, ahora = Date.now(), umbral = UMBRAL_SIN_REPORTAR_MS) {
-    const lat = driver?.latitude ?? driver?.last_location?.latitude;
-    const lng = driver?.longitude ?? driver?.last_location?.longitude;
+    const rawLat = driver?.latitude ?? driver?.last_location?.latitude;
+    const rawLng = driver?.longitude ?? driver?.last_location?.longitude;
 
-    if (lat == null || lng == null) return false;
+    if (rawLat == null || rawLng == null || rawLat === '' || rawLng === '' || typeof rawLat === 'boolean' || typeof rawLng === 'boolean') {
+        return false;
+    }
+
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        return false;
+    }
 
     const tiempo = marcaDeTiempo(driver);
-    if (tiempo === null) return true;
+    if (tiempo === null) {
+        const rawFecha = driver?.created_at ?? driver?.last_location?.created_at;
+        if (rawFecha != null && rawFecha !== '') return false;
+        return true;
+    }
 
-    return ahora - tiempo <= umbral;
+    const ahoraMs = Number.isFinite(Number(ahora)) ? Number(ahora) : Date.now();
+    return ahoraMs - tiempo <= umbral;
 }
 
 export function conductoresVigentes(drivers, ahora = Date.now(), umbral = UMBRAL_SIN_REPORTAR_MS) {
@@ -59,7 +73,8 @@ export function textoUltimoReporte(driver, ahora = Date.now()) {
     const tiempo = marcaDeTiempo(driver);
     if (tiempo === null) return 'sin hora';
 
-    const minutos = Math.max(0, Math.floor((ahora - tiempo) / 60000));
+    const ahoraMs = Number.isFinite(Number(ahora)) ? Number(ahora) : Date.now();
+    const minutos = Math.max(0, Math.floor((ahoraMs - tiempo) / 60000));
 
     return minutos === 0 ? 'ahora' : `hace ${minutos} min`;
 }
