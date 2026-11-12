@@ -6,6 +6,7 @@ import { logger } from "@utils/logger.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { maskRequestData, maskResponseData } from "@utils/mask.js";
 import { handleGlobalError, isCancelError } from "@utils/error-handler.js";
+import { flushAllPersistence } from "@/store/plugins/persistence.js";
 import axios from "axios";
 
 /**
@@ -34,7 +35,10 @@ function refreshAccessToken(baseURL) {
                 const token = response.data?.data?.access_token ?? response.data?.access_token;
                 if (!token) throw new Error("La renovación no devolvió access token");
                 await tokenManager.setToken(token);
-                if (storeRegistry.authStore) storeRegistry.authStore.accessToken = token;
+                if (storeRegistry.authStore) {
+                    storeRegistry.authStore.accessToken = token;
+                    await flushAllPersistence();
+                }
                 return token;
             })
             .finally(() => { _refreshPromise = null; });
@@ -44,6 +48,8 @@ function refreshAccessToken(baseURL) {
 
 // Interceptor de Request
 export const requestInterceptor = async (config) => {
+    config = config || {};
+    config.headers = config.headers || {};
     config.metadata = { startTime: Date.now() };
 
     // Inyección automática de token (Sanctum PAT)
@@ -70,12 +76,13 @@ export const responseInterceptor = {
         return response;
     },
     error: async (error) => {
+        if (!error) return Promise.reject(error);
         // Las cancelaciones propias (AbortController/axios) son esperadas al anular peticiones
         // en vuelo (búsqueda, paginación, etc.): no son errores reales y no deben registrarse
         // como `API Error`, disparar toasts ni limpiar sesión.
         if (isCancelError(error)) return Promise.reject(error);
 
-        const { response, config } = error;
+        const { response, config } = error || {};
 
         // Las rutas públicas de autenticación gestionan su propio error en la vista
         // de login (mensaje inline). No deben limpiar la sesión ni emitir
@@ -88,10 +95,14 @@ export const responseInterceptor = {
             if (_isHandling401) return Promise.reject(error);
 
             // Token de acceso vencido: se renueva con el refresh token de 30 días
-            // y se reintenta la petición original una sola vez. El logout no se
-            // renueva: debe cerrar la sesión aunque el token ya haya vencido.
+            // y se reintenta la petición original una sola vez. El logout y los desafíos
+            // de 2FA no se renuevan: deben tratarse por sus propios flujos.
             const original = error.config || {};
-            if (!original._reintentado && !url.includes('/logout') && !url.includes('/refresh-token')) {
+            const esExcluidaDeRefresh = url.includes('/logout')
+                || url.includes('/refresh-token')
+                || url.includes('/2fa/');
+
+            if (!original._reintentado && !esExcluidaDeRefresh) {
                 original._reintentado = true;
                 try {
                     const token = await refreshAccessToken(original.baseURL);

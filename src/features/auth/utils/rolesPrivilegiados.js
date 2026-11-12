@@ -9,9 +9,15 @@ export const ROLES_SOLO_SUPERADMIN = Object.freeze(['SUPERADMIN', 'SUPER_ADMIN',
 
 function aNombre(rol) {
     if (typeof rol === 'string') return rol;
-    // `internalName` es el nombre que usan las vistas que ya normalizaron el
-    // rol de la API (p. ej. Rolepermissionsform); `name` es la forma cruda.
-    return rol?.name ?? rol?.internalName ?? rol?.value ?? rol?.label ?? '';
+    if (!rol || typeof rol === 'symbol') return '';
+    try {
+        // `internalName` es el nombre que usan las vistas que ya normalizaron el
+        // rol de la API (p. ej. Rolepermissionsform); `name` es la forma cruda.
+        const val = rol?.name ?? rol?.internalName ?? rol?.value ?? rol?.label;
+        return typeof val === 'string' ? val : '';
+    } catch {
+        return '';
+    }
 }
 
 /** Normaliza el nombre ('admin-empresa', 'super admin', 'administrador', 'admin' → 'ADMIN_EMPRESA' / 'SUPERADMIN'). */
@@ -39,17 +45,26 @@ export function esRolReservado(rol) {
  * aparecen para un SUPERADMIN. Nunca revienta con formas inesperadas.
  */
 export function rolesVisibles(roles, esSuperadmin = false) {
-    const lista = Array.isArray(roles) ? roles : (roles?.data ?? []);
+    const lista = Array.isArray(roles)
+        ? roles
+        : (Array.isArray(roles?.data) ? roles.data : []);
+
     return lista.filter(r => {
-        const nombre = aNombre(r);
-        if (!nombre) return false;
-        return esSuperadmin || !esRolReservado(nombre);
+        try {
+            const nombre = aNombre(r);
+            if (!nombre || typeof nombre !== 'string') return false;
+            return esSuperadmin || !esRolReservado(nombre);
+        } catch {
+            return false;
+        }
     });
 }
 
 /** Indica si un usuario (array de roles en cualquier forma) tiene un rol reservado. */
 export function usuarioTieneRolReservado(roles) {
-    const lista = Array.isArray(roles) ? roles : (roles ? [roles] : []);
+    const lista = Array.isArray(roles)
+        ? roles
+        : (roles && typeof roles === 'object' && !Array.isArray(roles) ? [roles] : (typeof roles === 'string' ? [roles] : []));
     return lista.some(r => esRolReservado(r));
 }
 

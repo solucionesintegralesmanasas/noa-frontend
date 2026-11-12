@@ -27,10 +27,11 @@ export function isCanceledError(error) {
 }
 
 export class BaseService {
-    constructor({ resourcePath, tenantId = null, metadata = {} }) {
-        this.resourcePath = resourcePath.replace(/^\/+/, '').replace(/\/+$/, '');
+    constructor({ resourcePath = '', tenantId = null, metadata = {} } = {}) {
+        const path = typeof resourcePath === 'string' ? resourcePath : '';
+        this.resourcePath = path.replace(/^\/+/, '').replace(/\/+$/, '');
         this.tenantId = tenantId;
-        this.metadata = { module: "api", resource: resourcePath, ...metadata };
+        this.metadata = { module: "api", resource: this.resourcePath, ...metadata };
         this._listAbortController = null;
     }
 
@@ -188,6 +189,7 @@ export class BaseService {
     _toFormData(data, { methodOverride } = {}) {
         const form = new FormData();
         if (methodOverride) form.append("_method", methodOverride);
+        if (!data || typeof data !== 'object') return form;
 
         for (const [key, value] of Object.entries(data)) {
             if (value == null) continue;
@@ -220,7 +222,7 @@ export class BaseService {
      * Extrae el nombre de archivo del encabezado Content-Disposition.
      */
     _fileNameFromDisposition(disposition) {
-        if (!disposition) return null;
+        if (!disposition || typeof disposition !== 'string') return null;
         const starMatch = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition);
         if (starMatch?.[1]) {
             try { return decodeURIComponent(starMatch[1].trim().replace(/^"|"$/g, '')); } catch { /* usa respaldo */ }

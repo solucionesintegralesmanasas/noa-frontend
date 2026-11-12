@@ -18,14 +18,30 @@
  * @returns {string} Fecha resultante en yyyy-mm-dd, o cadena vacía si la entrada no es válida.
  */
 export function sumarDias(iso, dias) {
-  if (!iso) return '';
-  const partes = String(iso).split('-').map(Number);
+  if (!iso || typeof iso === 'symbol') return '';
+  let strIso = '';
+  try {
+    strIso = typeof iso === 'string' ? iso : String(iso);
+  } catch {
+    return '';
+  }
+  const partes = strIso.split('-').map(Number);
   if (partes.length !== 3 || partes.some(Number.isNaN)) return '';
   const [yyyy, mm, dd] = partes;
   if (!yyyy || !mm || !dd) return '';
   const fecha = new Date(yyyy, mm - 1, dd);
   if (Number.isNaN(fecha.getTime())) return '';
-  fecha.setDate(fecha.getDate() + Number(dias));
+  if (fecha.getFullYear() !== yyyy || fecha.getMonth() !== mm - 1 || fecha.getDate() !== dd) {
+    return '';
+  }
+  let diasNum = 0;
+  try {
+    if (typeof dias !== 'symbol') diasNum = Number(dias);
+  } catch {
+    return '';
+  }
+  if (!Number.isFinite(diasNum)) return '';
+  fecha.setDate(fecha.getDate() + diasNum);
   const anio = fecha.getFullYear();
   const mes = String(fecha.getMonth() + 1).padStart(2, '0');
   const dia = String(fecha.getDate()).padStart(2, '0');
@@ -42,14 +58,28 @@ export function sumarDias(iso, dias) {
  * @returns {object} El mismo formulario, ya normalizado.
  */
 export function fechasAutomaticas(form) {
-  if (!form.start_date) {
-    form.end_date = '';
+  if (!form || typeof form !== 'object') return form;
+  try {
+    if (!form.start_date || typeof form.start_date === 'symbol') {
+      try { form.end_date = ''; } catch {}
+      return form;
+    }
+    if (!form.issue_date) {
+      try { form.issue_date = form.start_date; } catch {}
+    }
+    let dias = 0;
+    try {
+      if (typeof form.duration !== 'symbol') dias = Number(form.duration);
+    } catch {
+      dias = 0;
+    }
+    try {
+      form.end_date = dias > 0 && Number.isFinite(dias) ? sumarDias(form.start_date, dias) : '';
+    } catch {}
+    return form;
+  } catch {
     return form;
   }
-  if (!form.issue_date) form.issue_date = form.start_date;
-  const dias = Number(form.duration);
-  form.end_date = dias > 0 ? sumarDias(form.start_date, dias) : '';
-  return form;
 }
 
 /**
@@ -60,6 +90,7 @@ export function fechasAutomaticas(form) {
  * @returns {object} Mapa de campo a mensaje; vacío si el formulario es válido.
  */
 export function validarFechasContrato(form) {
+  if (!form || typeof form !== "object") return { general: "Formulario inválido." };
   const errores = {};
   // El número de contrato ya no se captura: lo asigna el consecutivo del backend.
   if (!form.issue_date) errores.issue_date = 'La fecha de emisión es obligatoria.';
