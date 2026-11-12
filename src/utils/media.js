@@ -7,33 +7,48 @@ import env from './env.js';
  * @returns {string} - URL absoluta del recurso.
  */
 export function getMediaUrl(path, fallback = null) {
-    if (!path) {
-        return fallback || '/assets/img/favicons/favicon-32x32.png';
+    const defaultFallback = typeof fallback === 'string' && fallback.trim() !== ''
+        ? fallback
+        : '/assets/img/favicons/favicon-32x32.png';
+
+    if (!path || typeof path !== 'string') {
+        return defaultFallback;
     }
 
-    if (path.startsWith('data:')) {
-        return path;
+    const trimmedPath = path.trim();
+    if (!trimmedPath) {
+        return defaultFallback;
+    }
+
+    // Bloquear esquemas peligrosos para evitar inyecciones XSS en href/src
+    const lower = trimmedPath.toLowerCase();
+    if (lower.startsWith('javascript:') || lower.startsWith('vbscript:') || lower.startsWith('data:text/html')) {
+        return defaultFallback;
+    }
+
+    if (trimmedPath.startsWith('data:image/')) {
+        return trimmedPath;
     }
 
     // Obtener la URL base del servidor (quitando la parte de /api/v1 si existe)
     const baseApiUrl = env.API_BASE_URL || 'https://api.transportessinbarreras.com/api/v1';
     const baseUrl = baseApiUrl.replace(/\/api\/v1\/?$/, '');
 
-    // Si el backend devuelve una URL absoluta, extraemos su ruta (pathname)
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    // Si el backend devuelve una URL absoluta
+    if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
         try {
-            const urlObj = new URL(path);
-            // Si la URL absoluta apunta a /storage o /assets, forzamos usar el baseUrl del entorno
+            const urlObj = new URL(trimmedPath);
             if (urlObj.pathname.startsWith('/storage') || urlObj.pathname.startsWith('/assets')) {
                 return `${baseUrl}${urlObj.pathname}${urlObj.search}`;
             }
-        } catch (e) {
-            // Si falla el parseo, continuamos y devolvemos la ruta original
+        } catch {
+            return defaultFallback;
         }
-        return path;
+        return trimmedPath;
     }
 
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const safePath = trimmedPath.replace(/(\.\.[\/\\])+/g, '');
+    const cleanPath = safePath.startsWith('/') ? safePath : `/${safePath}`;
 
     if (cleanPath.startsWith('/storage') || cleanPath.startsWith('/assets')) {
         return `${baseUrl}${cleanPath}`;

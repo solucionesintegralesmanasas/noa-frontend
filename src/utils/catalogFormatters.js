@@ -5,7 +5,8 @@
  */
 
 function toCleanString(value) {
-    if (value === null || value === undefined) return '';
+    if (value === null || value === undefined || typeof value === 'symbol') return '';
+    if (typeof value === 'object') return '';
     return String(value).trim();
 }
 
@@ -24,7 +25,7 @@ export function toCatalogArray(value) {
  * y `search_text` con todas las variantes (nombre, apellido, razón social, nombre comercial, NIT/CC).
  */
 export function formatThirdPartyOption(item, labelField = 'company_name') {
-    if (!item || typeof item !== 'object') return item;
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
 
     const firstName = toCleanString(item.first_name);
     const lastName = toCleanString(item.last_name);
@@ -71,7 +72,7 @@ export function formatThirdPartyOption(item, labelField = 'company_name') {
         full_name: fullName || primaryName,
         display_name: primaryName,
         display_label: displayLabel,
-        [labelField]: displayLabel,
+        [typeof labelField === 'string' && labelField ? labelField : 'company_name']: displayLabel,
         search_text: searchText,
     };
 }
