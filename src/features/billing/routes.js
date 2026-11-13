@@ -88,6 +88,30 @@ export const billingRoutes = [
         },
     },
     {
+        path: '/facturacion/notas-credito',
+        name: 'billing.credit-notes',
+        component: () => import('./views/BillingNotesView.vue'),
+        meta: {
+            title: 'Notas Crédito',
+            auth: true,
+            layout: 'dashboard',
+            tipoNota: 'credito',
+            permissions: ['credit_notes.index'],
+        },
+    },
+    {
+        path: '/facturacion/notas-debito',
+        name: 'billing.debit-notes',
+        component: () => import('./views/BillingNotesView.vue'),
+        meta: {
+            title: 'Notas Débito',
+            auth: true,
+            layout: 'dashboard',
+            tipoNota: 'debito',
+            permissions: ['debit_notes.index'],
+        },
+    },
+    {
         path: '/facturacion/:id',
         name: 'billing.profile',
         component: () => import('./views/BillingDetailView.vue'),

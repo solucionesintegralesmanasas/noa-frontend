@@ -27,6 +27,8 @@ class CommercialInvoicesService extends BillingApiService {
     registrarPago(uuid, data) { return this._request('POST', `/${uuid}/pagos`, { data }); }
     anular(uuid) { return this._request('POST', `/${uuid}/anular`); }
     emitir(uuid) { return this._request('POST', `/${uuid}/emitir`); }
+    consultarDian(uuid) { return this._request('GET', `/${uuid}/estado-dian`); }
+    enviarCorreo(uuid, email) { return this._request('POST', `/${uuid}/enviar-correo`, { data: { email } }); }
 
     descargarPdf(uuid, numero) {
         return this._downloadPdf(`/${uuid}/pdf`, `Documento_${numero || uuid}.pdf`);

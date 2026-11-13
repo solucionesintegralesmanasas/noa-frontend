@@ -176,22 +176,71 @@
                 :total="store.pagination.totalItems" @change="onPageChange" />
         </div>
     </div>
+
+    <Dialog v-model:visible="mostrarModalDian" header="XML y respuesta de la DIAN" modal :style="{ width: '44rem', maxWidth: '96vw' }">
+        <div v-if="cargandoDetalleDian" class="py-4 text-center">
+            <NoaTableSpinner message="Cargando respuesta DIAN..." />
+        </div>
+        <div v-else-if="detalleDian" class="small">
+            <dl class="row mb-3">
+                <dt class="col-sm-4">Documento</dt>
+                <dd class="col-sm-8 font-monospace">{{ detalleDian.invoice_number }}</dd>
+                <dt class="col-sm-4">Estado DIAN</dt>
+                <dd class="col-sm-8">{{ detalleDian.electronic_status || 'PENDIENTE_DIAN' }}</dd>
+                <template v-if="detalleDian.cufe">
+                    <dt class="col-sm-4">CUFE</dt>
+                    <dd class="col-sm-8 text-break font-monospace">{{ detalleDian.cufe }}</dd>
+                </template>
+                <template v-if="mensajeRespuestaDian">
+                    <dt class="col-sm-4">Mensaje DIAN</dt>
+                    <dd class="col-sm-8">{{ mensajeRespuestaDian }}</dd>
+                </template>
+            </dl>
+
+            <div v-if="tieneXmlDescargable" class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-primary" type="button" @click="descargarXmlDian">
+                    <i class="fal fa-file-code me-1" aria-hidden="true" />Descargar XML DIAN
+                </button>
+            </div>
+
+            <pre v-if="detalleDian.dian_response" class="bg-light border rounded p-2 mb-0 small" style="max-height: 16rem; overflow: auto;">{{ JSON.stringify(detalleDian.dian_response, null, 2) }}</pre>
+            <div v-else class="alert alert-info mb-0">Este documento aún no tiene respuesta registrada de la DIAN.</div>
+        </div>
+    </Dialog>
+
+    <Dialog v-model:visible="mostrarModalCorreo" header="Enviar factura por correo" modal :style="{ width: '28rem', maxWidth: '94vw' }">
+        <form class="row g-3" @submit.prevent="confirmarEnvioCorreo">
+            <div class="col-12">
+                <label class="form-label required" for="f-envio-correo">Correo destino</label>
+                <input id="f-envio-correo" v-model="correoDestino" class="form-control" type="email" required placeholder="cliente@empresa.com" />
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button class="btn btn-falcon-default btn-sm" type="button" :disabled="enviandoCorreo" @click="mostrarModalCorreo = false">Cancelar</button>
+                <button class="btn btn-primary btn-sm" type="submit" :disabled="enviandoCorreo || !correoDestino">
+                    <i class="fad fa-envelope me-1" aria-hidden="true" />{{ enviandoCorreo ? 'Enviando...' : 'Enviar correo' }}
+                </button>
+            </div>
+        </form>
+    </Dialog>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import { useBillingStore } from '../store/billing.store.js';
 import { usePermissionsStore } from '@store';
 import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
+import { toast } from '@/utils/toast.js';
+import billingService from '../services/billing.service.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import RowActions from '@/components/RowActions.vue';
 import ListPagination from '@/components/ListPagination.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Dialog from 'primevue/dialog';
 
 const route = useRoute();
 const router = useRouter();
@@ -279,34 +328,213 @@ const handleDelete = (doc) => confirmDelete(doc, {
     html: `<p class="mb-2">¿Estás seguro de eliminar el documento <strong>"${doc.invoice_number}"</strong> en BORRADOR?</p>`,
 });
 
-const accionesDe = (data) => [
-    {
-        key: 'ver',
-        label: 'Ver detalle',
-        icon: 'far fa-eye',
-        tone: 'primary',
-        inline: true,
-        visible: can('commercial_invoices.profile'),
-        onClick: () => goToDetail(data.uuid),
-    },
-    {
-        key: 'editar',
-        label: 'Editar',
-        icon: 'far fa-pen',
-        tone: 'warning',
-        inline: true,
-        visible: can('commercial_invoices.update') && data.status === 'BORRADOR',
-        onClick: () => goToEdit(data.uuid),
-    },
-    {
-        key: 'eliminar',
-        label: 'Eliminar',
-        icon: 'far fa-trash-alt',
-        tone: 'danger',
-        visible: can('commercial_invoices.delete') && data.status === 'BORRADOR',
-        onClick: () => handleDelete(data),
-    },
-];
+const mostrarModalDian = ref(false);
+const cargandoDetalleDian = ref(false);
+const detalleDian = ref(null);
+
+const mostrarModalCorreo = ref(false);
+const enviandoCorreo = ref(false);
+const correoDestino = ref('');
+const facturaCorreoUuid = ref('');
+
+const mensajeRespuestaDian = computed(() => {
+    const r = detalleDian.value?.dian_response;
+    if (!r) return '';
+    return r.status_message || r.message || r.status_description || '';
+});
+
+const tieneXmlDescargable = computed(() => {
+    const d = detalleDian.value;
+    const r = d?.dian_response;
+    return Boolean(
+        r?.attached_document_base64_bytes
+        || r?.xml_base64_bytes
+        || d?.electronic_invoice?.xml_url,
+    );
+});
+
+const descargarXmlDian = () => {
+    const d = detalleDian.value;
+    const r = d?.dian_response;
+    const b64 = r?.attached_document_base64_bytes || r?.xml_base64_bytes;
+    if (b64) {
+        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/xml' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${d.invoice_number || d.uuid}.xml`;
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+    }
+    if (d?.electronic_invoice?.xml_url) {
+        window.open(d.electronic_invoice.xml_url, '_blank', 'noopener');
+    }
+};
+
+const emitirFactura = async (data) => {
+    try {
+        await store.emitir(data.uuid);
+        await toast('¡Éxito!', `Factura ${data.invoice_number} enviada a la DIAN.`, 'success');
+        await store.fetchItems();
+    } catch (_e) { /* store._run ya muestra el error */ }
+};
+
+const consultarDian = async (data) => {
+    try {
+        const res = await billingService.consultarDian(data.uuid);
+        const info = res?.data ?? res;
+        await toast('Estado DIAN', `Documento ${data.invoice_number}: ${info.estado || data.electronic_status || 'Sin cambios'}`, 'info');
+        await store.fetchItems();
+    } catch (error) {
+        await toast('Error', error?.response?.data?.message || 'No se pudo consultar el estado en la DIAN.', 'error');
+    }
+};
+
+const verRespuestaDian = async (data) => {
+    mostrarModalDian.value = true;
+    cargandoDetalleDian.value = true;
+    detalleDian.value = null;
+    try {
+        const res = await billingService.get(data.uuid);
+        detalleDian.value = res?.data ?? res;
+    } catch (error) {
+        mostrarModalDian.value = false;
+        await toast('Error', error?.response?.data?.message || 'No se pudo cargar la respuesta DIAN.', 'error');
+    } finally {
+        cargandoDetalleDian.value = false;
+    }
+};
+
+const abrirEnvioCorreo = (data) => {
+    facturaCorreoUuid.value = data.uuid;
+    correoDestino.value = data.customer?.email || '';
+    mostrarModalCorreo.value = true;
+};
+
+const confirmarEnvioCorreo = async () => {
+    if (!facturaCorreoUuid.value || !correoDestino.value) return;
+    enviandoCorreo.value = true;
+    try {
+        await billingService.enviarCorreo(facturaCorreoUuid.value, correoDestino.value.trim());
+        mostrarModalCorreo.value = false;
+        await toast('¡Éxito!', `Documento enviado a ${correoDestino.value.trim()}.`, 'success');
+    } catch (error) {
+        await toast('Error', error?.response?.data?.message || 'No se pudo enviar el correo.', 'error');
+    } finally {
+        enviandoCorreo.value = false;
+    }
+};
+
+const esperarRespuestaCliente = async (data) => {
+    await toast(
+        'En espera del cliente',
+        `La factura ${data.invoice_number} está pendiente de acuse/aceptación por parte del adquiriente.`,
+        'info',
+    );
+};
+
+const anularFactura = async (data) => {
+    try {
+        await store.anular(data.uuid);
+        await toast('Anulado', `Documento ${data.invoice_number} anulado.`, 'success');
+        await store.fetchItems();
+    } catch (_e) { /* store._run ya muestra el error */ }
+};
+
+const accionesDe = (data) => {
+    const esFactura = data.invoice_type === 'FACTURA_VENTA';
+    const puedeEmitir = esFactura
+        && data.status !== 'ANULADA'
+        && (!data.electronic_status || ['PENDIENTE_DIAN', 'RECHAZADA_DIAN'].includes(data.electronic_status));
+    const emitidaDian = esFactura && ['ACEPTADA_DIAN', 'VALIDADA_SIN_ENVIO', 'PENDIENTE_DIAN'].includes(data.electronic_status) && (data.cufe || data.provider_document_id);
+
+    return [
+        {
+            key: 'ver',
+            label: 'Ver detalle',
+            icon: 'far fa-eye',
+            tone: 'primary',
+            inline: true,
+            visible: can('commercial_invoices.profile'),
+            onClick: () => goToDetail(data.uuid),
+        },
+        {
+            key: 'editar',
+            label: 'Editar',
+            icon: 'far fa-pen',
+            tone: 'warning',
+            inline: true,
+            visible: can('commercial_invoices.update') && data.status === 'BORRADOR',
+            onClick: () => goToEdit(data.uuid),
+        },
+        {
+            key: 'pdf',
+            label: 'Descargar PDF',
+            icon: 'far fa-file-pdf',
+            tone: 'neutral',
+            inline: data.status !== 'BORRADOR',
+            visible: can('commercial_invoices.profile'),
+            onClick: () => billingService.descargarPdf(data.uuid, data.invoice_number),
+        },
+        {
+            key: 'emitir-dian',
+            label: 'Enviar a DIAN',
+            icon: 'far fa-paper-plane',
+            tone: 'primary',
+            visible: can('commercial_invoices.update') && puedeEmitir,
+            onClick: () => emitirFactura(data),
+        },
+        {
+            key: 'enviar-correo',
+            label: 'Enviar a correo',
+            icon: 'far fa-envelope',
+            tone: 'neutral',
+            visible: can('commercial_invoices.update') && emitidaDian,
+            onClick: () => abrirEnvioCorreo(data),
+        },
+        {
+            key: 'xml-respuesta',
+            label: 'XML respuesta de la DIAN',
+            icon: 'far fa-file-code',
+            tone: 'neutral',
+            visible: can('commercial_invoices.profile') && esFactura,
+            onClick: () => verRespuestaDian(data),
+        },
+        {
+            key: 'esperar-cliente',
+            label: 'Esperar respuesta del cliente',
+            icon: 'far fa-hourglass-half',
+            tone: 'neutral',
+            visible: can('commercial_invoices.profile') && emitidaDian,
+            onClick: () => esperarRespuestaCliente(data),
+        },
+        {
+            key: 'consultar-dian',
+            label: 'Consultar DIAN',
+            icon: 'far fa-sync-alt',
+            tone: 'neutral',
+            visible: can('commercial_invoices.profile') && emitidaDian,
+            onClick: () => consultarDian(data),
+        },
+        {
+            key: 'anular',
+            label: 'Anular',
+            icon: 'far fa-ban',
+            tone: 'danger',
+            visible: can('commercial_invoices.update') && data.status !== 'ANULADA' && Number(data.amount_paid || 0) === 0,
+            onClick: () => anularFactura(data),
+        },
+        {
+            key: 'eliminar',
+            label: 'Eliminar',
+            icon: 'far fa-trash-alt',
+            tone: 'danger',
+            visible: can('commercial_invoices.delete') && data.status === 'BORRADOR',
+            onClick: () => handleDelete(data),
+        },
+    ];
+};
 
 onMounted(async () => {
     const sortParam = route.query.sort;
