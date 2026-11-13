@@ -21,14 +21,23 @@
                     placeholder="Seleccione una factura emitida..."
                     class="w-100"
                     :class="{ 'is-invalid': errores.invoice_uuid }"
+                    :aria-invalid="Boolean(errores.invoice_uuid)"
+                    :aria-describedby="errores.invoice_uuid ? 'f-nota-factura-error' : undefined"
                 />
-                <div v-if="errores.invoice_uuid" class="invalid-feedback d-block">{{ errores.invoice_uuid }}</div>
+                <div v-if="errores.invoice_uuid" id="f-nota-factura-error" class="invalid-feedback d-block" role="alert">{{ errores.invoice_uuid }}</div>
             </div>
 
             <div class="col-12 col-md-5">
                 <label class="form-label required" for="f-nota-fecha">Fecha de emisión</label>
-                <DateInput id="f-nota-fecha" v-model="form.issue_date" class="form-control" :class="{ 'is-invalid': errores.issue_date }" />
-                <div v-if="errores.issue_date" class="invalid-feedback d-block">{{ errores.issue_date }}</div>
+                <DateInput
+                    id="f-nota-fecha"
+                    v-model="form.issue_date"
+                    class="form-control"
+                    :class="{ 'is-invalid': errores.issue_date }"
+                    :aria-invalid="Boolean(errores.issue_date)"
+                    :aria-describedby="errores.issue_date ? 'f-nota-fecha-error' : undefined"
+                />
+                <div v-if="errores.issue_date" id="f-nota-fecha-error" class="invalid-feedback d-block" role="alert">{{ errores.issue_date }}</div>
             </div>
 
             <div class="col-12 col-md-7">
@@ -42,8 +51,10 @@
                     placeholder="Seleccione el concepto..."
                     class="w-100"
                     :class="{ 'is-invalid': errores.correction_concept_code }"
+                    :aria-invalid="Boolean(errores.correction_concept_code)"
+                    :aria-describedby="errores.correction_concept_code ? 'f-nota-concepto-error' : undefined"
                 />
-                <div v-if="errores.correction_concept_code" class="invalid-feedback d-block">{{ errores.correction_concept_code }}</div>
+                <div v-if="errores.correction_concept_code" id="f-nota-concepto-error" class="invalid-feedback d-block" role="alert">{{ errores.correction_concept_code }}</div>
             </div>
 
             <div class="col-12 col-md-5">
@@ -79,7 +90,7 @@
                         <i class="fal fa-plus me-1" aria-hidden="true" />Agregar ítem
                     </button>
                 </div>
-                <div v-if="errores.items" class="text-danger small mb-2">{{ errores.items }}</div>
+                <div v-if="errores.items" id="f-nota-items-error" class="text-danger small mb-2" role="alert">{{ errores.items }}</div>
 
                 <div class="table-responsive border rounded">
                     <table class="table table-sm align-middle mb-0">
@@ -98,24 +109,29 @@
                             <tr v-for="(item, idx) in form.items" :key="idx">
                                 <td>
                                     <input
+                                        :id="`f-nota-item-desc-${idx}`"
                                         v-model="item.description"
                                         class="form-control form-control-sm"
+                                        :class="{ 'is-invalid': errores.items && !String(item.description || '').trim() }"
                                         type="text"
                                         maxlength="500"
                                         placeholder="Descripción del ajuste"
+                                        :aria-label="`Descripción del ítem ${idx + 1}`"
+                                        :aria-invalid="Boolean(errores.items && !String(item.description || '').trim())"
+                                        :aria-describedby="errores.items ? 'f-nota-items-error' : undefined"
                                     />
                                 </td>
                                 <td>
-                                    <input v-model.number="item.quantity" class="form-control form-control-sm text-end" type="number" min="0.01" step="0.01" />
+                                    <input :id="`f-nota-item-qty-${idx}`" v-model.number="item.quantity" class="form-control form-control-sm text-end" type="number" min="0.01" step="0.01" :aria-label="`Cantidad del ítem ${idx + 1}`" />
                                 </td>
                                 <td>
-                                    <input v-model.number="item.unit_price" class="form-control form-control-sm text-end" type="number" min="0" step="0.01" />
+                                    <input :id="`f-nota-item-price-${idx}`" v-model.number="item.unit_price" class="form-control form-control-sm text-end" type="number" min="0" step="0.01" :aria-label="`Valor unitario del ítem ${idx + 1}`" />
                                 </td>
                                 <td>
-                                    <input v-model.number="item.discount_amount" class="form-control form-control-sm text-end" type="number" min="0" step="0.01" />
+                                    <input :id="`f-nota-item-desc-val-${idx}`" v-model.number="item.discount_amount" class="form-control form-control-sm text-end" type="number" min="0" step="0.01" :aria-label="`Descuento del ítem ${idx + 1}`" />
                                 </td>
                                 <td>
-                                    <input v-model.number="item.tax_rate" class="form-control form-control-sm text-end" type="number" min="0" max="100" step="0.01" />
+                                    <input :id="`f-nota-item-iva-${idx}`" v-model.number="item.tax_rate" class="form-control form-control-sm text-end" type="number" min="0" max="100" step="0.01" :aria-label="`IVA porcentaje del ítem ${idx + 1}`" />
                                 </td>
                                 <td class="text-end font-monospace small">${{ formatear(totalLinea(item)) }}</td>
                                 <td class="text-center">
@@ -156,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import Dialog from 'primevue/dialog';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import DateInput from '@/components/form/DateInput.vue';
@@ -295,7 +311,11 @@ const validar = () => {
 };
 
 const guardar = async () => {
-    if (!validar()) return;
+    if (!validar()) {
+        await nextTick();
+        document.querySelector('.is-invalid, [aria-invalid="true"]')?.focus?.();
+        return;
+    }
     guardando.value = true;
     try {
         const servicio = esCredito.value ? creditNotesService : debitNotesService;

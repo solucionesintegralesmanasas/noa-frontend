@@ -209,14 +209,24 @@
     </Dialog>
 
     <Dialog v-model:visible="mostrarModalCorreo" header="Enviar factura por correo" modal :style="{ width: '28rem', maxWidth: '94vw' }">
-        <form class="row g-3" @submit.prevent="confirmarEnvioCorreo">
+        <form class="row g-3" novalidate @submit.prevent="confirmarEnvioCorreo">
             <div class="col-12">
                 <label class="form-label required" for="f-envio-correo">Correo destino</label>
-                <input id="f-envio-correo" v-model="correoDestino" class="form-control" type="email" required placeholder="cliente@empresa.com" />
+                <input
+                    id="f-envio-correo"
+                    v-model="correoDestino"
+                    class="form-control"
+                    :class="{ 'is-invalid': correoError }"
+                    type="email"
+                    placeholder="cliente@empresa.com"
+                    :aria-invalid="Boolean(correoError)"
+                    :aria-describedby="correoError ? 'f-envio-correo-error' : undefined"
+                />
+                <div v-if="correoError" id="f-envio-correo-error" class="invalid-feedback d-block" role="alert">{{ correoError }}</div>
             </div>
             <div class="col-12 d-flex justify-content-end gap-2">
                 <button class="btn btn-falcon-default btn-sm" type="button" :disabled="enviandoCorreo" @click="mostrarModalCorreo = false">Cancelar</button>
-                <button class="btn btn-primary btn-sm" type="submit" :disabled="enviandoCorreo || !correoDestino">
+                <button class="btn btn-primary btn-sm" type="submit" :disabled="enviandoCorreo">
                     <i class="fad fa-envelope me-1" aria-hidden="true" />{{ enviandoCorreo ? 'Enviando...' : 'Enviar correo' }}
                 </button>
             </div>
@@ -335,6 +345,7 @@ const detalleDian = ref(null);
 const mostrarModalCorreo = ref(false);
 const enviandoCorreo = ref(false);
 const correoDestino = ref('');
+const correoError = ref('');
 const facturaCorreoUuid = ref('');
 
 const mensajeRespuestaDian = computed(() => {
@@ -409,16 +420,24 @@ const verRespuestaDian = async (data) => {
 const abrirEnvioCorreo = (data) => {
     facturaCorreoUuid.value = data.uuid;
     correoDestino.value = data.customer?.email || '';
+    correoError.value = '';
     mostrarModalCorreo.value = true;
 };
 
 const confirmarEnvioCorreo = async () => {
-    if (!facturaCorreoUuid.value || !correoDestino.value) return;
+    const destino = correoDestino.value.trim();
+    if (!destino || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
+        correoError.value = 'Indica un correo electrónico válido.';
+        document.getElementById('f-envio-correo')?.focus();
+        return;
+    }
+    correoError.value = '';
+    if (!facturaCorreoUuid.value) return;
     enviandoCorreo.value = true;
     try {
-        await billingService.enviarCorreo(facturaCorreoUuid.value, correoDestino.value.trim());
+        await billingService.enviarCorreo(facturaCorreoUuid.value, destino);
         mostrarModalCorreo.value = false;
-        await toast('¡Éxito!', `Documento enviado a ${correoDestino.value.trim()}.`, 'success');
+        await toast('¡Éxito!', `Documento enviado a ${destino}.`, 'success');
     } catch (error) {
         await toast('Error', error?.response?.data?.message || 'No se pudo enviar el correo.', 'error');
     } finally {
