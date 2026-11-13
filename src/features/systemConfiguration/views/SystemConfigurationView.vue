@@ -1731,24 +1731,18 @@ const probarTelegram = async () => {
     const resultado = await enviarPruebaTelegram(formData.notification_telegram_chat_ids);
 
     if (!resultado) {
-        return Swal.fire({
-            title: 'Telegram',
-            text: errorTelegram.value,
-            icon: 'error',
-            confirmButtonText: 'Aceptar'
-        });
+        return toast('Telegram', errorTelegram.value || 'No se pudo enviar la prueba.', 'error');
     }
 
     const fallidos = resultado.fallidos?.length
         ? ` No se pudo enviar a: ${resultado.fallidos.join(', ')}.`
         : '';
 
-    return Swal.fire({
-        title: 'Prueba enviada',
-        text: `Mensaje enviado a ${resultado.enviados?.length ?? 0} chat(s).${fallidos}`,
-        icon: resultado.fallidos?.length ? 'warning' : 'success',
-        confirmButtonText: 'Aceptar'
-    });
+    return toast(
+        'Prueba enviada',
+        `Mensaje enviado a ${resultado.enviados?.length ?? 0} chat(s).${fallidos}`,
+        resultado.fallidos?.length ? 'warning' : 'success',
+    );
 };
 
 // Enlace fijo del bot de Telegram para compartir con los destinatarios.
@@ -1760,14 +1754,9 @@ const ENLACE_BOT_TELEGRAM = 'https://t.me/noa_transportes_bot';
 const copiarEnlaceBot = async () => {
     try {
         await navigator.clipboard.writeText(ENLACE_BOT_TELEGRAM);
-        toast('Enlace copiado', 'Pega y comparte este enlace con el destinatario.', 'success');
+        await toast('Enlace copiado', 'Pega y comparte este enlace con el destinatario.', 'success');
     } catch {
-        await Swal.fire({
-            title: 'Enlace del bot',
-            text: ENLACE_BOT_TELEGRAM,
-            icon: 'info',
-            confirmButtonText: 'Aceptar'
-        });
+        await toast('Enlace del bot', ENLACE_BOT_TELEGRAM, 'info');
     }
 };
 
