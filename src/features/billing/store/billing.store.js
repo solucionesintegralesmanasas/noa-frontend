@@ -7,7 +7,7 @@ import billingService, {
 
 /**
  * Store Pinia del módulo de facturación comercial.
- * Cotizaciones y facturas internas, más proveedores tecnológicos Factus.
+ * Cotizaciones y facturas internas, más proveedores tecnológicos (Factus o ApiDian).
  */
 export const useBillingStore = defineStore('billing', {
     state: () => ({
@@ -18,7 +18,7 @@ export const useBillingStore = defineStore('billing', {
         tipoFiltro: 'COTIZACION',
         catalogs: { clientes: [], resoluciones: [], metodosPago: [], companies: [] },
         resolutions: [],
-        // Proveedores tecnológicos (driver único: Factus).
+        // Proveedores tecnológicos (driver por empresa: factus o apidian).
         providers: [],
         provider: null,
         pagination: { currentPage: 1, itemsPerPage: 10, totalItems: 0, totalPages: 0 },
@@ -203,7 +203,7 @@ export const useBillingStore = defineStore('billing', {
         setGlobalFilter(query) { this.search = query; this.pagination.currentPage = 1; return this.fetchItems(); },
         clearFilters() { this.search = ''; this.pagination.currentPage = 1; return this.fetchItems(); },
 
-        // ── Proveedores tecnológicos (Factus) ────────────────────────────────
+        // ── Proveedores tecnológicos (Factus / ApiDian) ───────────────────────
 
         async fetchProviders() {
             return this._run(async () => {

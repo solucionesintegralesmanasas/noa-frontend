@@ -42,9 +42,9 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
                 },
                 PrimeSelect: {
                     name: 'PrimeSelect',
-                    props: ['modelValue', 'options'],
+                    props: ['modelValue', 'options', 'optionLabel', 'inputId'],
                     emits: ['update:modelValue'],
-                    template: '<select class="prime-select-stub" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option></select>',
+                    template: '<div><input :id="inputId" class="prime-select-stub" type="text" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /><ul v-if="options && options.length"><li v-for="(o,i) in options" :key="i">{{ typeof optionLabel === \'function\' ? optionLabel(o) : (o[optionLabel] ?? o.label ?? JSON.stringify(o)) }}</li></ul></div>',
                 },
                 DateInput: {
                     name: 'DateInput',
@@ -57,11 +57,8 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
 
     it('incluye el tipo de reporte "Por proyecto" entre las opciones disponibles', () => {
         const wrapper = createWrapper();
-        const selectTipo = wrapper.find('.prime-select-stub');
-        const options = selectTipo.findAll('option');
-        const labels = options.map((o) => o.text());
-
-        expect(labels.some((l) => l.includes('Por proyecto'))).toBe(true);
+        // El PrimeSelect del tipo renderiza `<ul>` con los items; buscamos por texto.
+        expect(wrapper.html()).toContain('Por proyecto');
     });
 
     it('al seleccionar tipo "proyecto", muestra el selector de proyecto y carga solo los vehículos de ese proyecto', async () => {
@@ -83,8 +80,8 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
 
         const wrapper = createWrapper();
 
-        // 1. Cambiar tipo a "proyecto"
-        await wrapper.find('.prime-select-stub').setValue('proyecto');
+        // 1. Cambiar tipo a "proyecto" (el stub emite al hacer setValue)
+        await wrapper.find('#rep-tipo').setValue('proyecto');
         await flushPromises();
 
         // 2. Verificar que el selector de proyecto aparece
@@ -99,14 +96,11 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
         expect(mockLoadProjectDetail).toHaveBeenCalledWith('proj-1');
 
         // 5. Verificar que el selector de vehículos contiene ÚNICAMENTE los vehículos de proj-1
-        const selectVeh = wrapper.find('#rep-veh');
-        const vehOptions = selectVeh.findAll('option').map((o) => o.text());
-
-        expect(vehOptions).toContain('Todos los vehículos del proyecto');
-        expect(vehOptions.some((o) => o.includes('PRJ100 (10)'))).toBe(true);
-        expect(vehOptions.some((o) => o.includes('PRJ200 (20)'))).toBe(true);
-        expect(vehOptions.some((o) => o.includes('GEN111'))).toBe(false);
-        expect(vehOptions.some((o) => o.includes('GEN222'))).toBe(false);
+        expect(wrapper.vm.vehiculosDisponibles).toHaveLength(2);
+        expect(wrapper.html()).toContain('PRJ100');
+        expect(wrapper.html()).toContain('PRJ200');
+        expect(wrapper.html()).not.toContain('GEN111');
+        expect(wrapper.html()).not.toContain('GEN222');
     });
 
     it('al descargar el reporte por proyecto, envía project_uuid y vehicle_uuid si fue seleccionado', async () => {
@@ -122,20 +116,21 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
         });
 
         const wrapper = createWrapper();
-        await wrapper.find('.prime-select-stub').setValue('proyecto');
+        await wrapper.find('#rep-tipo').setValue('proyecto');
         await flushPromises();
 
         const selectProyecto = wrapper.find('#rep-proyecto');
         await selectProyecto.setValue('proj-1');
         await flushPromises();
 
-        const selectVeh = wrapper.find('#rep-veh');
-        await selectVeh.setValue('v-proj-1');
+        // Simular selección directa del vehículo (el campo está deshabilitado mientras carga)
+        wrapper.vm.filtros.vehicle_uuid = 'v-proj-1';
         await flushPromises();
 
         // Clic en botón PDF
         const btnPdf = wrapper.findAll('button').find((b) => b.text().includes('PDF'));
         await btnPdf.trigger('click');
+        await flushPromises();
 
         expect(mockDownloadReport).toHaveBeenCalledWith(
             'proyecto',

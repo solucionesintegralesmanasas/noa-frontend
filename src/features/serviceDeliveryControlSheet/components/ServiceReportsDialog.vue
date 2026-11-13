@@ -35,14 +35,17 @@
                     <label class="form-label" :class="{ required: tipo === 'vehiculo' }" for="rep-veh">
                         Vehículo {{ (tipo === 'mensual' || tipo === 'proyecto') ? '(opcional)' : '' }}
                     </label>
-                    <select id="rep-veh" v-model="filtros.vehicle_uuid" class="form-select form-select-sm" :disabled="tipo === 'proyecto' && (cargandoVehiculosProyecto || !filtros.project_uuid)">
-                        <option value="">
-                            {{ tipo === 'proyecto' ? 'Todos los vehículos del proyecto' : (tipo === 'mensual' ? 'Todos los vehículos' : 'Seleccione...') }}
-                        </option>
-                        <option v-for="v in vehiculosDisponibles" :key="v.uuid" :value="v.uuid">
-                            {{ v.vehicle_license_plate }}{{ v.internal_number ? ` (${v.internal_number})` : '' }}
-                        </option>
-                    </select>
+                    <PrimeSelect
+                        :input-id="'rep-veh'"
+                        v-model="filtros.vehicle_uuid"
+                        :options="vehiculosDisponibles"
+                        option-value="uuid"
+                        :option-label="(o) => `${o.vehicle_license_plate}${o.internal_number ? ' (' + o.internal_number + ')' : ''}`"
+                        placeholder="Buscar vehículo..."
+                        filter
+                        :disabled="tipo === 'proyecto' && (cargandoVehiculosProyecto || !filtros.project_uuid)"
+                        class="w-100"
+                    />
                     <span v-if="tipo === 'proyecto' && cargandoVehiculosProyecto" class="text-muted small mt-1 d-block">
                         <i class="fas fa-spinner fa-spin me-1" aria-hidden="true"></i> Cargando vehículos del proyecto...
                     </span>
