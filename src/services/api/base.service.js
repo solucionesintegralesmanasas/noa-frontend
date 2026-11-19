@@ -315,6 +315,29 @@ export class BaseService {
     }
 
     /**
+     * Descarga un archivo ZIP como blob (web).
+     */
+    async _downloadZip(url, filename = 'reporte.zip') {
+        const instance = this._getInstance();
+        const fullUrl = url.startsWith('http') ? url : `${this.resourcePath}${url}`;
+        let response;
+        try {
+            response = await instance.get(fullUrl, { responseType: 'blob' });
+        } catch (err) {
+            throw await this._blobErrorToMessage(err);
+        }
+        const blob = new Blob([response.data], { type: 'application/zip' });
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+    }
+
+    /**
      * Convierte un error blob del backend en un Error con mensaje legible.
      * Maneja respuestas inesperadas (como errores de servidor HTML) que no son PDFs.
      */

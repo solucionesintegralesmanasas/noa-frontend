@@ -42,6 +42,12 @@ export function esCerrado(data) {
     return !(data?.is_active == 1 || data?.is_active === true);
 }
 
+/** Etiqueta de turno visible cuando hay más de un tramo en el mismo día. */
+export function etiquetaTurno(data) {
+    const turno = Number(data?.turno);
+    return turno > 1 ? `Turno ${turno}` : null;
+}
+
 /**
  * Resumen claro e inequívoco de los días del servicio.
  * En lugar de abreviaturas crípticas como "Inc" o "Borr", expresa exactamente

@@ -5,6 +5,7 @@ import ServiceReportsDialog from '../components/ServiceReportsDialog.vue';
 
 const mockLoadProjectDetail = vi.fn();
 const mockDownloadReport = vi.fn();
+const mockDownloadProjectZip = vi.fn();
 
 vi.mock('../store/serviceDeliveryControlSheet.store.js', () => ({
     useServiceDeliveryControlSheetStore: () => ({
@@ -15,6 +16,7 @@ vi.mock('../store/serviceDeliveryControlSheet.store.js', () => ({
         projectsOverview: [],
         loadProjectDetail: mockLoadProjectDetail,
         downloadReport: mockDownloadReport,
+        downloadProjectZip: mockDownloadProjectZip,
     }),
 }));
 
@@ -103,7 +105,7 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
         expect(wrapper.html()).not.toContain('GEN222');
     });
 
-    it('al descargar el reporte por proyecto, envía project_uuid y vehicle_uuid si fue seleccionado', async () => {
+    it('con vehículo seleccionado descarga el ZIP, que entrega una planilla por día', async () => {
         mockLoadProjectDetail.mockResolvedValue({
             uuid: 'proj-1',
             assignments: [
@@ -132,13 +134,38 @@ describe('ServiceReportsDialog - Reporte por Proyecto', () => {
         await btnPdf.trigger('click');
         await flushPromises();
 
-        expect(mockDownloadReport).toHaveBeenCalledWith(
-            'proyecto',
+        expect(mockDownloadProjectZip).toHaveBeenCalledWith(
             expect.objectContaining({
                 project_uuid: 'proj-1',
                 vehicle_uuid: 'v-proj-1',
-            }),
-            'pdf'
+                incluir_abiertos: 1,
+            })
         );
+        expect(mockDownloadReport).not.toHaveBeenCalled();
+    });
+
+    it('sin vehículo seleccionado, descarga el proyecto como ZIP', async () => {
+        mockLoadProjectDetail.mockResolvedValue({
+            uuid: 'proj-1',
+            assignments: [
+                { vehicle_uuid: 'v-proj-1', is_active: true, vehicle: { uuid: 'v-proj-1', vehicle_license_plate: 'PRJ100' } },
+                { vehicle_uuid: 'v-proj-2', is_active: true, vehicle: { uuid: 'v-proj-2', vehicle_license_plate: 'PRJ200' } },
+            ],
+        });
+
+        const wrapper = createWrapper();
+        await wrapper.find('#rep-tipo').setValue('proyecto');
+        await flushPromises();
+        await wrapper.find('#rep-proyecto').setValue('proj-1');
+        await flushPromises();
+
+        const btnPdf = wrapper.findAll('button').find((b) => b.text().includes('PDF'));
+        await btnPdf.trigger('click');
+        await flushPromises();
+
+        expect(mockDownloadProjectZip).toHaveBeenCalledWith(
+            expect.objectContaining({ project_uuid: 'proj-1', incluir_abiertos: 1 })
+        );
+        expect(mockDownloadReport).not.toHaveBeenCalled();
     });
 });

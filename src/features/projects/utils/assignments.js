@@ -6,6 +6,9 @@
  * la última fila. Por eso se envían solo las asignaciones activas (una por
  * conductor) más la fila que se agrega o se alterna; así no se pierde una
  * asignación activa por culpa de un histórico retirado.
+ *
+ * Un vehículo sí puede tener varios conductores activos: el relevo suma turnos
+ * y el conductor anterior sigue vigente en el proyecto.
  */
 
 const fila = (asignacion, isActive = true) => ({
@@ -27,7 +30,6 @@ export function validarAsignaciones(asignaciones = []) {
     const errores = [];
     const validAssignments = [];
     const driversSeen = {};
-    const vehiclesSeen = {};
 
     (asignaciones || []).forEach((row, index) => {
         const label = `Fila ${index + 1}`;
@@ -44,12 +46,6 @@ export function validarAsignaciones(asignaciones = []) {
             return;
         }
         driversSeen[row.third_party_uuid] = true;
-
-        if (vehiclesSeen[row.vehicle_uuid]) {
-            errores.push(`${label}: el vehículo ya fue asignado a este proyecto.`);
-            return;
-        }
-        vehiclesSeen[row.vehicle_uuid] = true;
 
         validAssignments.push({
             third_party_uuid: row.third_party_uuid,

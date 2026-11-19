@@ -414,6 +414,19 @@ export const useServiceDeliveryControlSheetStore = defineStore('serviceDeliveryC
         },
 
         /**
+         * Descarga el reporte por proyecto en un ZIP: una planilla por vehículo,
+         * incluyendo días abiertos y cerrados.
+         * @param {Object} params - Filtros del reporte (project_uuid, fechas).
+         * @returns {Promise<void>}
+         */
+        async downloadProjectZip(params = {}) {
+            return this._run(async () => {
+                await serviceDeliveryControlSheetService.downloadProjectZip(params);
+                await toast('¡Éxito!', 'Reporte del proyecto descargado en ZIP', 'success');
+            }, 'Error al descargar el reporte por proyecto');
+        },
+
+        /**
          * Genera el enlace público temporal para la firma del coordinador (1 hora).
          * @param {string} uuid - UUID de la planilla.
          * @returns {Promise<Object>} Datos con { url, expires_at }.

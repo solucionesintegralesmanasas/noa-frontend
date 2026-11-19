@@ -59,6 +59,8 @@ export const seleccionarPlanillaVigente = (servicio, dias, hoy) => {
     if (!servicio) return null;
     const lista = Array.isArray(dias) ? dias : [];
     if (!lista.length) return esDiaVigente(servicio, hoy) ? servicio : null;
-    const deHoy = lista.find((dia) => esDiaVigente(dia, hoy));
-    return deHoy && estaAbierta(deHoy) ? deHoy : null;
+    // Con relevo de turno hay dos hijos el mismo día (el saliente cerrado y el
+    // entrante abierto): se elige el abierto, no el primero que aparezca.
+    const deHoy = lista.filter((dia) => esDiaVigente(dia, hoy)).find((dia) => estaAbierta(dia));
+    return deHoy || null;
 };
