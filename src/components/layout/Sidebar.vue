@@ -205,6 +205,7 @@ const MENU_SECTIONS = [
             { id: 'vehiculos', label: 'Vehículos', icon: 'fa-truck-moving', to: '/vehiculos', permissions: ['vehicles.index'] },
             { id: 'documentos-vehiculares', label: 'Documentos Vehiculares', icon: 'fa-file-alt', to: '/vehiculos-documentos', permissions: ['vehicle_documents.index'] },
             { id: 'inspecciones', label: 'Inspecciones', icon: 'fa-clipboard-check', to: '/inspeccion-vehiculos', permissions: ['vehicle_inspections.index'] },
+            { id: 'contratos-alquiler', label: 'Alquiler de Vehículos', icon: 'fa-car-side', to: '/alquiler-vehiculos', permissions: ['rental_contracts.index'] },
             {
                 id: 'mantenimientos',
                 label: 'Mantenimientos',
