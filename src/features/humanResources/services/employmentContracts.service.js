@@ -14,7 +14,7 @@ class EmploymentContractsService extends BaseService {
     update(uuid, data) { return this._request('PUT', `/${uuid}`, { data }); }
     delete(uuid) { return this._request('DELETE', `/${uuid}`); }
     getProfile(uuid) { return this._request('GET', `/${uuid}/profile`); }
-    downloadPdf(uuid) { return this._request('GET', `/${uuid}/pdf`, { responseType: 'blob' }); }
+    downloadPdf(uuid) { return this._downloadPdf(`/${uuid}/pdf`, `Contrato_Laboral_${uuid}.pdf`); }
 
     async getFormOptions() {
         const fetchSafe = async (url) => {
