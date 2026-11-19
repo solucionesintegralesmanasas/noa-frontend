@@ -105,6 +105,22 @@
                         <button v-if="puedePagar && can('commercial_invoices.create')" class="btn btn-sm btn-outline-success" type="button" @click="mostrarPago = true">
                             <i class="fad fa-coins me-1" aria-hidden="true" />Registrar pago
                         </button>
+                        <button
+                            v-if="['EMITIDA_INTERNA', 'PAGADA_PARCIAL', 'VENCIDA'].includes(doc.status) && can('credit_notes.create')"
+                            class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            @click="router.push({ path: '/facturacion/notas-credito', query: { invoice_uuid: doc.uuid } })"
+                        >
+                            <i class="fad fa-file-minus me-1" aria-hidden="true" />Emitir nota crédito
+                        </button>
+                        <button
+                            v-if="['EMITIDA_INTERNA', 'PAGADA_PARCIAL', 'VENCIDA', 'PAGADA'].includes(doc.status) && can('debit_notes.create')"
+                            class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            @click="router.push({ path: '/facturacion/notas-debito', query: { invoice_uuid: doc.uuid } })"
+                        >
+                            <i class="fad fa-file-plus me-1" aria-hidden="true" />Emitir nota débito
+                        </button>
                     </template>
                     <button v-if="puedeAnular && can('commercial_invoices.update')" class="btn btn-sm btn-outline-danger" type="button" @click="anular">
                         <i class="fad fa-ban me-1" aria-hidden="true" />Anular

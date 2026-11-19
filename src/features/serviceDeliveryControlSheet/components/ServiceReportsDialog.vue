@@ -9,7 +9,7 @@
         <div class="p-1">
             <div class="alert alert-info py-2 px-3 mb-3 small d-flex align-items-center gap-2" style="border-radius: 6px;">
                 <i class="fad fa-info-circle text-primary" aria-hidden="true"></i>
-                <span>Un solo formulario: elige el tipo y completa sus campos. El PDF sale en OPE-F-006 y el Excel en filas. El mensual marca historial solo.</span>
+                <span>Un solo formulario: elige el tipo y completa sus campos. El PDF sale en OPE-F-006 y el Excel en filas. El de proyecto baja una planilla por vehículo (abiertas y cerradas).</span>
             </div>
             <label class="form-label required fw-medium" for="rep-tipo">Tipo de reporte</label>
             <PrimeSelect input-id="rep-tipo" v-model="tipo" :options="tipos" option-label="label" option-value="value" class="w-100 mb-3" :invalid="!!error" />
@@ -35,14 +35,17 @@
                     <label class="form-label" :class="{ required: tipo === 'vehiculo' }" for="rep-veh">
                         Vehículo {{ (tipo === 'mensual' || tipo === 'proyecto') ? '(opcional)' : '' }}
                     </label>
-                    <select id="rep-veh" v-model="filtros.vehicle_uuid" class="form-select form-select-sm" :disabled="tipo === 'proyecto' && (cargandoVehiculosProyecto || !filtros.project_uuid)">
-                        <option value="">
-                            {{ tipo === 'proyecto' ? 'Todos los vehículos del proyecto' : (tipo === 'mensual' ? 'Todos los vehículos' : 'Seleccione...') }}
-                        </option>
-                        <option v-for="v in vehiculosDisponibles" :key="v.uuid" :value="v.uuid">
-                            {{ v.vehicle_license_plate }}{{ v.internal_number ? ` (${v.internal_number})` : '' }}
-                        </option>
-                    </select>
+                    <PrimeSelect
+                        :input-id="'rep-veh'"
+                        v-model="filtros.vehicle_uuid"
+                        :options="vehiculosDisponibles"
+                        option-value="uuid"
+                        :option-label="(o) => `${o.vehicle_license_plate}${o.internal_number ? ' (' + o.internal_number + ')' : ''}`"
+                        placeholder="Buscar vehículo..."
+                        filter
+                        :disabled="tipo === 'proyecto' && (cargandoVehiculosProyecto || !filtros.project_uuid)"
+                        class="w-100"
+                    />
                     <span v-if="tipo === 'proyecto' && cargandoVehiculosProyecto" class="text-muted small mt-1 d-block">
                         <i class="fas fa-spinner fa-spin me-1" aria-hidden="true"></i> Cargando vehículos del proyecto...
                     </span>
@@ -215,7 +218,7 @@ const tipos = [
     { label: '3. Por conductor', value: 'conductor' },
     { label: '4. Por día', value: 'dia' },
     { label: '5. Mensual (igual que Planilla Mensual)', value: 'mensual' },
-    { label: '6. Por proyecto', value: 'proyecto' },
+    { label: '6. Por proyecto (una planilla por vehículo)', value: 'proyecto' },
 ];
 const years = computed(() => { const a = new Date().getFullYear(); return [a, a - 1, a - 2]; });
 const muestraRango = computed(() => tipo.value === 'vehiculo' || tipo.value === 'conductor' || tipo.value === 'proyecto');
@@ -237,6 +240,9 @@ const validar = () => {
     if (tipo.value === 'mensual' && (!filtros.month || !filtros.year)) return 'Elige mes y año.';
     if (tipo.value === 'proyecto') {
         if (!filtros.project_uuid) return 'Elige el proyecto.';
+        if (!cargandoVehiculosProyecto.value && vehiculosProyecto.value.length === 0) {
+            return 'El proyecto no tiene vehículos asignados.';
+        }
         if (filtros.fecha_desde && filtros.fecha_hasta) {
             const dias = (new Date(filtros.fecha_hasta) - new Date(filtros.fecha_desde)) / 86400000;
             if (dias < 0) return 'La fecha hasta no puede ser menor que desde.';
@@ -261,6 +267,13 @@ const descargar = async (formato) => {
         if (tipo.value === 'mensual') { params.month = filtros.month; params.year = filtros.year; }
         if (tipo.value === 'proyecto') {
             params.project_uuid = filtros.project_uuid;
+            // El reporte por proyecto incluye días abiertos y cerrados.
+            params.incluir_abiertos = 1;
+            // En PDF se entrega un ZIP: con vehículo elegido, una planilla por día.
+            if (formato === 'pdf') {
+                await store.downloadProjectZip(params);
+                return;
+            }
         } else if (props.project?.uuid) {
             params.project_uuid = props.project.uuid;
         }

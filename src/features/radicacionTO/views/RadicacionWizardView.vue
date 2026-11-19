@@ -144,10 +144,11 @@
                         :class="contratoAdmin ? 'btn-outline-success' : 'btn-primary'"
                         data-bs-toggle="modal"
                         data-bs-target="#modal-admin"
-                        :aria-label="contratoAdmin ? 'Ver o crear otro contrato de administración de flota' : 'Crear contrato de administración de flota'"
+                        :aria-label="contratoAdmin ? 'Actualizar las fechas del contrato de administración de flota' : 'Crear contrato de administración de flota'"
+                        @click="prepararContratoAdmin"
                       >
-                        <i class="fas" :class="contratoAdmin ? 'fa-rotate-right' : 'fa-plus'" aria-hidden="true"></i>
-                        {{ contratoAdmin ? 'Crear otro' : 'Crear contrato' }}
+                        <i class="fas" :class="contratoAdmin ? 'fa-pen' : 'fa-plus'" aria-hidden="true"></i>
+                        {{ contratoAdmin ? 'Actualizar contrato' : 'Crear contrato' }}
                       </button>
                       <button
                         v-if="puedeCrear && contratoAdmin && !contratoAdmin.firmado"
@@ -193,10 +194,11 @@
                         :class="contratoPrest ? 'btn-outline-success' : 'btn-primary'"
                         data-bs-toggle="modal"
                         data-bs-target="#modal-prest"
-                        :aria-label="contratoPrest ? 'Ver o crear otro contrato de prestación de servicios' : 'Crear contrato de prestación de servicios'"
+                        :aria-label="contratoPrest ? 'Actualizar las fechas del contrato de prestación de servicios' : 'Crear contrato de prestación de servicios'"
+                        @click="prepararContratoPrestacion"
                       >
-                        <i class="fas" :class="contratoPrest ? 'fa-rotate-right' : 'fa-plus'" aria-hidden="true"></i>
-                        {{ contratoPrest ? 'Crear otro' : 'Crear contrato' }}
+                        <i class="fas" :class="contratoPrest ? 'fa-pen' : 'fa-plus'" aria-hidden="true"></i>
+                        {{ contratoPrest ? 'Actualizar contrato' : 'Crear contrato' }}
                       </button>
                       <button
                         v-if="puedeCrear && contratoPrest && !contratoPrest.firmado"
@@ -384,12 +386,12 @@
                     <span class="noa-card-title">Datos registrados de la empresa</span>
                   </div>
                   <div class="row g-2 noa-meta">
-                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresa.razon_social || '—' }}</strong></div>
-                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresa.nit || '—' }}</div>
-                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresa.direccion || '—' }}</div>
-                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresa.telefono || '—' }}</div>
-                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresa.representante_legal || '—' }}</div>
-                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresa.correo || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Razón social:</span> <strong>{{ empresaTransporte.razon_social || '—' }}</strong></div>
+                    <div class="col-md-4"><span class="text-muted">NIT:</span> {{ empresaTransporte.nit || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Dirección:</span> {{ empresaTransporte.direccion || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Teléfono:</span> {{ empresaTransporte.telefono || '—' }}</div>
+                    <div class="col-md-8"><span class="text-muted">Representante legal:</span> {{ empresaTransporte.representante_legal || '—' }}</div>
+                    <div class="col-md-4"><span class="text-muted">Correo:</span> {{ empresaTransporte.correo || '—' }}</div>
                   </div>
                 </div>
               </div>
@@ -459,37 +461,36 @@
               </div>
 
               <div class="col-md-4">
-                <label class="form-label required noa-label" for="admin-duracion">Duración (días)</label>
+                <label class="form-label noa-label" for="admin-duracion">
+                  Duración (meses)
+                  <small class="text-muted fw-normal">(calculada)</small>
+                </label>
                 <input
                   id="admin-duracion"
                   type="number"
-                  v-model.number="formAdmin.duration"
-                  class="form-control"
-                  min="1"
-                  :class="{ 'is-invalid': erroresAdmin.duration }"
-                  :aria-invalid="!!erroresAdmin.duration"
-                  :aria-describedby="erroresAdmin.duration ? 'admin-duracion-error' : undefined"
-                />
-                <div v-if="erroresAdmin.duration" id="admin-duracion-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresAdmin.duration }}
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label noa-label" for="admin-fecha-fin">
-                  Fecha de fin
-                  <small class="text-muted fw-normal">(calculada)</small>
-                </label>
-                <DateInput
-                  id="admin-fecha-fin"
-                  v-model="formAdmin.end_date"
                   class="form-control bg-light"
                   readonly
                   aria-readonly="true"
-                  :class="{ 'is-invalid': erroresAdmin.end_date }"
+                  :value="mesesEntre(formAdmin.start_date, formAdmin.end_date)"
                 />
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label required noa-label" for="admin-fecha-fin">Fecha de fin</label>
+                <DateInput
+                  id="admin-fecha-fin"
+                  v-model="formAdmin.end_date"
+                  class="form-control"
+                  placeholder="dd/mm/aaaa"
+                  :class="{ 'is-invalid': erroresAdmin.end_date }"
+                  :aria-invalid="!!erroresAdmin.end_date"
+                  :aria-describedby="erroresAdmin.end_date ? 'admin-fecha-fin-error' : undefined"
+                />
+                <div v-if="erroresAdmin.end_date" id="admin-fecha-fin-error" class="invalid-feedback d-block" role="alert">
+                  {{ erroresAdmin.end_date }}
+                </div>
                 <div class="form-text">
-                  <i class="fas fa-circle-info me-1" aria-hidden="true"></i>Se calcula: inicio + duración
+                  <i class="fas fa-circle-info me-1" aria-hidden="true"></i>La duración se calcula: fin − inicio
                 </div>
               </div>
 
@@ -522,8 +523,8 @@
             class="btn btn-primary d-inline-flex align-items-center gap-2"
             :disabled="cargandoContratoAdmin"
           >
-            <i class="fas" :class="cargandoContratoAdmin ? 'fa-spinner fa-spin' : 'fa-plus-circle'" aria-hidden="true"></i>
-            {{ cargandoContratoAdmin ? 'Guardando…' : 'Crear contrato' }}
+            <i class="fas" :class="cargandoContratoAdmin ? 'fa-spinner fa-spin' : (contratoAdmin ? 'fa-floppy-disk' : 'fa-plus-circle')" aria-hidden="true"></i>
+            {{ cargandoContratoAdmin ? 'Guardando…' : (contratoAdmin ? 'Actualizar contrato' : 'Crear contrato') }}
           </button>
         </div>
       </div>
@@ -638,37 +639,36 @@
               </div>
 
               <div class="col-md-4">
-                <label class="form-label required noa-label" for="prest-duracion">Duración (días)</label>
+                <label class="form-label noa-label" for="prest-duracion">
+                  Duración (meses)
+                  <small class="text-muted fw-normal">(calculada)</small>
+                </label>
                 <input
                   id="prest-duracion"
                   type="number"
-                  v-model.number="formPrest.duration"
-                  class="form-control"
-                  min="1"
-                  :class="{ 'is-invalid': erroresPrest.duration }"
-                  :aria-invalid="!!erroresPrest.duration"
-                  :aria-describedby="erroresPrest.duration ? 'prest-duracion-error' : undefined"
-                />
-                <div v-if="erroresPrest.duration" id="prest-duracion-error" class="invalid-feedback d-block" role="alert">
-                  {{ erroresPrest.duration }}
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label noa-label" for="prest-fecha-fin">
-                  Fecha de fin
-                  <small class="text-muted fw-normal">(calculada)</small>
-                </label>
-                <DateInput
-                  id="prest-fecha-fin"
-                  v-model="formPrest.end_date"
                   class="form-control bg-light"
                   readonly
                   aria-readonly="true"
-                  :class="{ 'is-invalid': erroresPrest.end_date }"
+                  :value="mesesEntre(formPrest.start_date, formPrest.end_date)"
                 />
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label required noa-label" for="prest-fecha-fin">Fecha de fin</label>
+                <DateInput
+                  id="prest-fecha-fin"
+                  v-model="formPrest.end_date"
+                  class="form-control"
+                  placeholder="dd/mm/aaaa"
+                  :class="{ 'is-invalid': erroresPrest.end_date }"
+                  :aria-invalid="!!erroresPrest.end_date"
+                  :aria-describedby="erroresPrest.end_date ? 'prest-fecha-fin-error' : undefined"
+                />
+                <div v-if="erroresPrest.end_date" id="prest-fecha-fin-error" class="invalid-feedback d-block" role="alert">
+                  {{ erroresPrest.end_date }}
+                </div>
                 <div class="form-text">
-                  <i class="fas fa-circle-info me-1" aria-hidden="true"></i>Se calcula: inicio + duración
+                  <i class="fas fa-circle-info me-1" aria-hidden="true"></i>La duración se calcula: fin − inicio
                 </div>
               </div>
 
@@ -723,8 +723,8 @@
             class="btn btn-primary d-inline-flex align-items-center gap-2"
             :disabled="cargandoContratoPrest"
           >
-            <i class="fas" :class="cargandoContratoPrest ? 'fa-spinner fa-spin' : 'fa-plus-circle'" aria-hidden="true"></i>
-            {{ cargandoContratoPrest ? 'Guardando…' : 'Crear contrato' }}
+            <i class="fas" :class="cargandoContratoPrest ? 'fa-spinner fa-spin' : (contratoPrest ? 'fa-floppy-disk' : 'fa-plus-circle')" aria-hidden="true"></i>
+            {{ cargandoContratoPrest ? 'Guardando…' : (contratoPrest ? 'Actualizar contrato' : 'Crear contrato') }}
           </button>
         </div>
       </div>
@@ -836,11 +836,13 @@ import DateInput from '@/components/form/DateInput.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import RadicacionTimeline from '../components/RadicacionTimeline.vue';
 import service, { mensajeDeError } from '../services/radicacion.service.js';
-import { fechasAutomaticas, validarFechasContrato } from '../utils/fechasContrato.js';
+import { fechasAutomaticas, mesesEntre, validarFechasContrato } from '../utils/fechasContrato.js';
 import { etiquetaPaso, etiquetaTipo, normalizarLinea } from '../utils/pasosRadicacion.js';
 import { usePermissionsStore } from '@store';
 import fleetService from '../services/fleetServiceContract.service.js';
 import prestationService from '../services/serviceProvisionContract.service.js';
+import companiesService from '@/features/companies/services/companies.service.js';
+import { logger } from '@/utils/logger.js';
 import { toast } from '@/utils/toast.js';
 
 const route = useRoute();
@@ -898,6 +900,9 @@ async function guardarPaso() {
 
 const esPasoTarjeta = computed(() => pasoActual.value?.paso === 'TARJETA_DE_OPERACION');
 const empresa = computed(() => detalle.value?.empresa ?? {});
+// Empresa de transporte del expediente (registro de Empresas) para el contrato
+// de administración de flota.
+const empresaTransporte = ref({});
 const siguienteContrato = computed(() => detalle.value?.siguiente_contrato ?? '');
 const opcionesAccion = [
   { label: 'Crear (C)', value: 'C' },
@@ -967,8 +972,8 @@ const erroresPrest = reactive({});
 const cargandoContratoAdmin = ref(false);
 const cargandoContratoPrest = ref(false);
 
-watch(() => [formAdmin.start_date, formAdmin.duration], () => fechasAutomaticas(formAdmin));
-watch(() => [formPrest.start_date, formPrest.duration], () => fechasAutomaticas(formPrest));
+watch(() => [formAdmin.start_date, formAdmin.end_date], () => fechasAutomaticas(formAdmin));
+watch(() => [formPrest.start_date, formPrest.end_date], () => fechasAutomaticas(formPrest));
 
 const vaciarAdmin = () => {
   Object.assign(formAdmin, {
@@ -990,12 +995,32 @@ const vaciarPrest = () => {
 
 function volver() { router.push('/radicacion'); }
 
+/** Datos de la empresa de transporte para el modal de administración de flota. */
+async function cargarEmpresaTransporte(uuid) {
+  if (!uuid) return;
+  try {
+    const r = await companiesService.get(uuid);
+    const c = r?.data?.data ?? r?.data ?? r ?? {};
+    empresaTransporte.value = {
+      razon_social: c.business_name ?? '',
+      nit: c.document_number ?? '',
+      direccion: c.address ?? '',
+      telefono: c.phone ?? '',
+      correo: c.email ?? '',
+      representante_legal: [c.legal_representative_name, c.legal_representative_last_name].filter(Boolean).join(' '),
+    };
+  } catch (e) {
+    logger.warn('No se cargaron los datos de la empresa de transporte', { message: e?.message });
+  }
+}
+
 async function cargar() {
   cargandoDetalle.value = true;
   try {
     const r = await service.detalle(route.params.uuid);
     detalle.value = r.data?.data ?? r.data;
     hidratarPasoForm();
+    await cargarEmpresaTransporte(detalle.value?.expediente?.company_uuid);
     if (esPasoTarjeta.value) {
       for (const form of [formAdmin, formPrest]) {
         if (!form.start_date) form.start_date = hoy();
@@ -1024,14 +1049,70 @@ async function txt(origin) {
   try {
     const r = await service.generarTxt(pasoActual.value.uuid, origin);
     lote.value = r.data?.data ?? r.data;
+    descargarTxt(lote.value.content);
   } catch (e) { toast('No se pudo generar el TXT', mensajeDeError(e, 'Revise los requisitos del paso.'), 'error'); }
   finally { cargando.value = false; }
+}
+
+/** Descarga el TXT con nombre <placa>_<tipo de contrato (campo 20)>.txt */
+function descargarTxt(contenido) {
+  const lineas = String(contenido ?? '').trim().split(/\r?\n/);
+  const datos = (lineas[1] ?? '').split('|');
+  const placa = datos[11] || 'sin_placa';
+  const tipoContrato = datos[19] ?? '';
+  const nombre = `${placa}_${tipoContrato}.txt`.replace(/[\\/:*?"<>|]/g, '_');
+  const url = URL.createObjectURL(new Blob([contenido], { type: 'text/plain;charset=utf-8' }));
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombre;
+  enlace.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Carga el contrato guardado para actualizar sus fechas y datos. */
+async function prepararContratoAdmin() {
+  if (!contratoAdmin.value?.uuid) { vaciarAdmin(); return; }
+  try {
+    const r = await fleetService.get(contratoAdmin.value.uuid);
+    const c = r.data?.data ?? r.data ?? {};
+    Object.assign(formAdmin, {
+      type_of_action: c.type_of_action ?? 'C',
+      issue_date: String(c.issue_date ?? '').slice(0, 10),
+      start_date: String(c.start_date ?? '').slice(0, 10),
+      end_date: String(c.end_date ?? '').slice(0, 10),
+      duration: Number(c.duration ?? 365),
+      valuation_amount: Number(c.valuation_amount ?? 0),
+    });
+  } catch (e) {
+    logger.warn('No se cargaron los datos del contrato de administración', { message: e?.message });
+  }
+}
+
+/** Carga el contrato guardado para actualizar sus fechas y datos. */
+async function prepararContratoPrestacion() {
+  if (!contratoPrest.value?.uuid) { vaciarPrest(); return; }
+  try {
+    const r = await prestationService.get(contratoPrest.value.uuid);
+    const c = r.data?.data ?? r.data ?? {};
+    Object.assign(formPrest, {
+      type_of_action: c.type_of_action ?? 'C',
+      issue_date: String(c.issue_date ?? '').slice(0, 10),
+      start_date: String(c.start_date ?? '').slice(0, 10),
+      end_date: String(c.end_date ?? '').slice(0, 10),
+      duration: Number(c.duration ?? 365),
+      valuation_amount: Number(c.valuation_amount ?? 0),
+      coverage: c.coverage ?? 'NACIONAL',
+      object_description: c.object_description ?? '',
+    });
+  } catch (e) {
+    logger.warn('No se cargaron los datos del contrato de prestación', { message: e?.message });
+  }
 }
 
 async function crearContratoAdmin() {
   Object.keys(erroresAdmin).forEach((k) => delete erroresAdmin[k]);
   fechasAutomaticas(formAdmin);
-  const falla = validarFechasContrato(formAdmin);
+  const falla = validarFechasContrato(formAdmin, { maxMeses: 24, exigirVigente: true });
   if (Object.keys(falla).length) { Object.assign(erroresAdmin, falla); return; }
   cargandoContratoAdmin.value = true;
   try {
@@ -1048,12 +1129,17 @@ async function crearContratoAdmin() {
       duration: Number(formAdmin.duration),
       valuation_amount: Number(formAdmin.valuation_amount) || 0,
     };
-    await fleetService.create(payload);
-    toast('Contrato de administración creado', '', 'success');
+    if (contratoAdmin.value?.uuid) {
+      await fleetService.update(contratoAdmin.value.uuid, payload);
+      toast('Contrato de administración actualizado', '', 'success');
+    } else {
+      await fleetService.create(payload);
+      toast('Contrato de administración creado', '', 'success');
+    }
     cerrarModal('modal-admin');
     vaciarAdmin();
     await cargar();
-  } catch (e) { toast('No se pudo crear el contrato', mensajeDeError(e), 'error'); }
+  } catch (e) { toast('No se pudo guardar el contrato', mensajeDeError(e), 'error'); }
   finally { cargandoContratoAdmin.value = false; }
 }
 
@@ -1079,12 +1165,17 @@ async function crearContratoPrestacion() {
       coverage: formPrest.coverage.trim() || 'NACIONAL',
       object_description: formPrest.object_description.trim() || null,
     };
-    await prestationService.create(payload);
-    toast('Contrato de prestación creado', '', 'success');
+    if (contratoPrest.value?.uuid) {
+      await prestationService.update(contratoPrest.value.uuid, payload);
+      toast('Contrato de prestación actualizado', '', 'success');
+    } else {
+      await prestationService.create(payload);
+      toast('Contrato de prestación creado', '', 'success');
+    }
     cerrarModal('modal-prest');
     vaciarPrest();
     await cargar();
-  } catch (e) { toast('No se pudo crear el contrato', mensajeDeError(e), 'error'); }
+  } catch (e) { toast('No se pudo guardar el contrato', mensajeDeError(e), 'error'); }
   finally { cargandoContratoPrest.value = false; }
 }
 

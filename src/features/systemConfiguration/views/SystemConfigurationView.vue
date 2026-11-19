@@ -428,6 +428,28 @@
                                             </div>
                                         </div>
 
+                                        <div class="col-12 col-md-6">
+                                            <div
+                                                class="p-3 rounded border bg-white d-flex align-items-start gap-3 h-100 switch-card">
+                                                <div class="form-check form-switch flex-shrink-0 mt-1">
+                                                    <input class="form-check-input" type="checkbox"
+                                                        id="notify_by_telegram"
+                                                        v-model="formData.notify_by_telegram"
+                                                        :disabled="!formData.activate_notifications" />
+                                                </div>
+                                                <div>
+                                                    <label class="form-label fw-medium mb-1 cursor-pointer"
+                                                        for="notify_by_telegram">
+                                                        Notificar por Telegram
+                                                    </label>
+                                                    <p class="text-muted small mb-0">
+                                                        Envía las alertas de documentos vencidos a los chat_id
+                                                        configurados. Requiere el bot de Telegram en el servidor.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="col-12"
                                             v-if="formData.notify_by_email && formData.activate_notifications">
                                             <div class="col-12 col-md-6">
@@ -440,6 +462,45 @@
                                                 <div class="invalid-feedback"
                                                     v-if="validationErrors.notification_email">{{
                                                         validationErrors.notification_email }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12"
+                                            v-if="formData.notify_by_telegram && formData.activate_notifications">
+                                            <div class="col-12 col-md-8">
+                                                <label class="form-label required"
+                                                    for="f-notification_telegram_chat_ids">chat_id de Telegram</label>
+                                                <input id="f-notification_telegram_chat_ids"
+                                                    v-model="formData.notification_telegram_chat_ids" type="text"
+                                                    class="form-control"
+                                                    :class="{ 'is-invalid': validationErrors.notification_telegram_chat_ids }"
+                                                    :aria-invalid="!!validationErrors.notification_telegram_chat_ids"
+                                                    :aria-describedby="validationErrors.notification_telegram_chat_ids ? 'f-notification_telegram_chat_ids-error' : 'ayuda-telegram'"
+                                                    placeholder="Ej: 123456789, -987654321" />
+                                                <div class="invalid-feedback"
+                                                    v-if="validationErrors.notification_telegram_chat_ids"
+                                                    id="f-notification_telegram_chat_ids-error" role="alert">{{
+                                                        validationErrors.notification_telegram_chat_ids }}</div>
+                                                <p class="text-muted small mb-2 mt-1" id="ayuda-telegram">
+                                                    Hasta 5 chat_id separados por coma. Use el id numérico o @usuario.
+                                                    Si se deja vacío se usa el chat de respaldo del servidor.
+                                                </p>
+                                                <button type="button"
+                                                    class="btn btn-outline-primary btn-sm rounded-pill"
+                                                    :disabled="enviandoTelegram" @click="probarTelegram">
+                                                    <span v-if="enviandoTelegram"
+                                                        class="spinner-border spinner-border-sm me-1"
+                                                        aria-hidden="true"></span>
+                                                    <i v-else class="fas fa-paper-plane me-1"
+                                                        aria-hidden="true"></i>
+                                                    Enviar prueba
+                                                </button>
+                                                <button type="button"
+                                                    class="btn btn-outline-secondary btn-sm rounded-pill ms-1"
+                                                    @click="copiarEnlaceBot">
+                                                    <i class="fas fa-copy me-1" aria-hidden="true"></i>
+                                                    Copiar enlace del bot
+                                                </button>
                                             </div>
                                         </div>
 
@@ -1114,11 +1175,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useSystemConfigurationStore } from '../store/systemConfiguration.store.js';
 import systemConfigurationService from '../services/systemConfiguration.service.js';
+import { PDF_DOCUMENTOS, PDF_MODOS, normalizarPdfBranding } from '../utils/pdfBranding.js';
 import { useAuthStore } from '@/features/auth/store/auth.store.js';
 import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
 import companiesService from '@/features/companies/services/companies.service.js';
 import { usePermissionsStore } from '@/store/modules/permissions.js';
+import { useTelegram } from '@/hooks/useTelegram.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import DateInput from '@/components/form/DateInput.vue';
 import Swal from 'sweetalert2';
@@ -1149,41 +1212,6 @@ const datosEmpresa = reactive({
 });
 const erroresEmpresa = reactive({});
 const guardandoEmpresa = ref(false);
-
-// --- PRESENTACIÓN POR DOCUMENTO PDF ---
-// Claves alineadas con PdfService::PDF_CLAVES del backend.
-const PDF_DOCUMENTOS = Object.freeze([
-    { clave: 'fuec', etiqueta: 'FUEC' },
-    { clave: 'hoja_vida_vehicular', etiqueta: 'Hoja de vida vehicular' },
-    { clave: 'ficha_tecnica_vehiculo', etiqueta: 'Ficha técnica del vehículo' },
-    { clave: 'acta_entrega', etiqueta: 'Acta de entrega' },
-    { clave: 'mantenimiento', etiqueta: 'Hoja de vida de mantenimiento' },
-    { clave: 'inspeccion_preoperacional', etiqueta: 'Inspección preoperacional' },
-    { clave: 'planilla_diaria', etiqueta: 'Planilla diaria' },
-    { clave: 'planilla_mensual', etiqueta: 'Planilla mensual / historial' },
-    { clave: 'planilla_filtrada', etiqueta: 'Reporte de planillas filtradas' },
-    { clave: 'convenio_colaboracion', etiqueta: 'Convenio de colaboración' },
-    { clave: 'recibo_administracion', etiqueta: 'Recibo de administración' },
-    { clave: 'reporte_vehiculos', etiqueta: 'Reporte de vehículos' },
-    { clave: 'ficha_tecnica_tercero', etiqueta: 'Ficha técnica del tercero' },
-]);
-
-const PDF_MODOS = Object.freeze([
-    { valor: 'membrete', etiqueta: 'Hoja membretada' },
-    { valor: 'limpio', etiqueta: 'Sin nada (limpio)' },
-]);
-
-const MODOS_PDF_VALIDOS = PDF_MODOS.map((m) => m.valor);
-
-const normalizarPdfBranding = (valor) => {
-    const limpio = {};
-    if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
-        for (const doc of PDF_DOCUMENTOS) {
-            if (MODOS_PDF_VALIDOS.includes(valor[doc.clave])) limpio[doc.clave] = valor[doc.clave];
-        }
-    }
-    return limpio;
-};
 
 // --- STORES ---
 const authStore = useAuthStore();
@@ -1247,6 +1275,7 @@ const getOrFetchCompanyUuid = async () => {
 const isViewLoading = ref(true);
 const submitting = ref(false);
 const validationErrors = reactive({});
+const { enviando: enviandoTelegram, error: errorTelegram, enviarPrueba: enviarPruebaTelegram } = useTelegram();
 
 const breadcrumbs = computed(() => [
     { label: 'Configuración', to: '/settings/system-configuration' },
@@ -1268,6 +1297,8 @@ const formData = reactive({
     activate_notifications: false,
     notify_by_email: false,
     notification_email: '',
+    notify_by_telegram: false,
+    notification_telegram_chat_ids: '',
     fuec_pdf_show_signatures: true,
     fuec_pdf_show_contractor_details: true,
     fuec_pdf_show_route_details: true,
@@ -1347,6 +1378,21 @@ const validateForm = () => {
             if (!emailRegex.test(formData.notification_email)) {
                 validationErrors.notification_email = 'Ingrese un correo electrónico válido';
             }
+        }
+    }
+
+    if (formData.activate_notifications && formData.notify_by_telegram) {
+        const chatIds = String(formData.notification_telegram_chat_ids || '')
+            .split(',')
+            .map((chatId) => chatId.trim())
+            .filter(Boolean);
+
+        if (chatIds.length === 0) {
+            validationErrors.notification_telegram_chat_ids = 'Configure al menos un chat_id de Telegram';
+        } else if (chatIds.length > 5) {
+            validationErrors.notification_telegram_chat_ids = 'Puede configurar como máximo 5 chat_id de Telegram';
+        } else if (chatIds.some((chatId) => !/^(-?\d{5,20}|@[A-Za-z0-9_]{5,32})$/.test(chatId))) {
+            validationErrors.notification_telegram_chat_ids = 'Cada chat_id debe ser numérico o @usuario';
         }
     }
 
@@ -1644,6 +1690,42 @@ const uploadConfigFile = async (event, type) => {
     }
 };
 
+/**
+ * Envía un mensaje de prueba a los chat_id escritos en el formulario.
+ */
+const probarTelegram = async () => {
+    const resultado = await enviarPruebaTelegram(formData.notification_telegram_chat_ids);
+
+    if (!resultado) {
+        return toast('Telegram', errorTelegram.value || 'No se pudo enviar la prueba.', 'error');
+    }
+
+    const fallidos = resultado.fallidos?.length
+        ? ` No se pudo enviar a: ${resultado.fallidos.join(', ')}.`
+        : '';
+
+    return toast(
+        'Prueba enviada',
+        `Mensaje enviado a ${resultado.enviados?.length ?? 0} chat(s).${fallidos}`,
+        resultado.fallidos?.length ? 'warning' : 'success',
+    );
+};
+
+// Enlace fijo del bot de Telegram para compartir con los destinatarios.
+const ENLACE_BOT_TELEGRAM = 'https://t.me/noa_transportes_bot';
+
+/**
+ * Copia el enlace del bot al portapapeles para compartirlo con el destinatario.
+ */
+const copiarEnlaceBot = async () => {
+    try {
+        await navigator.clipboard.writeText(ENLACE_BOT_TELEGRAM);
+        await toast('Enlace copiado', 'Pega y comparte este enlace con el destinatario.', 'success');
+    } catch {
+        await toast('Enlace del bot', ENLACE_BOT_TELEGRAM, 'info');
+    }
+};
+
 const handleSubmit = async () => {
     if (!validateForm()) {
         const firstError = document.querySelector('.is-invalid');
@@ -1684,6 +1766,10 @@ const handleSubmit = async () => {
 
         if (!payload.activate_notifications || !payload.notify_by_email) {
             payload.notification_email = null;
+        }
+
+        if (!payload.activate_notifications || !payload.notify_by_telegram) {
+            payload.notification_telegram_chat_ids = null;
         }
 
         // Nombres de empresa propia: del textarea (uno por línea) al arreglo.
@@ -1737,6 +1823,8 @@ const handleSubmit = async () => {
                 activate_notifications: updatedConfig.activate_notifications === 1 || updatedConfig.activate_notifications === true,
                 notify_by_email: updatedConfig.notify_by_email === 1 || updatedConfig.notify_by_email === true,
                 notification_email: updatedConfig.notification_email || '',
+                notify_by_telegram: updatedConfig.notify_by_telegram === 1 || updatedConfig.notify_by_telegram === true,
+                notification_telegram_chat_ids: updatedConfig.notification_telegram_chat_ids || '',
                 fuec_pdf_show_signatures: updatedConfig.fuec_pdf_show_signatures === 1 || updatedConfig.fuec_pdf_show_signatures === true,
                 fuec_pdf_show_contractor_details: updatedConfig.fuec_pdf_show_contractor_details === 1 || updatedConfig.fuec_pdf_show_contractor_details === true,
                 fuec_pdf_show_route_details: updatedConfig.fuec_pdf_show_route_details === 1 || updatedConfig.fuec_pdf_show_route_details === true,
@@ -1880,6 +1968,8 @@ onMounted(async () => {
                     activate_notifications: data.activate_notifications === 1 || data.activate_notifications === true,
                     notify_by_email: data.notify_by_email === 1 || data.notify_by_email === true,
                     notification_email: data.notification_email || '',
+                    notify_by_telegram: data.notify_by_telegram === 1 || data.notify_by_telegram === true,
+                    notification_telegram_chat_ids: data.notification_telegram_chat_ids || '',
                     fuec_pdf_show_signatures: data.fuec_pdf_show_signatures === 1 || data.fuec_pdf_show_signatures === true || data.fuec_pdf_show_signatures === undefined,
                     fuec_pdf_show_contractor_details: data.fuec_pdf_show_contractor_details === 1 || data.fuec_pdf_show_contractor_details === true || data.fuec_pdf_show_contractor_details === undefined,
                     fuec_pdf_show_route_details: data.fuec_pdf_show_route_details === 1 || data.fuec_pdf_show_route_details === true || data.fuec_pdf_show_route_details === undefined,

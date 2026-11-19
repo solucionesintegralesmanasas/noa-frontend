@@ -145,11 +145,23 @@
                             <span v-if="inactiveAssignments.length" class="badge assignment-badge-inactive ms-1">
                                 {{ inactiveAssignments.length }} retirado{{ inactiveAssignments.length !== 1 ? 's' : '' }}
                             </span>
+                            <div class="assignment-search ms-auto">
+                                <i class="fal fa-search" aria-hidden="true"></i>
+                                <input id="f-asignaciones-busqueda" v-model="filtroAsignaciones"
+                                    type="search" placeholder="Buscar conductor o vehículo..."
+                                    class="assignment-search__input"
+                                    aria-label="Buscar conductor o vehículo" />
+                                <button v-if="filtroAsignaciones" class="assignment-search__clear" type="button"
+                                    title="Limpiar búsqueda" aria-label="Limpiar búsqueda"
+                                    @click="filtroAsignaciones = ''">
+                                    <i class="fal fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        <div v-if="project.assignments?.length" class="assignments-list">
-                            <div v-for="assignment in project.assignments" :key="assignment.uuid"
+                        <div v-if="asignacionesFiltradas.length" class="assignments-list">
+                            <div v-for="assignment in asignacionesFiltradas" :key="assignment.uuid"
                                 class="assignment-row d-flex flex-wrap align-items-center">
                                 <div class="row w-100 g-2 g-md-3 align-items-center">
                                     <!-- Conductor -->
@@ -197,7 +209,15 @@
                                     </div>
 
                                     <!-- Acciones -->
-                                    <div v-if="can('projects.update')" class="col-auto ms-auto flex-shrink-0">
+                                    <div v-if="can('projects.update')" class="col-auto ms-auto flex-shrink-0 d-flex gap-2">
+                                        <button v-if="assignment.is_active && assignment.relevo && can('service_delivery_control_sheets.update')"
+                                            type="button" class="btn btn-sm assignment-action"
+                                            aria-haspopup="dialog"
+                                            title="Aplicar relevo de turno"
+                                            @click="toggleRelevo(assignment)">
+                                            <i class="fad fa-right-left text-primary" aria-hidden="true" />
+                                            Relevo
+                                        </button>
                                         <button type="button"
                                             class="btn btn-sm assignment-action"
                                             :class="assignment.is_active ? 'assignment-action-retirar' : 'assignment-action-reactivar'"
@@ -212,9 +232,22 @@
                                         </button>
                                     </div>
                                 </div>
+
+                                <!-- Relevo de turno: modal con el conductor entrante -->
+                                <RelevoForm :visible="relevoAbiertoUuid === assignment.uuid"
+                                    :relevo="assignment.relevo" :project-uuid="project.uuid"
+                                    :vehicle-uuid="assignment.vehicle_uuid"
+                                    :vehicle-label="assignment.vehicle?.vehicle_license_plate || ''"
+                                    :candidatos="candidatosDeRelevo(assignment)"
+                                    :saving="savingRelevo" :server-error="relevoError"
+                                    @submit="submitRelevo" @update:visible="cerrarRelevo" />
                             </div>
                         </div>
-                        <p v-if="!project.assignments?.length" class="assignment-empty">
+                        <p v-else-if="project.assignments?.length" class="assignment-empty">
+                            <i class="fad fa-search me-1" aria-hidden="true" />Sin resultados para
+                            «{{ filtroAsignaciones }}».
+                        </p>
+                        <p v-else class="assignment-empty">
                             <i class="fad fa-info-circle me-1" aria-hidden="true" />Este proyecto aún no tiene conductores con vehículos asignados.
                         </p>
 
@@ -326,7 +359,7 @@
             <!-- Evidencia acumulada del proyecto -->
             <div v-if="can('service_delivery_control_sheets.index')" class="col-12 col-sm-12 col-md-12 col-lg-12">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center gap-2">
+                    <div class="card-header bg-light py-2 px-3 border-bottom d-flex flex-wrap align-items-center gap-2">
                         <i class="fad fa-folder-open text-primary" style="font-size: 14px;" aria-hidden="true"></i>
                         <h6 class="mb-0 fw-medium" style="font-size: 0.9rem;">
                             Evidencia acumulada
@@ -335,11 +368,39 @@
                                 {{ evidenciaTotal }} días · {{ evidenciaCerradas }} cerrados
                             </span>
                         </h6>
-                        <button type="button" class="btn btn-sm btn-falcon-default py-0 px-2 ms-auto"
-                            title="Abrir el listado de planillas filtrado por este proyecto"
-                            @click="irAPlanillas">
-                            <i class="fad fa-clipboard-list me-1" aria-hidden="true" />Ver en planillas
-                        </button>
+                        <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Filtrar evidencia por estado">
+                                <button type="button" class="btn btn-xs fw-semibold"
+                                    :class="filtroEstadoEvidencia === 'cerrados' ? 'btn-success text-white' : 'btn-outline-secondary'"
+                                    :aria-pressed="filtroEstadoEvidencia === 'cerrados'"
+                                    @click="filtroEstadoEvidencia = 'cerrados'">
+                                    Cerrados
+                                </button>
+                                <button type="button" class="btn btn-xs fw-semibold"
+                                    :class="filtroEstadoEvidencia === 'en_curso' ? 'btn-info text-white' : 'btn-outline-secondary'"
+                                    :aria-pressed="filtroEstadoEvidencia === 'en_curso'"
+                                    @click="filtroEstadoEvidencia = 'en_curso'">
+                                    En curso
+                                </button>
+                                <button type="button" class="btn btn-xs fw-semibold"
+                                    :class="filtroEstadoEvidencia === 'por_certificar' ? 'btn-warning text-dark' : 'btn-outline-secondary'"
+                                    :aria-pressed="filtroEstadoEvidencia === 'por_certificar'"
+                                    @click="filtroEstadoEvidencia = 'por_certificar'">
+                                    Por certificar
+                                </button>
+                                <button type="button" class="btn btn-xs fw-semibold"
+                                    :class="filtroEstadoEvidencia === 'sin_llenar' ? 'btn-danger text-white' : 'btn-outline-secondary'"
+                                    :aria-pressed="filtroEstadoEvidencia === 'sin_llenar'"
+                                    @click="filtroEstadoEvidencia = 'sin_llenar'">
+                                    Sin llenar
+                                </button>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-falcon-default py-0 px-2"
+                                title="Abrir el listado de planillas filtrado por este proyecto"
+                                @click="irAPlanillas">
+                                <i class="fad fa-clipboard-list me-1" aria-hidden="true" />Ver en planillas
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body py-2">
                         <div v-if="evidenciaLoading" class="text-center py-3">
@@ -354,28 +415,8 @@
                             <i class="fad fa-info-circle me-1" aria-hidden="true" />Este proyecto aún no tiene planillas registradas.
                         </p>
                         <div v-else>
-                            <div class="d-flex flex-wrap gap-2 my-2 small">
-                                <span class="badge badge-subtle-success">Cerrados: {{ evidenciaCerradas }}</span>
-                                <span class="badge badge-subtle-danger">En curso: {{ evidenciaEnCurso }}</span>
-                                <span v-if="diasIncompletos > 0" class="badge badge-subtle-warning"
-                                    :title="'Días con datos o firmas operativas pendientes'">
-                                    <i class="fad fa-triangle-exclamation me-1" aria-hidden="true"></i>
-                                    {{ diasIncompletos }} con evidencia incompleta
-                                </span>
-                                <span v-if="evidenciaResumen.pendiente_certificacion > 0" class="badge badge-subtle-info"
-                                    :title="'Días operativamente completos que aún esperan firma del coordinador'">
-                                    {{ evidenciaResumen.pendiente_certificacion }} por certificar
-                                </span>
-                                <span v-if="evidenciaResumen.excepciones > 0" class="badge badge-subtle-danger"
-                                    :title="'Días cerrados con una excepción aprobada'">
-                                    {{ evidenciaResumen.excepciones }} excepción(es)
-                                </span>
-                                <span v-if="evidenciaTotal > 0 && !evidenciaEnCurso && !diasIncompletos && !evidenciaResumen.pendiente_certificacion && !evidenciaResumen.excepciones" class="badge badge-subtle-success">
-                                    <i class="fad fa-circle-check me-1" aria-hidden="true"></i>Evidencia completa
-                                </span>
-                            </div>
                             <div class="table-responsive">
-                                <table class="table table-sm mb-0">
+                                <table v-if="evidenciaFiltrada.length" class="table table-sm mb-0">
                                     <thead>
                                         <tr>
                                             <th scope="col">Fecha</th>
@@ -385,9 +426,37 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <template v-for="padre in evidenciaItems" :key="padre.uuid">
-                                            <tr v-for="dia in diasDe(padre)" :key="dia.uuid || dia.service_date">
-                                                <td>{{ formatRango(dia.service_date) || '—' }}</td>
+                                        <template v-for="grupo in evidenciaFiltrada" :key="grupo.padre.uuid">
+                                            <tr class="evidencia-hoja-row">
+                                                <td colspan="4" class="py-2">
+                                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                                        <i class="fad fa-truck text-muted" aria-hidden="true"></i>
+                                                        <span class="fw-semibold font-monospace text-dark">
+                                                            {{ grupo.padre.vehicle_license_plate || 'Sin placa' }}
+                                                        </span>
+                                                        <span v-if="nombreConductor(grupo.padre)" class="text-muted small">
+                                                            <i class="fad fa-user ms-1 me-1" aria-hidden="true"></i>{{ nombreConductor(grupo.padre) }}
+                                                        </span>
+                                                        <span v-if="documentoConductor(grupo.padre)" class="text-muted small font-monospace">
+                                                            {{ documentoConductor(grupo.padre) }}
+                                                        </span>
+                                                        <span v-if="grupo.padre.estado" class="badge rounded-pill ms-auto"
+                                                            :class="claseEstadoServicio(grupo.padre.estado)" style="font-size:0.6rem;"
+                                                            :title="tituloEstadoServicio(grupo.padre)">
+                                                            {{ etiquetaEstadoServicio(grupo.padre.estado) }}
+                                                        </span>
+                                                        <button v-if="can('service_delivery_control_sheets.update')"
+                                                            type="button" class="btn btn-falcon-default btn-sm py-0 px-2"
+                                                            title="Abrir la hoja de control de este vehículo"
+                                                            :aria-label="`Abrir hoja de control de ${grupo.padre.vehicle_license_plate || 'vehículo'}`"
+                                                            @click="abrirHoja(grupo.padre.uuid)">
+                                                            <i class="fad fa-folder-open text-primary me-1" aria-hidden="true"></i>Abrir Hoja
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr v-for="dia in grupo.dias" :key="dia.uuid || dia.service_date">
+                                                <td class="ps-4">{{ formatRango(dia.service_date) || '—' }}</td>
                                                 <td>
                                                     <!-- SPEC-002 §8: estado administrativo y evidencia del día -->
                                                     <span v-if="dia.estado" class="badge rounded-pill d-block mt-1"
@@ -416,6 +485,9 @@
                                         </template>
                                     </tbody>
                                 </table>
+                                <p v-else class="text-muted small my-2">
+                                    <i class="fad fa-info-circle me-1" aria-hidden="true" />No hay días en este estado.
+                                </p>
                             </div>
                             <div class="d-flex align-items-center justify-content-between mt-2">
                                 <small class="text-muted">Página {{ evidenciaPage }} de {{ evidenciaLastPage }}</small>
@@ -452,6 +524,8 @@ import { useProjectsStore } from '../store/projects.store.js';
 import { useServiceDeliveryControlSheetStore } from '../../serviceDeliveryControlSheet/store/serviceDeliveryControlSheet.store.js';
 import serviceDeliveryControlSheetService from '../../serviceDeliveryControlSheet/services/serviceDeliveryControlSheet.service.js';
 import { formatRango, diasHijos, recorridosCount, esCerrado } from '../../serviceDeliveryControlSheet/hooks/useServiceList.js';
+import { candidatosDeRelevo as candidatosDeRelevoUtil } from '../../serviceDeliveryControlSheet/utils/relevo.js';
+import RelevoForm from '../../serviceDeliveryControlSheet/components/RelevoForm.vue';
 import { usePermissionsStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
@@ -494,6 +568,21 @@ const inactiveAssignments = computed(() =>
     (project.value?.assignments || []).filter((a) => a.is_active === false)
 );
 
+/** Búsqueda local en la lista de asignaciones (conductor, documento o vehículo). */
+const filtroAsignaciones = ref('');
+const asignacionesFiltradas = computed(() => {
+    const q = filtroAsignaciones.value.trim().toLowerCase();
+    const lista = project.value?.assignments || [];
+    if (!q) return lista;
+    return lista.filter((a) => [
+        driverName(a.conductor),
+        a.conductor?.document_number,
+        a.vehicle?.vehicle_license_plate,
+        a.vehicle?.internal_number,
+        a.vehicle?.model,
+    ].some((v) => String(v || '').toLowerCase().includes(q)));
+});
+
 const togglingUuid = ref(null);
 
 /** Retira o reactiva una asignación conductor-vehículo sin borrarla. */
@@ -512,6 +601,52 @@ const toggleAssignment = async (assignment) => {
         await toast('Error', 'No se pudo actualizar la asignación', 'error');
     } finally {
         togglingUuid.value = null;
+    }
+};
+
+// --- Relevo de turno (modal con el conductor entrante) ---
+const relevoAbiertoUuid = ref(null);
+const savingRelevo = ref(false);
+const relevoError = ref('');
+
+/** Conductores de la empresa aptos para recibir el turno del vehículo. */
+const candidatosDeRelevo = (assignment) => candidatosDeRelevoUtil(
+    store.catalogs.drivers || [],
+    assignment.third_party_uuid,
+    (conductor) => driverOptionLabel(conductor),
+);
+
+const toggleRelevo = async (assignment) => {
+    if (relevoAbiertoUuid.value === assignment.uuid) {
+        cerrarRelevo();
+        return;
+    }
+    relevoAbiertoUuid.value = assignment.uuid;
+    relevoError.value = '';
+    await loadAssignmentCatalogs();
+};
+
+const cerrarRelevo = () => {
+    relevoAbiertoUuid.value = null;
+    relevoError.value = '';
+};
+
+const submitRelevo = async (payload) => {
+    if (savingRelevo.value) return;
+    savingRelevo.value = true;
+    relevoError.value = '';
+    try {
+        await serviceDeliveryControlSheetService.relay(payload);
+        await toast('Relevo de conductor', 'El entrante tomó el turno y tiene su hoja de control del día; el anterior sigue vigente.', 'success');
+        project.value = await store.fetchProfileById(route.params.id);
+        cerrarRelevo();
+    } catch (err) {
+        const detalles = err?.response?.data?.error?.details;
+        relevoError.value = Array.isArray(detalles) && detalles[0]?.messages?.[0]
+            ? detalles[0].messages[0]
+            : (err?.response?.data?.message || 'No se pudo aplicar el relevo de conductor.');
+    } finally {
+        savingRelevo.value = false;
     }
 };
 
@@ -658,12 +793,68 @@ const evidenciaError = ref('');
 const descargandoPdf = ref(null);
 
 const projectUuid = computed(() => project.value?.uuid || route.params.id);
-const evidenciaEnCurso = computed(() => evidenciaResumen.value.en_curso || 0);
-const diasDe = (padre) => diasHijos(padre, false);
+const diasDe = (padre) => {
+    const dias = diasHijos(padre, false);
+    // Hoja de un solo día (sin hijos): la propia hoja es el día.
+    return dias.length ? dias : (padre.uuid || padre.service_date ? [padre] : []);
+};
 const recorridosDe = (dia) => recorridosCount(dia);
 
-/** Conteo global, calculado por backend en bloques; no solo la página visible. */
-const diasIncompletos = computed(() => evidenciaResumen.value.evidencia_incompleta || 0);
+/** Filtro de evidencia por estado (SPEC-002 §4). */
+const filtroEstadoEvidencia = ref('cerrados');
+
+/** Fecha de hoy en ISO (YYYY-MM-DD) para detectar días vencidos. */
+const hoyIso = (() => {
+    const hoy = new Date();
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+})();
+
+/** ¿El día ya venció (fecha anterior a hoy)? */
+const esAnteriorAHoy = (serviceDate) => {
+    const fecha = String(serviceDate || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(fecha) && fecha < hoyIso;
+};
+
+/** Clasifica un día según su estado administrativo derivado. */
+const clasificarDia = (dia) => {
+    switch (dia.estado) {
+        case 'CERTIFICADA':
+        case 'CERRADA_CON_EXCEPCION':
+            return 'cerrados';
+        case 'EN_CURSO':
+            return 'en_curso';
+        case 'CERRADA_OPERATIVAMENTE':
+            return 'por_certificar';
+        default:
+            // BORRADOR/PARCIAL: "sin llenar" solo si el día ya pasó (fecha < hoy).
+            return esAnteriorAHoy(dia.service_date) ? 'sin_llenar' : null;
+    }
+};
+
+/** Hojas con los días del estado elegido. */
+const evidenciaFiltrada = computed(() => {
+    const objetivo = filtroEstadoEvidencia.value;
+    return evidenciaItems.value
+        .map((padre) => ({
+            padre,
+            dias: diasDe(padre).filter((dia) => clasificarDia(dia) === objetivo),
+        }))
+        .filter((grupo) => grupo.dias.length > 0);
+});
+
+/** Datos del conductor de la hoja para la fila agrupada de evidencia. */
+const nombreConductor = (padre) =>
+    (padre.driver_name || padre.official_name_and_surname || '').trim();
+
+const documentoConductor = (padre) => {
+    const doc = padre.internalControl?.thirdParty?.document_number;
+    return doc ? `CC ${doc}` : '';
+};
+
+/** Abre la hoja de control de servicio del vehículo en el proyecto. */
+const abrirHoja = (uuid) => {
+    router.push(`/planilla-de-control-de-prestacion-servicios/editar/${uuid}`);
+};
 
 const cargarEvidencia = async (page = 1) => {
     evidenciaLoading.value = true;
@@ -1200,5 +1391,67 @@ dd {
     100% {
         background-position: -200% 0;
     }
+}
+
+/* ===== BUSCADOR LOCAL (asignaciones y evidencia) ===== */
+.assignment-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #94a3b8;
+    min-width: 14rem;
+}
+
+.assignment-search:focus-within {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.assignment-search__input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.78rem;
+    color: #1e293b;
+}
+
+.assignment-search__input::placeholder {
+    color: #94a3b8;
+}
+
+.assignment-search__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.6rem;
+    flex-shrink: 0;
+}
+
+.assignment-search__clear:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+/* ===== FILA AGRUPADA DE HOJA EN EVIDENCIA ===== */
+.evidencia-hoja-row {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.evidencia-hoja-row td {
+    border-bottom: none;
 }
 </style>

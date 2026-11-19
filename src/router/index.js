@@ -42,6 +42,7 @@ import { vehicleActivityReportsRoutes } from '@/features/vehicleActivityReports/
 import { vehiclesRoutes } from '@/features/vehicles/routes.js'
 import { vehicleClassesRoutes } from '@/features/vehicleClasses/routes.js'
 import { withholdingsRoutes } from '@/features/withholdings/routes.js'
+import { rentalContractsRoutes } from '@/features/rentalContracts/routes.js'
 import { authGuard } from './guards/auth.js'
 import { twoFAGuard } from './guards/2fa.js'
 import { permissionsGuard } from './guards/permissions.js'
@@ -103,6 +104,7 @@ const routes = [
   ...vehiclesRoutes,
   ...vehicleClassesRoutes,
   ...withholdingsRoutes,
+  ...rentalContractsRoutes,
   ...fuelManagementRoutes,
   ...fuelRequestsRoutes,
   {

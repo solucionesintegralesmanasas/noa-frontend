@@ -44,12 +44,16 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useEmploymentContractsStore } from '../store/employmentContracts.store.js';
+import { usePermissionsStore } from '@store';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 
 const route = useRoute();
 const router = useRouter();
 const store = useEmploymentContractsStore();
+const permissionsStore = usePermissionsStore();
 const contract = ref(null);
+
+const can = (action) => permissionsStore.can(action);
 
 const tp = computed(() => contract.value?.third_party ?? contract.value?.thirdParty ?? null);
 const employeeName = computed(() => {

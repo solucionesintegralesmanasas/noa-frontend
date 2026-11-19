@@ -120,20 +120,10 @@ export const useEmploymentContractsStore = defineStore('employmentContracts', {
         },
 
         downloadPdf(uuid) {
-            return this._run(async () => {
-                const r = await employmentContractsService.downloadPdf(uuid);
-                // Create object URL for the blob
-                const blob = new Blob([r.data], { type: 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `Contrato_Laboral_${uuid}.pdf`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                window.URL.revokeObjectURL(url);
-                return true;
-            }, 'Error al descargar el PDF');
+            return this._run(
+                () => employmentContractsService.downloadPdf(uuid),
+                'Error al descargar el PDF'
+            );
         },
 
         fetchProfileById(uuid) {

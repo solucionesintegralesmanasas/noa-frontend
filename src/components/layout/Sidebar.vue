@@ -205,6 +205,7 @@ const MENU_SECTIONS = [
             { id: 'vehiculos', label: 'Vehículos', icon: 'fa-truck-moving', to: '/vehiculos', permissions: ['vehicles.index'] },
             { id: 'documentos-vehiculares', label: 'Documentos Vehiculares', icon: 'fa-file-alt', to: '/vehiculos-documentos', permissions: ['vehicle_documents.index'] },
             { id: 'inspecciones', label: 'Inspecciones', icon: 'fa-clipboard-check', to: '/inspeccion-vehiculos', permissions: ['vehicle_inspections.index'] },
+            { id: 'contratos-alquiler', label: 'Alquiler de Vehículos', icon: 'fa-car-side', to: '/alquiler-vehiculos', permissions: ['rental_contracts.index'] },
             {
                 id: 'mantenimientos',
                 label: 'Mantenimientos',
@@ -243,10 +244,12 @@ const MENU_SECTIONS = [
                 activeWhen: (path) => {
                     if (path === '/facturacion') return true;
                     if (path.startsWith('/facturacion/facturas') || path.startsWith('/facturacion/cotizaciones')) return true;
-                    const rutasHermanas = ['/facturacion/proveedores', '/facturacion/resoluciones'];
+                    const rutasHermanas = ['/facturacion/proveedores', '/facturacion/resoluciones', '/facturacion/notas-credito', '/facturacion/notas-debito'];
                     return path.startsWith('/facturacion/') && !rutasHermanas.some((ruta) => path === ruta || path.startsWith(`${ruta}/`));
                 },
             },
+            { id: 'notas-credito', label: 'Notas Crédito', icon: 'fa-file-minus', to: '/facturacion/notas-credito', permissions: ['credit_notes.index'] },
+            { id: 'notas-debito', label: 'Notas Débito', icon: 'fa-file-plus', to: '/facturacion/notas-debito', permissions: ['debit_notes.index'] },
             { id: 'resoluciones-facturacion', label: 'Resoluciones de Facturación', icon: 'fa-scroll', to: '/facturacion/resoluciones', permissions: ['billing_resolutions.index'] },
             { id: 'proveedores-facturacion', label: 'Proveedores de Facturación', icon: 'fa-server', to: '/facturacion/proveedores', permissions: ['billing_providers.index'], exact: true },
             { id: 'cuotas-administracion', label: 'Cuotas de Administración', icon: 'fa-file-invoice-dollar', to: '/pagos-de-administracion', permissions: ['affiliate_admin_charges.index'] },

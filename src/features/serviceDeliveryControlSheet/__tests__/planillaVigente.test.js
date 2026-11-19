@@ -58,6 +58,14 @@ describe('planillaVigente', () => {
         expect(seleccionarPlanillaVigente(servicio, dias, HOY)).toBeNull();
     });
 
+    it('con relevo elige el turno abierto de hoy aunque el saliente esté cerrado', () => {
+        const servicio = { uuid: 'padre', service_date: '2026-10-30' };
+        const saliente = { uuid: 'turno-1', service_date: HOY, is_active: 0, turno: 1 };
+        const entrante = { uuid: 'turno-2', service_date: HOY, is_active: 1, turno: 2, relevo_de_uuid: 'turno-1' };
+
+        expect(seleccionarPlanillaVigente(servicio, [saliente, entrante], HOY)?.uuid).toBe('turno-2');
+    });
+
     it('la hoja única solo se opera el día de su fecha y si está abierta', () => {
         expect(seleccionarPlanillaVigente(dia(HOY), [], HOY)?.service_date).toBe(HOY);
         expect(seleccionarPlanillaVigente(dia(HOY, false), [], HOY)).toBeNull();
