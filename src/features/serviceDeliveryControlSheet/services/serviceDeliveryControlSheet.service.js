@@ -127,6 +127,15 @@ class ServiceDeliveryControlSheetService extends BaseService {
     updateBulk(data) { return this._request('PUT', '/bulk', { data }); }
 
     /**
+     * Relevo de conductor como cambio de turno: cierra el turno abierto del
+     * vehículo y abre el turno del conductor entrante, sin copiar recorridos.
+     * @param {Object} data - Payload con project_uuid, vehicle_uuid, third_party_uuid
+     *                        y opcionalmente end_time/ending_kilometer.
+     * @returns {Promise<Object>} { source, sheet }.
+     */
+    relay(data) { return this._request('POST', '/relay', { data }); }
+
+    /**
      * Obtiene las opciones de los catálogos relacionados (Empresas, Vehículos, Conductores).
      * @returns {Promise<Object>} Objeto con los arreglos de opciones.
      */
@@ -293,6 +302,21 @@ class ServiceDeliveryControlSheetService extends BaseService {
         const url = `/reports/${tipo}/${formato}${queryStr}`;
         if (formato === 'excel') return this._downloadExcel(url);
         return this._downloadPdf(url);
+    }
+
+    /**
+     * Descarga un ZIP con una planilla por vehículo del proyecto.
+     * @param {Object} params - Filtros: project_uuid, fecha_desde, fecha_hasta, incluir_abiertos.
+     */
+    downloadProjectZip(params = {}) {
+        const limpios = {};
+        for (const [k, v] of Object.entries(params ?? {})) {
+            if (v === undefined || v === null || v === '' || v === 'undefined') continue;
+            limpios[k] = v;
+        }
+        const queryParams = new URLSearchParams(limpios).toString();
+        const queryStr = queryParams ? `?${queryParams}` : '';
+        return this._downloadZip(`/reports/proyecto/zip${queryStr}`);
     }
 }
 

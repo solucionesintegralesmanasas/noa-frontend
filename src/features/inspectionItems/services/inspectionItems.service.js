@@ -14,6 +14,20 @@ class InspectionItemsService extends BaseService {
     create(data) { return this._request('POST', '', { data }); }
     update(uuid, data) { return this._request('PUT', `/${uuid}`, { data }); }
     delete(uuid) { return this._request('DELETE', `/${uuid}`); }
+
+    listCategories() { return this._request('GET', '/categories', { listAbort: false }); }
+    createCategory(data) { return this._request('POST', '/categories', { data }); }
+    updateCategory(uuid, data) { return this._request('PUT', `/categories/${uuid}`, { data }); }
+    deleteCategory(uuid) { return this._request('DELETE', `/categories/${uuid}`); }
+
+    bulkCreate(data) { return this._request('POST', '/bulk', { data }); }
+    downloadTemplate() { return this._downloadExcel('/template', 'Plantilla_Items_Inspeccion.xlsx'); }
+
+    importExcel(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this._multipart('POST', '/import', formData);
+    }
 }
 
 export default new InspectionItemsService();

@@ -37,10 +37,10 @@
                     <div class="mb-2">
                         <h6 class="fw-semibold text-warning mb-2 d-flex align-items-center gap-2">
                             <i class="fad fa-triangle-exclamation" aria-hidden="true"></i>
-                            Vehículos asignados SIN hojas de control ({{ assignedWithoutSheets.length }})
+                            Turnos asignados SIN hojas de control ({{ assignedWithoutSheets.length }})
                         </h6>
                         <p class="text-muted small mb-2">
-                            Estos vehículos están en el proyecto pero aún no tienen sus Hojas de Control de Servicio.
+                            Conductores con turno activo en el proyecto que aún no tienen su Hoja de Control de Servicio.
                         </p>
                     </div>
 
@@ -55,7 +55,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="vehicle in assignedWithoutSheets" :key="vehicle.vehicle_uuid">
+                                <tr v-for="vehicle in assignedWithoutSheets" :key="`${vehicle.vehicle_uuid}|${vehicle.third_party_uuid}`">
                                     <td>
                                         <span class="fw-medium font-monospace">{{ vehicle.vehicle?.vehicle_license_plate || '—' }}</span>
                                     </td>
@@ -77,7 +77,7 @@
                 <!-- Empty state -->
                 <div v-else class="text-center py-4">
                     <i class="fad fa-circle-check text-success fs-2 mb-2" aria-hidden="true"></i>
-                    <p class="text-muted mb-0">Todos los vehículos del proyecto ya tienen sus Hojas de Control de Servicio.</p>
+                    <p class="text-muted mb-0">Todos los turnos del proyecto ya tienen su Hoja de Control de Servicio.</p>
                 </div>
 
                 <!-- Action buttons -->
@@ -92,7 +92,7 @@
                     >
                         <span v-if="saving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
                         <i v-else class="fad fa-file-circle-plus me-1" aria-hidden="true"></i>
-                        Crear hojas para estos vehículos
+                        Crear hojas de estos turnos
                     </button>
                 </div>
             </template>
@@ -157,8 +157,9 @@ const driverName = (thirdParty) => {
 };
 
 /**
- * Crea las hojas de control pendientes para los vehículos que ya están en el
- * proyecto pero aún no tienen ninguna hoja (alta pendiente SPEC-009).
+ * Crea las hojas de control pendientes para los turnos (conductor+vehículo)
+ * activos que aún no tienen hoja (alta pendiente SPEC-009). Un vehículo puede
+ * tener varios turnos por relevo y cada uno necesita su hoja.
  * Usa el rango de vigencia del proyecto como fechas por defecto.
  */
 const crearHojas = async () => {
@@ -175,10 +176,15 @@ const crearHojas = async () => {
 
     saving.value = true;
     try {
-        const vehicleUuids = assignedWithoutSheets.value.map(v => v.vehicle_uuid);
+        const assignments = assignedWithoutSheets.value.map(v => ({
+            vehicle_uuid: v.vehicle_uuid,
+            third_party_uuid: v.third_party_uuid,
+        }));
+        const vehicleUuids = [...new Set(assignments.map(a => a.vehicle_uuid))];
         await store.createBulk({
             project_uuid: props.projectUuid,
             vehicle_uuids: vehicleUuids,
+            assignments,
             service_date: startDate,
             start_date: startDate,
             end_date: endDate,

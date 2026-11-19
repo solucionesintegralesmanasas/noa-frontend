@@ -437,6 +437,14 @@ Rediseño integral de la gestión de Hojas de Control de Servicios (PCP) en `Ser
   - Multi-día: al cambiar proyecto, fechas, tipo o pareja se propaga a las hojas hijas abiertas y se conservan las cerradas; extender el rango crea planillas diarias faltantes y recortarlo elimina solo días abiertos sin evidencia (422 si el día tiene km, horas, recorridos o firmas).
   - Listado: acciones en línea **Continuar servicio + Editar**; PDF y Firma del coordinador pasan al menú ⋮; en móvil «Editar» solo aparece con `service_delivery_control_sheets.update` y hoja abierta.
   - Pruebas: `formularioEdicion.test.js` (3) y `listadoEdicion.test.js` (2); backend `EdicionHojaControlTest` (13 casos, 154 aserciones).
+- **Relevo de conductor (2026-11-17, UI 2026-11-18):**
+  - Desde el detalle del proyecto (`ProjectsDetailView.vue`) el botón **Relevo** abre una **modal** (`components/RelevoForm.vue`) con el conductor entrante y un único botón **Aplicar relevo**. Solo se elige el conductor: no se piden hora ni kilometraje, porque el relevo no cierra la planilla ni crea turnos.
+  - **El relevo nunca cierra la planilla**: una planilla se cierra por fecha o cuando el conductor la cierra. El relevo suma al entrante al vehículo **sin retirar al saliente**: es como si el vehículo tuviera turnos y ambos conductores quedan vigentes en `project_driver_vehicles` (por eso `validarAsignaciones` ya no rechaza dos conductores en el mismo vehículo). El botón **Retirar/Reactivar** de la fila se conserva aparte.
+  - Los conductores salen del **catálogo de terceros** de la empresa (`store.catalogs.drivers`), no de las asignaciones del proyecto; si el elegido aún no está asignado, el backend le crea la asignación al vehículo.
+  - `utils/relevo.js` (`candidatosDeRelevo`, `validarRelevo`, `armarPayloadRelevo`) concentra la lógica; el servicio llama a `POST .../service-delivery-control-sheets/relay`.
+  - `planillaVigente.js` elige la planilla **abierta** del día, no el primero. La pastilla `Turno N` (`etiquetaTurno` en `useServiceList.js`) solo aparece en datos creados con el diseño anterior de turnos.
+  - Pruebas: `relevo.test.js` (6) y el caso de `planillaVigente.test.js`.
+  - **«Gestionar Asignaciones» (`ProjectAssignmentsModal.vue`) trabaja por turno**, no por coche: lista cada par conductor+vehículo activo sin hoja de control (el endpoint `assigned-without-sheets` los devuelve así) y crea las suyas enviando `assignments` al bulk. Antes se filtraba por vehículo y el turno del entrante quedaba oculto cuando el saliente ya tenía hojas.
 - **Planillas de Control (`ControlSheetsListView.vue`):**
   - Agrupación por proyectos y persistencia del orden server-side.
 

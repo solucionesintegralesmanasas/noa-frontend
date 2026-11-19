@@ -489,6 +489,12 @@
                                             <tr v-for="dia in diasHijos(data)" :key="dia.uuid" class="align-middle">
                                                 <td class="py-2 px-2 fw-semibold text-dark">
                                                     {{ formatRango(dia.service_date) || '-' }}
+                                                    <span v-if="etiquetaTurno(dia)"
+                                                        class="badge badge-subtle-info rounded-pill ms-1"
+                                                        style="font-size: 0.68rem;"
+                                                        :title="`Relevo del turno ${Number(dia.turno) - 1}`">
+                                                        {{ etiquetaTurno(dia) }}
+                                                    </span>
                                                 </td>
                                                 <td class="py-2 px-2 text-center">
                                                     <span
@@ -811,6 +817,7 @@ import {
     recorridosTexto as recorridosTextoHook,
     esCerrado,
     resumenDiasInfo,
+    etiquetaTurno,
     tieneKm,
     formatKmValor
 } from '../hooks/useServiceList.js';

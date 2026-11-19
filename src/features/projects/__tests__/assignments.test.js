@@ -60,7 +60,7 @@ describe('validación de asignaciones del formulario', () => {
         ]);
     });
 
-    it('sigue rechazando conductores y vehículos duplicados entre activos', () => {
+    it('rechaza al conductor duplicado y permite varios conductores por vehículo', () => {
         const { errores, validAssignments } = validarAsignaciones([
             { third_party_uuid: 'd1', vehicle_uuid: 'v1', is_active: true },
             { third_party_uuid: 'd1', vehicle_uuid: 'v2', is_active: true },
@@ -69,10 +69,10 @@ describe('validación de asignaciones del formulario', () => {
 
         expect(errores).toEqual([
             'Fila 2: el conductor ya fue asignado a este proyecto.',
-            'Fila 3: el vehículo ya fue asignado a este proyecto.',
         ]);
         expect(validAssignments).toEqual([
             { third_party_uuid: 'd1', vehicle_uuid: 'v1', is_active: true },
+            { third_party_uuid: 'd2', vehicle_uuid: 'v1', is_active: true },
         ]);
     });
 

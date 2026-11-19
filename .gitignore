@@ -57,3 +57,6 @@ dist/
 dist-ssr/
 # Capturas del humo de roles: solo locales (datos reales de la aplicacion)
 docs/metrics/roles-smoke/
+
+v3.zip
+.vitest/
