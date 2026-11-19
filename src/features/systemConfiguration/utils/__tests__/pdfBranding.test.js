@@ -7,6 +7,8 @@ describe('pdfBranding', () => {
 
         expect(claves).toContain('reporte_actividad_vehicular');
         expect(claves).toContain('reporte_vehiculos');
+        expect(claves).toContain('contrato_laboral');
+        expect(claves).toContain('contrato_alquiler');
         expect(new Set(claves).size).toBe(claves.length);
     });
 

@@ -17,6 +17,8 @@ export const PDF_DOCUMENTOS = Object.freeze([
     { clave: 'reporte_vehiculos', etiqueta: 'Reporte de vehículos' },
     { clave: 'reporte_actividad_vehicular', etiqueta: 'Reporte de actividad vehicular' },
     { clave: 'ficha_tecnica_tercero', etiqueta: 'Ficha técnica del tercero' },
+    { clave: 'contrato_laboral', etiqueta: 'Contrato laboral' },
+    { clave: 'contrato_alquiler', etiqueta: 'Contrato de alquiler de vehículo' },
 ]);
 
 export const PDF_MODOS = Object.freeze([
