@@ -1175,6 +1175,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useSystemConfigurationStore } from '../store/systemConfiguration.store.js';
 import systemConfigurationService from '../services/systemConfiguration.service.js';
+import { PDF_DOCUMENTOS, PDF_MODOS, normalizarPdfBranding } from '../utils/pdfBranding.js';
 import { useAuthStore } from '@/features/auth/store/auth.store.js';
 import { useUserStore } from '@/store/modules/user.js';
 import { authService } from '@/features/auth/services/auth.service.js';
@@ -1211,41 +1212,6 @@ const datosEmpresa = reactive({
 });
 const erroresEmpresa = reactive({});
 const guardandoEmpresa = ref(false);
-
-// --- PRESENTACIÓN POR DOCUMENTO PDF ---
-// Claves alineadas con PdfService::PDF_CLAVES del backend.
-const PDF_DOCUMENTOS = Object.freeze([
-    { clave: 'fuec', etiqueta: 'FUEC' },
-    { clave: 'hoja_vida_vehicular', etiqueta: 'Hoja de vida vehicular' },
-    { clave: 'ficha_tecnica_vehiculo', etiqueta: 'Ficha técnica del vehículo' },
-    { clave: 'acta_entrega', etiqueta: 'Acta de entrega' },
-    { clave: 'mantenimiento', etiqueta: 'Hoja de vida de mantenimiento' },
-    { clave: 'inspeccion_preoperacional', etiqueta: 'Inspección preoperacional' },
-    { clave: 'planilla_diaria', etiqueta: 'Planilla diaria' },
-    { clave: 'planilla_mensual', etiqueta: 'Planilla mensual / historial' },
-    { clave: 'planilla_filtrada', etiqueta: 'Reporte de planillas filtradas' },
-    { clave: 'convenio_colaboracion', etiqueta: 'Convenio de colaboración' },
-    { clave: 'recibo_administracion', etiqueta: 'Recibo de administración' },
-    { clave: 'reporte_vehiculos', etiqueta: 'Reporte de vehículos' },
-    { clave: 'ficha_tecnica_tercero', etiqueta: 'Ficha técnica del tercero' },
-]);
-
-const PDF_MODOS = Object.freeze([
-    { valor: 'membrete', etiqueta: 'Hoja membretada' },
-    { valor: 'limpio', etiqueta: 'Sin nada (limpio)' },
-]);
-
-const MODOS_PDF_VALIDOS = PDF_MODOS.map((m) => m.valor);
-
-const normalizarPdfBranding = (valor) => {
-    const limpio = {};
-    if (valor && typeof valor === 'object' && !Array.isArray(valor)) {
-        for (const doc of PDF_DOCUMENTOS) {
-            if (MODOS_PDF_VALIDOS.includes(valor[doc.clave])) limpio[doc.clave] = valor[doc.clave];
-        }
-    }
-    return limpio;
-};
 
 // --- STORES ---
 const authStore = useAuthStore();
