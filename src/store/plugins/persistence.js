@@ -2,6 +2,67 @@ import { secureStorage } from "@services/security/secure-storage.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { logger } from "@utils/logger.js";
 
+const DEBOUNCE_MS = 300;
+
+// Lista de propiedades excluidas del cifrado por store (D4)
+const OMIT_KEYS = {
+    auth: ["isHydrated"],
+    permissions: ["isHydrated", "isLoaded", "abilities"],
+    user_profile: ["isHydrated"],
+    ui: ["isHydrated", "isLoading", "isOpen", "activeTab"],
+};
+
+// Registro de escrituras pendientes con debounce por clave de persistencia
+const pendingSaves = new Map();
+
+/**
+ * Fuerza el vaciado inmediato de todas las persistencias diferidas pendientes.
+ * Se invoca automáticamente en eventos críticos (pagehide, visibilitychange, logout).
+ */
+export async function flushAllPersistence() {
+    const promises = [];
+    for (const entry of pendingSaves.values()) {
+        if (entry.timeout) {
+            clearTimeout(entry.timeout);
+            entry.timeout = null;
+            promises.push(entry.execute());
+        }
+    }
+    await Promise.all(promises);
+}
+
+/**
+ * Cancela cualquier persistencia pendiente sin escribir a disco.
+ * Usado en logout y limpieza total de sesión para evitar que escrituras tardías
+ * re-creen claves tras un secureStorage.clear().
+ */
+export function cancelPendingPersistence() {
+    for (const entry of pendingSaves.values()) {
+        if (entry.timeout) {
+            clearTimeout(entry.timeout);
+            entry.timeout = null;
+        }
+    }
+    pendingSaves.clear();
+}
+
+// Escuchadores de eventos para vaciado automático ante abandono de página o cierre de sesión
+if (typeof window !== "undefined") {
+    window.addEventListener("pagehide", () => {
+        flushAllPersistence();
+    });
+    if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                flushAllPersistence();
+            }
+        });
+    }
+    window.addEventListener("auth:unauthorized", () => {
+        flushAllPersistence();
+    });
+}
+
 // Pre-calienta la clave criptográfica en paralelo para que todos los stores
 // se beneficien del cache. Se ejecuta solo la primera vez.
 let _keyWarmed = false;
@@ -27,6 +88,21 @@ async function configurePersistence(store, key) {
         const stored = await secureStorage.getItem(key);
         if (stored) {
             store.$patch(stored);
+            if (store.$id === "permissions") {
+                const hasPermissionsOrRoles =
+                    (Array.isArray(stored.permissions) && stored.permissions.length > 0) ||
+                    (Array.isArray(stored.roles) && stored.roles.length > 0) ||
+                    (stored.user && (stored.user.roles || stored.user.permissions));
+                if (hasPermissionsOrRoles) {
+                    if (typeof store.buildAbilities === 'function') {
+                        store.buildAbilities();
+                    } else if (typeof store.setUser === 'function' && stored.user) {
+                        store.setUser(stored.user);
+                    } else {
+                        store.isLoaded = true;
+                    }
+                }
+            }
             logger.debug(`Store [${store.$id}] hidratado desde almacenamiento seguro.`);
         }
     } catch (e) {
@@ -41,14 +117,54 @@ async function configurePersistence(store, key) {
         }
     }
 
-    // Suscribirse a cambios para persistir el estado automáticamente
-    store.$subscribe(async (mutation, state) => {
+    const omitList = OMIT_KEYS[key] || ["isHydrated"];
+
+    // Suscribirse a cambios para persistir el estado automáticamente con debounce y filtrado
+    store.$subscribe((mutation, state) => {
         try {
             // Filtrar campos volátiles que no queremos persistir si existen
-            const dataToPersist = { ...state };
-            delete dataToPersist.isHydrated;
-            
-            await secureStorage.setItem(key, dataToPersist);
+            const dataToPersist = {};
+            for (const [prop, val] of Object.entries(state)) {
+                if (!omitList.includes(prop)) {
+                    dataToPersist[prop] = val;
+                }
+            }
+
+            const serialized = JSON.stringify(dataToPersist);
+            let entry = pendingSaves.get(key);
+            if (!entry) {
+                entry = {
+                    timeout: null,
+                    lastSerialized: null,
+                    execute: null,
+                };
+                pendingSaves.set(key, entry);
+            }
+
+            entry.execute = async () => {
+                try {
+                    await secureStorage.setItem(key, dataToPersist);
+                    entry.lastSerialized = serialized;
+                } catch (e) {
+                    logger.error(`Error al persistir Store [${store.$id}]:`, e);
+                }
+            };
+
+            // Si el contenido serializado no ha variado respecto a la última escritura, se cancela timeout y omite
+            if (entry.lastSerialized === serialized) {
+                if (entry.timeout) {
+                    clearTimeout(entry.timeout);
+                    entry.timeout = null;
+                }
+                return;
+            }
+
+            // Reiniciar debounce ante mutaciones rápidas consecutivas
+            if (entry.timeout) clearTimeout(entry.timeout);
+            entry.timeout = setTimeout(() => {
+                entry.timeout = null;
+                entry.execute();
+            }, DEBOUNCE_MS);
         } catch (e) {
             logger.error(`Error al persistir Store [${store.$id}]:`, e);
         }

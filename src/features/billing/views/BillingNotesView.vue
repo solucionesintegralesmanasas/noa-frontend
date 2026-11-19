@@ -4,7 +4,7 @@
         :subtitle="esCredito ? 'Ajustes que disminuyen el valor de facturas emitidas' : 'Ajustes que aumentan el valor de facturas emitidas'"
         :icon="esCredito ? 'fad fa-file-minus text-primary' : 'fad fa-file-plus text-primary'"
         :show-bg="true"
-        :loading="cargando"
+        :loading="cargandoInicial"
         :compact="true"
         :breadcrumbs="[{ label: 'Finanzas' }, { label: 'Facturación', to: '/facturacion' }, { label: esCredito ? 'Notas crédito' : 'Notas débito' }]"
     >
@@ -65,7 +65,7 @@
                         type="search"
                         placeholder="Buscar por número, factura o motivo..."
                         aria-label="Buscar notas"
-                        @keyup.enter="cargar"
+                        @keyup.enter="alBuscarInmediato"
                     />
                     <button
                         v-if="busqueda"
@@ -73,16 +73,16 @@
                         type="button"
                         title="Limpiar búsqueda"
                         aria-label="Limpiar búsqueda"
-                        @click="busqueda = ''; cargar()"
+                        @click="limpiarBusqueda"
                     >
                         <i class="fal fa-times" aria-hidden="true" />
                     </button>
                 </div>
             </div>
 
-            <span v-if="!cargando" class="noa-results">
+            <span v-if="!cargandoInicial" class="noa-results">
                 <i class="fas fa-filter" aria-hidden="true" />
-                {{ notas.length }} nota{{ notas.length !== 1 ? 's' : '' }}
+                {{ paginacion.total }} nota{{ paginacion.total !== 1 ? 's' : '' }}
             </span>
         </div>
 
@@ -91,12 +91,16 @@
                 <DataTable
                     :value="notas"
                     :loading="cargando"
+                    :lazy="true"
+                    :sort-field="sortField"
+                    :sort-order="sortOrdenPrimeVue"
                     responsiveLayout="scroll"
                     tableStyle="min-width: 52rem"
                     class="table table-sm mb-0 professional-table noa-table-fixed"
                     emptyMessage="No hay notas registradas"
+                    @sort="onSort"
                 >
-                    <Column header="Número / Fecha" style="width: 16%;">
+                    <Column header="Número / Fecha" field="issue_date" sortable style="width: 16%;">
                         <template #body="{ data }">
                             <span class="noa-cell-strong font-monospace">{{ data.note_number }}</span>
                             <div class="noa-cell-sub">{{ data.issue_date }}</div>
@@ -125,13 +129,13 @@
                         </template>
                     </Column>
 
-                    <Column header="Total" class="text-end" header-class="text-end" style="width: 13%;">
+                    <Column header="Total" field="total" sortable class="text-end" header-class="text-end" style="width: 13%;">
                         <template #body="{ data }">
                             <span class="font-monospace fw-medium">${{ formatear(data.total) }}</span>
                         </template>
                     </Column>
 
-                    <Column header="Estado" class="text-center" header-class="text-center" style="width: 12%;">
+                    <Column header="Estado" field="status" sortable class="text-center" header-class="text-center" style="width: 12%;">
                         <template #body="{ data }">
                             <span class="noa-status" :class="claseEstadoInterno(data.status)">
                                 {{ data.status }}
@@ -139,7 +143,7 @@
                         </template>
                     </Column>
 
-                    <Column header="Estado DIAN" class="text-center" header-class="text-center" style="width: 17%;">
+                    <Column header="Estado DIAN" field="electronic_status" sortable class="text-center" header-class="text-center" style="width: 17%;">
                         <template #body="{ data }">
                             <span class="noa-status" :class="estadoElectronico(data.electronic_status).clase">
                                 {{ estadoElectronico(data.electronic_status).etiqueta }}
@@ -173,6 +177,14 @@
                     </template>
                 </DataTable>
             </div>
+
+            <ListPagination
+                v-if="!cargandoInicial"
+                :page="paginacion.currentPage"
+                :per-page="paginacion.perPage"
+                :total="paginacion.total"
+                @change="alCambiarPagina"
+            />
         </div>
     </div>
 
@@ -235,25 +247,37 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-end gap-4">
-                <span>Subtotal: <strong>${{ formatear(notaDetalle.subtotal) }}</strong></span>
-                <span>Impuestos: <strong>${{ formatear(notaDetalle.total_tax) }}</strong></span>
-                <span>Total: <strong class="text-primary">${{ formatear(notaDetalle.total) }}</strong></span>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <button
+                    v-if="puedeVer"
+                    type="button"
+                    class="btn btn-outline-primary btn-sm"
+                    @click="descargarPdf(notaDetalle)"
+                >
+                    <i class="fal fa-file-pdf me-1" aria-hidden="true" />Descargar PDF
+                </button>
+                <div class="d-flex justify-content-end gap-4 ms-auto">
+                    <span>Subtotal: <strong>${{ formatear(notaDetalle.subtotal) }}</strong></span>
+                    <span>Impuestos: <strong>${{ formatear(notaDetalle.total_tax) }}</strong></span>
+                    <span>Total: <strong class="text-primary">${{ formatear(notaDetalle.total) }}</strong></span>
+                </div>
             </div>
         </div>
     </Dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import RowActions from '@/components/RowActions.vue';
+import ListPagination from '@/components/ListPagination.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
 import BillingNoteFormDialog from '../components/BillingNoteFormDialog.vue';
+import { useServerSort } from '@/hooks/useServerSort.js';
 import { usePermissionsStore } from '@store';
 import { toast } from '@/utils/toast.js';
 import { creditNotesService, debitNotesService } from '../services/billing.service.js';
@@ -269,10 +293,26 @@ const servicioActual = computed(() => (esCredito.value ? creditNotesService : de
 
 const puedeCrear = computed(() => can(esCredito.value ? 'credit_notes.create' : 'debit_notes.create'));
 const puedeActualizar = computed(() => can(esCredito.value ? 'credit_notes.update' : 'debit_notes.update'));
+const puedeVer = computed(() =>
+    can(esCredito.value ? 'credit_notes.profile' : 'debit_notes.profile')
+    || can(esCredito.value ? 'credit_notes.index' : 'debit_notes.index'),
+);
 
 const notas = ref([]);
+const cargandoInicial = ref(true);
 const cargando = ref(false);
 const busqueda = ref('');
+const paginacion = reactive({ currentPage: 1, perPage: 15, total: 0 });
+let timerBusqueda = null;
+
+const { sortField, sortOrder, sortOrdenPrimeVue, onSort, restore } = useServerSort({
+    route,
+    router,
+    onChange: () => {
+        paginacion.currentPage = 1;
+        cargar();
+    },
+});
 
 const mostrarCrear = ref(false);
 const facturaInicial = ref('');
@@ -307,16 +347,44 @@ const cargar = async () => {
     cargando.value = true;
     try {
         const res = await servicioActual.value.list({
-            per_page: 50,
+            page: paginacion.currentPage,
+            per_page: paginacion.perPage,
             search: busqueda.value.trim() || undefined,
+            sort_by: sortField.value || undefined,
+            sort_order: sortOrder.value || undefined,
         });
         const body = res?.data ?? res;
-        notas.value = body?.data ?? (Array.isArray(body) ? body : []);
+        const lista = body?.data ?? (Array.isArray(body) ? body : []);
+        notas.value = Array.isArray(lista) ? lista : [];
+        paginacion.currentPage = Number(body?.current_page ?? paginacion.currentPage) || 1;
+        paginacion.perPage = Number(body?.per_page ?? paginacion.perPage) || 15;
+        paginacion.total = Number(body?.total ?? notas.value.length) || 0;
     } catch (error) {
         await toast('Error', error?.response?.data?.message || 'No se pudieron cargar las notas.', 'error');
     } finally {
         cargando.value = false;
+        cargandoInicial.value = false;
     }
+};
+
+const alCambiarPagina = ({ page, rows }) => {
+    paginacion.currentPage = page;
+    paginacion.perPage = rows;
+    cargar();
+};
+
+const alBuscarInmediato = () => {
+    if (timerBusqueda) {
+        clearTimeout(timerBusqueda);
+        timerBusqueda = null;
+    }
+    paginacion.currentPage = 1;
+    cargar();
+};
+
+const limpiarBusqueda = () => {
+    busqueda.value = '';
+    alBuscarInmediato();
 };
 
 const irATipo = (tipo) => {
@@ -341,6 +409,14 @@ const verDetalle = async (nota) => {
         await toast('Error', error?.response?.data?.message || 'No se pudo cargar el detalle.', 'error');
     } finally {
         cargandoDetalle.value = false;
+    }
+};
+
+const descargarPdf = async (nota) => {
+    try {
+        await servicioActual.value.descargarPdf(nota.uuid, nota.note_number);
+    } catch (error) {
+        await toast('Error', error?.response?.data?.message || 'No se pudo descargar el PDF de la nota.', 'error');
     }
 };
 
@@ -372,39 +448,76 @@ const anular = async (nota) => {
 
 const accionesDe = (data) => [
     {
-        id: 'ver',
+        key: 'ver',
         label: 'Ver detalle',
-        icon: 'fal fa-eye',
+        icon: 'far fa-eye',
+        tone: 'neutral',
+        inline: true,
+        visible: puedeVer.value,
         onClick: () => verDetalle(data),
     },
     {
-        id: 'emitir',
+        key: 'pdf',
+        label: 'Descargar PDF',
+        icon: 'far fa-file-pdf',
+        tone: 'neutral',
+        inline: true,
+        visible: puedeVer.value,
+        onClick: () => descargarPdf(data),
+    },
+    {
+        key: 'emitir',
         label: 'Emitir y transmitir a DIAN',
-        icon: 'fal fa-paper-plane',
-        variant: 'primary',
+        icon: 'far fa-paper-plane',
+        tone: 'primary',
         visible: data.status === 'BORRADOR' && puedeActualizar.value,
         onClick: () => emitir(data),
     },
     {
-        id: 'anular',
+        key: 'anular',
         label: 'Anular borrador',
-        icon: 'fal fa-ban',
-        variant: 'danger',
+        icon: 'far fa-ban',
+        tone: 'danger',
         visible: data.status === 'BORRADOR' && puedeActualizar.value,
         onClick: () => anular(data),
     },
 ];
 
+watch(busqueda, () => {
+    if (timerBusqueda) clearTimeout(timerBusqueda);
+    timerBusqueda = setTimeout(() => {
+        paginacion.currentPage = 1;
+        cargar();
+    }, 300);
+});
+
 watch(tipoActual, () => {
+    if (timerBusqueda) {
+        clearTimeout(timerBusqueda);
+        timerBusqueda = null;
+    }
     busqueda.value = '';
+    paginacion.currentPage = 1;
     cargar();
 });
 
 onMounted(async () => {
+    const sortParam = route.query.sort;
+    const orderParam = route.query.order;
+    if (typeof sortParam === 'string' && sortParam) {
+        restore(sortParam, orderParam);
+    }
     await cargar();
     const inv = String(route.query?.invoice_uuid || '');
     if (inv && puedeCrear.value) {
         abrirCrear(inv);
+    }
+});
+
+onBeforeUnmount(() => {
+    if (timerBusqueda) {
+        clearTimeout(timerBusqueda);
+        timerBusqueda = null;
     }
 });
 </script>

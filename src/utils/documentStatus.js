@@ -7,7 +7,10 @@
  * listados ni badges con datos anteriores a la unificación.
  */
 
-const NORMALIZADO = { SI: 'VIGENTE', NO: 'NO VIGENTE' };
+const NORMALIZADO = Object.freeze(Object.assign(Object.create(null), {
+    SI: 'VIGENTE',
+    NO: 'NO VIGENTE',
+}));
 
 /**
  * Normaliza un estado histórico al vocabulario vigente.
@@ -15,8 +18,10 @@ const NORMALIZADO = { SI: 'VIGENTE', NO: 'NO VIGENTE' };
  * @returns {string}
  */
 export function normalizarEstadoDocumento(estado) {
-    if (estado === null || estado === undefined) return '';
-    return NORMALIZADO[estado] ?? estado;
+    if (estado === null || estado === undefined || typeof estado === 'symbol') return '';
+    if (typeof estado === 'object') return '';
+    const clave = String(estado).trim().toUpperCase();
+    return NORMALIZADO[clave] ?? String(estado);
 }
 
 /**

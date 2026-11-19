@@ -25,9 +25,14 @@ export const dateUtils = {
      * Formatea fecha al estándar del ERP
      */
     format: (date, formatStr = "DD/MM/YYYY") => {
-        if (!date) return "-";
-        const m = dayjs(date);
-        return m.isValid() ? m.format(formatStr) : "-";
+        if (!date || (typeof date === 'number' && !Number.isFinite(date))) return "-";
+        const safeFormat = typeof formatStr === 'string' && formatStr ? formatStr : "DD/MM/YYYY";
+        try {
+            const m = dayjs(date);
+            return m.isValid() ? m.format(safeFormat) : "-";
+        } catch {
+            return "-";
+        }
     },
 
     /**
@@ -56,8 +61,11 @@ export const dateUtils = {
  * @returns {string|null}
  */
 export function parsearFechaFlexible(texto) {
-    if (texto === null || texto === undefined) return null;
-    // Solo importa la parte de fecha: recorta hora ("... 00:00:00") e ISO con T.
+    if (texto === null || texto === undefined || typeof texto === 'symbol') return null;
+    if (typeof texto === 'object' && !(texto instanceof Date)) return null;
+    if (texto instanceof Date) {
+        return Number.isNaN(texto.getTime()) ? null : dayjs(texto).format('YYYY-MM-DD');
+    }
     const limpio = String(texto).trim().split(/\s+/)[0].split('T')[0];
     if (!limpio) return null;
     const formatos = [

@@ -27,17 +27,46 @@ export function isCanceledError(error) {
 }
 
 export class BaseService {
-    constructor({ resourcePath, tenantId = null, metadata = {} }) {
-        this.resourcePath = resourcePath.replace(/^\/+/, '').replace(/\/+$/, '');
+    constructor({ resourcePath = '', tenantId = null, metadata = {} } = {}) {
+        const path = typeof resourcePath === 'string' ? resourcePath : '';
+        this.resourcePath = path.replace(/^\/+/, '').replace(/\/+$/, '');
         this.tenantId = tenantId;
-        this.metadata = { module: "api", resource: resourcePath, ...metadata };
+        this.metadata = { module: "api", resource: this.resourcePath, ...metadata };
         this._listAbortController = null;
     }
 
     _getInstance() {
-        return this.tenantId ? apiClient.forTenant(this.tenantId) : apiClient.global;
-    }
+        const instancia = apiClient.global;
+        if (!this.tenantId) return instancia;
 
+        // Empresa explícita del servicio: viaja como cabecera por petición (sin instancias Axios cacheadas).
+        const tenantId = this.tenantId;
+        return new Proxy(instancia, {
+            apply(target, thisArg, args) {
+                const cfg = args[0] || {};
+                const headers = { "X-Company-UUID": tenantId, ...(cfg.headers || {}) };
+                return Reflect.apply(target, thisArg, [{ ...cfg, headers }]);
+            },
+            get(target, prop, receiver) {
+                const orig = Reflect.get(target, prop, receiver);
+                if (typeof orig === 'function') {
+                    if (['get', 'delete', 'head', 'options'].includes(prop)) {
+                        return (url, cfg = {}) => orig.call(target, url, {
+                            ...cfg,
+                            headers: { "X-Company-UUID": tenantId, ...(cfg.headers || {}) }
+                        });
+                    }
+                    if (['post', 'put', 'patch'].includes(prop)) {
+                        return (url, data, cfg = {}) => orig.call(target, url, data, {
+                            ...cfg,
+                            headers: { "X-Company-UUID": tenantId, ...(cfg.headers || {}) }
+                        });
+                    }
+                }
+                return orig;
+            }
+        });
+    }
     /**
      * Obtiene el contexto del usuario actual (Empresa y Tercero) 
      * validando si es SUPERADMIN (retorna null para omitir filtros).
@@ -160,6 +189,7 @@ export class BaseService {
     _toFormData(data, { methodOverride } = {}) {
         const form = new FormData();
         if (methodOverride) form.append("_method", methodOverride);
+        if (!data || typeof data !== 'object') return form;
 
         for (const [key, value] of Object.entries(data)) {
             if (value == null) continue;
@@ -192,7 +222,7 @@ export class BaseService {
      * Extrae el nombre de archivo del encabezado Content-Disposition.
      */
     _fileNameFromDisposition(disposition) {
-        if (!disposition) return null;
+        if (!disposition || typeof disposition !== 'string') return null;
         const starMatch = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition);
         if (starMatch?.[1]) {
             try { return decodeURIComponent(starMatch[1].trim().replace(/^"|"$/g, '')); } catch { /* usa respaldo */ }

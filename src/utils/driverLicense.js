@@ -8,13 +8,17 @@
 export function elegirLicencia(licenses) {
     if (!Array.isArray(licenses) || licenses.length === 0) return null;
 
+    const toSafeString = (v) => (v == null || typeof v === 'symbol' || (typeof v === 'object' && !(v instanceof Date)) ? '' : String(v));
+
     const esActiva = (l) => {
-        if (l?.status === 1 || l?.status === true) return true;
-        return String(l?.status ?? '').trim().toUpperCase() === 'ACTIVA';
+        if (!l || typeof l !== 'object') return false;
+        if (l.status === 1 || l.status === true) return true;
+        return toSafeString(l.status).trim().toUpperCase() === 'ACTIVA';
     };
 
     const vence = (l) => {
-        const f = String(l?.expiration_date ?? '').slice(0, 10);
+        if (!l || typeof l !== 'object') return -Infinity;
+        const f = toSafeString(l.expiration_date).slice(0, 10);
         const t = Date.parse(f);
         return Number.isNaN(t) ? -Infinity : t;
     };
@@ -33,7 +37,11 @@ export function elegirLicencia(licenses) {
 export function afiliadoDeLicencias(licenses, catalogoAfiliados = []) {
     if (!Array.isArray(licenses) || licenses.length === 0) return null;
 
-    const afiliados = new Set((catalogoAfiliados ?? []).map((a) => a?.uuid).filter(Boolean));
+    const listaAfiliados = Array.isArray(catalogoAfiliados)
+        ? catalogoAfiliados
+        : (Array.isArray(catalogoAfiliados?.data) ? catalogoAfiliados.data : []);
+
+    const afiliados = new Set(listaAfiliados.map((a) => a?.uuid).filter(Boolean));
     const uuidDe = (owner) => owner?.third_party_uuid ?? owner?.thirdPartyUuid ?? null;
 
     const elegida = elegirLicencia(licenses);
@@ -41,6 +49,7 @@ export function afiliadoDeLicencias(licenses, catalogoAfiliados = []) {
     if (uuidElegida && afiliados.has(uuidElegida)) return uuidElegida;
 
     for (const licencia of licenses) {
+        if (!licencia || typeof licencia !== 'object') continue;
         const uuid = uuidDe(licencia.owner_driver ?? licencia.ownerDriver);
         if (uuid && afiliados.has(uuid)) return uuid;
     }

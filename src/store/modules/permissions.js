@@ -9,15 +9,27 @@ import { permissionsPersistencePlugin } from "@store/plugins/persistence.js";
  * y 'SUPERADMIN', 'super-admin' y 'super_admin' coincidan siempre.
  */
 export const toCanonicalRole = (v) => {
-    if (!v) return '';
-    const clean = String(v).toUpperCase().replace(/[-_\s]+/g, '');
+    if (!v || typeof v === 'symbol') return '';
+    let str = '';
+    try {
+        if (typeof v === 'string') str = v;
+        else if (v && typeof v === 'object') {
+            str = typeof v.name === 'string' ? v.name : '';
+        } else {
+            str = String(v);
+        }
+    } catch {
+        return '';
+    }
+    if (!str || typeof str !== 'string') return '';
+    const clean = str.toUpperCase().replace(/[-_\s]+/g, '');
     if (clean === 'ADMINISTRADOR' || clean === 'ADMIN' || clean === 'ADMINEMPRESA') {
         return 'ADMIN_EMPRESA';
     }
     if (clean === 'SUPERADMIN' || clean === 'SUPER') {
         return 'SUPERADMIN';
     }
-    return String(v).toUpperCase().replace(/[-\s]+/g, '_');
+    return str.toUpperCase().replace(/[-\s]+/g, '_');
 };
 
 export const usePermissionsStore = defineStore("permissions", {
@@ -32,7 +44,16 @@ export const usePermissionsStore = defineStore("permissions", {
 
     actions: {
         setUser(user) {
-            this.user = user;
+            this.user = user || null;
+            if (!user) {
+                this.roles = [];
+                this.permissions = [];
+                this.abilities = {};
+                rbac.clearUser();
+                this.isLoaded = false;
+                return;
+            }
+
             this.roles = Array.isArray(user.roles) ? user.roles : Object.values(user.roles || {});
             this.permissions = Array.isArray(user.permissions) ? user.permissions : Object.values(user.permissions || {});
 
@@ -41,9 +62,18 @@ export const usePermissionsStore = defineStore("permissions", {
             this.isLoaded = true;
         },
 
+        buildAbilities() {
+            this.roles = Array.isArray(this.roles) ? this.roles : Object.values(this.roles || {});
+            this.permissions = Array.isArray(this.permissions) ? this.permissions : Object.values(this.permissions || {});
+
+            rbac.setUser({ ...(this.user || {}), roles: this.roles, permissions: this.permissions });
+            this.abilities = defineAbilities({ roles: this.roles, permissions: this.permissions });
+            this.isLoaded = true;
+        },
+
         async load() {
             if (this.isLoaded) return;
-            const { authService } = await import("@services/api/auth.service.js");
+            const { authService } = await import("@/features/auth/services/auth.service.js");
             const { user } = await authService.getProfile();
             this.setUser(user);
         },

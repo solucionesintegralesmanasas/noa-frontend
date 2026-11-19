@@ -192,7 +192,7 @@ onMounted(async () => {
     try {
         const authStore = useAuthStore();
         const tenantId = authStore.currentTenant?.id;
-        const instance = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+        const instance = apiClient.global;
 
         const permissionsStore = usePermissionsStore();
         const userStore = useUserStore();
@@ -242,9 +242,7 @@ const loadForecast = async () => {
     
     isLoading.value = true;
     try {
-        const authStore = useAuthStore();
-        const tenantId = authStore.currentTenant?.id;
-        const instance = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+        const instance = apiClient.global;
 
         const response = await instance.get(`/fleet-management/vehicles/${selectedVehicleUuid.value}/maintenance-forecast`);
         forecastData.value = response.data.data;

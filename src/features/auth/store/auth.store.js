@@ -5,7 +5,7 @@ import { usePermissionsStore } from "@store/modules/permissions.js";
 import { logger } from "@utils/logger.js";
 import { tokenManager } from "@services/security/token-manager.js";
 import { secureStorage } from "@services/security/secure-storage.js";
-import { authPersistencePlugin } from "@store/plugins/persistence.js";
+import { authPersistencePlugin, flushAllPersistence, cancelPendingPersistence } from "@store/plugins/persistence.js";
 
 /** Router inyectado desde plugins.js para evitar dependencia circular */
 let _router = null;
@@ -60,6 +60,9 @@ export const useAuthStore = defineStore("auth", {
                     role: user.role || "user",
                 };
 
+                // Garantizar persistencia inmediata de la sesión en disco (sin esperar debounce)
+                await flushAllPersistence();
+
                 return user;
             } catch (e) {
                 logger.error("Login failed", { error: e.message });
@@ -86,6 +89,9 @@ export const useAuthStore = defineStore("auth", {
                     name: user.tenantName || "Default",
                     role: user.role || "user",
                 };
+
+                // Garantizar persistencia inmediata de la sesión en disco (sin esperar debounce)
+                await flushAllPersistence();
 
                 logger.info("2FA verificado y sesión iniciada");
                 return user;
@@ -149,7 +155,8 @@ export const useAuthStore = defineStore("auth", {
                     authService.logout().catch(() => {});
                 }
 
-                // 3. Limpiar estado reactivo en memoria
+                // 3. Limpiar estado reactivo en memoria cancelando persistencias diferidas
+                cancelPendingPersistence();
                 this.$reset();
                 useUserStore().clear();
                 usePermissionsStore().clear();
@@ -157,6 +164,7 @@ export const useAuthStore = defineStore("auth", {
                 // 4. Limpiar almacenamiento físico garantizado (después de que Pinia intente reescribir estados vacíos)
                 setTimeout(async () => {
                     try {
+                        cancelPendingPersistence();
                         await tokenManager.clearTokens();
                         await secureStorage.clear();
                     } catch (e) {

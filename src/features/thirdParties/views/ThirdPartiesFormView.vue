@@ -733,6 +733,7 @@ const formData = reactive({
     tax_regime: '',
     tax_responsibility_uuid: '',
     company_uuid: '',
+    license_uuid: null,
     license_number: null,
     license_category: null,
     license_issue_date: null,
@@ -1330,6 +1331,7 @@ onMounted(async () => {
                         const licencia = elegirLicencia(licencias);
                         if (licencia) {
                             licenciaCargada.value = true;
+                            formData.license_uuid = licencia.uuid ?? null;
                             formData.license_number = licencia.number ?? null;
                             formData.license_category = licencia.category ?? null;
                             formData.license_issue_date = licencia.issue_date ? String(licencia.issue_date).slice(0, 10) : null;

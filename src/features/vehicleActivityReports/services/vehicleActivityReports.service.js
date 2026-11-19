@@ -68,16 +68,17 @@ class VehicleActivityReportsService extends BaseService {
 
     async downloadExcel(params = {}) {
         const qs = new URLSearchParams(this._cleanParams(params)).toString();
-        return this._downloadExcel(qs ? `/${this.resourcePath}/excel?${qs}` : `/${this.resourcePath}/excel`, 'Reporte_Actividad_Vehicular.xlsx');
+        return this._downloadExcel(qs ? `/excel?${qs}` : '/excel', 'Reporte_Actividad_Vehicular.xlsx');
     }
 
     async downloadPdf(params = {}) {
         const qs = new URLSearchParams(this._cleanParams(params)).toString();
-        return this._downloadPdf(qs ? `/${this.resourcePath}/pdf?${qs}` : `/${this.resourcePath}/pdf`, 'Reporte_Actividad_Vehicular.pdf');
+        return this._downloadPdf(qs ? `/pdf?${qs}` : '/pdf', 'Reporte_Actividad_Vehicular.pdf');
     }
 
     /**
      * Catálogos de los filtros: vehículos y proyectos de la empresa.
+     * Solo consulta los que el usuario tiene permiso de ver (Principio #7: Permisos primero).
      */
     async getCatalogos() {
         const fetchSafe = async (url) => {
@@ -91,10 +92,15 @@ class VehicleActivityReportsService extends BaseService {
             }
         };
 
-        const [vehiculos, proyectos] = await Promise.all([
-            fetchSafe('fleet-management/vehicles/list'),
-            fetchSafe('projects/list'),
-        ]);
+        const { usePermissionsStore } = await import('@store');
+        const permissionsStore = usePermissionsStore();
+
+        const promises = [
+            permissionsStore.can('vehicles.index') ? fetchSafe('fleet-management/vehicles/list') : Promise.resolve([]),
+            permissionsStore.can('projects.index') ? fetchSafe('projects/list') : Promise.resolve([]),
+        ];
+
+        const [vehiculos, proyectos] = await Promise.all(promises);
 
         return {
             vehiculos: formatVehicleList(vehiculos),

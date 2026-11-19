@@ -503,7 +503,6 @@ import { useTable } from '@/hooks/useTable.js';
 import { useTableActions } from '@/hooks/useTableActions.js';
 import { useServerSort } from '@/hooks/useServerSort.js';
 import VehicleInspectionsService from '../services/vehicleInspections.service.js';
-import { useAuthStore } from '@/store/modules/auth.js';
 import apiClient from '@/services/api/client.js';
 import BasePageHeader from '@/components/BasePageHeader.vue';
 import NoaTableSpinner from '@/components/NoaTableSpinner.vue';
@@ -669,8 +668,7 @@ const openSignaturePad = async (data) => {
     sigLoadingDetail.value = true;
     sigDetail.value = null;
     try {
-        const tenantId = useAuthStore().currentTenant?.id;
-        const instance = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+        const instance = apiClient.global;
         const response = await instance.get(`/fleet-management/vehicle-inspections/${data.uuid}`);
         sigDetail.value = response.data.data;
         if (!sigDetail.value.has_coordinator_signature) {
@@ -710,8 +708,7 @@ const onSignatureSaved = async (signatureData) => {
 
     // Refrescar estado real desde el backend
     try {
-        const tenantId = useAuthStore().currentTenant?.id;
-        const instance = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+        const instance = apiClient.global;
         const response = await instance.get(`/fleet-management/vehicle-inspections/${selectedInspectionForSignature.value.uuid}`);
         
         // Preserve the intelligently selected role if possible
@@ -755,8 +752,7 @@ const generatePublicSignLink = async (uuid) => {
             }
         });
 
-        const tenantId = useAuthStore().currentTenant?.id;
-        const instance = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+        const instance = apiClient.global;
 
         const response = await instance.post(`/fleet-management/vehicle-inspections/${uuid}/generate-sign-url`);
         const publicUrl = response.data.data.url;

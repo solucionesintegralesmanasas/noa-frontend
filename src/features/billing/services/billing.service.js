@@ -75,6 +75,9 @@ class CommercialInvoicesService extends BillingApiService {
 class NotasService extends BillingApiService {
     emitir(uuid) { return this._request('POST', `/${uuid}/emitir`); }
     anular(uuid) { return this._request('POST', `/${uuid}/anular`); }
+    descargarPdf(uuid, numero) {
+        return this._downloadPdf(`/${uuid}/pdf`, `Nota_${numero || uuid}.pdf`);
+    }
 }
 
 export const billingService = new CommercialInvoicesService();

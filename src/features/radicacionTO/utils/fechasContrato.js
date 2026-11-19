@@ -8,18 +8,59 @@
  */
 
 /**
- * Parte una fecha ISO (yyyy-mm-dd) en números, sin pasar por `new Date(iso)`,
- * que interpreta la cadena como UTC y desplaza el día según la zona horaria.
+ * Convierte un valor de entrada a cadena ISO segura sin lanzar errores ante
+ * `Symbol`, `Object.create(null)` u objetos hostiles.
  *
- * @param {string} iso Fecha en formato yyyy-mm-dd.
+ * @param {unknown} valor Entrada a normalizar.
+ * @returns {string} Cadena o vacío si no es convertible de forma segura.
+ */
+function textoFechaSeguro(valor) {
+  if (!valor || typeof valor === 'symbol') return '';
+  try {
+    const str = typeof valor === 'string' ? valor : String(valor);
+    return str.length <= 64 ? str : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Parte una fecha ISO (yyyy-mm-dd) en números, verificando que exista en el
+ * calendario, sin pasar por `new Date(iso)` (que interpreta UTC y desplaza el día).
+ *
+ * @param {unknown} iso Fecha en formato yyyy-mm-dd.
  * @returns {[number, number, number]|null} [año, mes, día] o `null` si no es válida.
  */
 function partesIso(iso) {
-  const partes = String(iso).split('-').map(Number);
-  if (partes.length !== 3 || partes.some(Number.isNaN)) return null;
+  const str = textoFechaSeguro(iso);
+  if (!str) return null;
+  const partes = str.split('-').map(Number);
+  if (partes.length !== 3 || partes.some((n) => !Number.isInteger(n))) return null;
   const [yyyy, mm, dd] = partes;
-  if (!yyyy || !mm || !dd) return null;
+  if (!yyyy || !mm || !dd || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const fecha = new Date(yyyy, mm - 1, dd);
+  if (
+    Number.isNaN(fecha.getTime())
+    || fecha.getFullYear() !== yyyy
+    || fecha.getMonth() !== mm - 1
+    || fecha.getDate() !== dd
+  ) {
+    return null;
+  }
   return [yyyy, mm, dd];
+}
+
+/**
+ * Formatea una instancia Date local a `yyyy-mm-dd`.
+ *
+ * @param {Date} fecha Fecha válida.
+ * @returns {string} Cadena ISO.
+ */
+function formatearIso(fecha) {
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
 
 /**
@@ -47,12 +88,39 @@ export function diasEntre(desde, hasta) {
  * @returns {number} Meses completos; 0 si alguna fecha no es válida.
  */
 export function mesesEntre(desde, hasta) {
-  if (!partesIso(desde) || !partesIso(hasta)) return 0;
-  const [anioA, mesA] = partesIso(desde);
-  const [anioB, mesB] = partesIso(hasta);
+  const a = partesIso(desde);
+  const b = partesIso(hasta);
+  if (!a || !b) return 0;
+  const [anioA, mesA] = a;
+  const [anioB, mesB] = b;
   let meses = (anioB - anioA) * 12 + (mesB - mesA);
-  if (sumarMeses(desde, meses) > hasta) meses -= 1;
+  const hastaStr = textoFechaSeguro(hasta);
+  if (sumarMeses(desde, meses) > hastaStr) meses -= 1;
   return Math.max(0, meses);
+}
+
+/**
+ * Suma días a una fecha ISO sin desplazamientos de zona horaria.
+ *
+ * @param {string} iso Fecha de inicio en formato yyyy-mm-dd.
+ * @param {number} dias Días a sumar.
+ * @returns {string} Fecha resultante en yyyy-mm-dd, o cadena vacía si la entrada no es válida.
+ */
+export function sumarDias(iso, dias) {
+  const partes = partesIso(iso);
+  if (!partes) return '';
+  let diasNum = NaN;
+  try {
+    if (typeof dias !== 'symbol') diasNum = Number(dias);
+  } catch {
+    return '';
+  }
+  if (!Number.isFinite(diasNum)) return '';
+  const [yyyy, mm, dd] = partes;
+  const fecha = new Date(yyyy, mm - 1, dd);
+  fecha.setDate(fecha.getDate() + Math.trunc(diasNum));
+  if (Number.isNaN(fecha.getTime())) return '';
+  return formatearIso(fecha);
 }
 
 /**
@@ -66,14 +134,19 @@ export function mesesEntre(desde, hasta) {
 export function sumarMeses(iso, meses) {
   const partes = partesIso(iso);
   if (!partes) return '';
+  let mesesNum = NaN;
+  try {
+    if (typeof meses !== 'symbol') mesesNum = Number(meses);
+  } catch {
+    return '';
+  }
+  if (!Number.isFinite(mesesNum)) return '';
   const [yyyy, mm, dd] = partes;
-  const fecha = new Date(yyyy, mm - 1 + Number(meses), 1);
+  const fecha = new Date(yyyy, mm - 1 + Math.trunc(mesesNum), 1);
+  if (Number.isNaN(fecha.getTime())) return '';
   const ultimoDia = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
   fecha.setDate(Math.min(dd, ultimoDia));
-  const anio = fecha.getFullYear();
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  return `${anio}-${mes}-${dia}`;
+  return formatearIso(fecha);
 }
 
 /**
@@ -85,11 +158,20 @@ export function sumarMeses(iso, meses) {
  * @returns {object} El mismo formulario, ya normalizado.
  */
 export function fechasAutomaticas(form) {
-  if (!form.issue_date && form.start_date) form.issue_date = form.start_date;
-  form.duration = form.start_date && form.end_date
-    ? diasEntre(form.start_date, form.end_date)
-    : 0;
-  return form;
+  if (!form || typeof form !== 'object') return form;
+  try {
+    const start = textoFechaSeguro(form.start_date);
+    const end = textoFechaSeguro(form.end_date);
+    if (!form.issue_date && start) {
+      try { form.issue_date = start; } catch { /* objeto congelado */ }
+    }
+    try {
+      form.duration = start && end ? diasEntre(start, end) : 0;
+    } catch { /* objeto congelado */ }
+    return form;
+  } catch {
+    return form;
+  }
 }
 
 /**
@@ -102,28 +184,41 @@ export function fechasAutomaticas(form) {
  * @param {boolean} [opciones.exigirVigente] Exige que la fecha de fin no esté vencida.
  * @returns {object} Mapa de campo a mensaje; vacío si el formulario es válido.
  */
-export function validarFechasContrato(form, { maxMeses = 0, exigirVigente = false } = {}) {
-  const errores = {};
-  // El número de contrato ya no se captura: lo asigna el consecutivo del backend.
-  if (!form.issue_date) errores.issue_date = 'La fecha de emisión es obligatoria.';
-  if (!form.start_date) errores.start_date = 'La fecha de inicio es obligatoria.';
-  if (!form.end_date) {
-    errores.end_date = 'La fecha de fin es obligatoria.';
-  } else if (form.end_date <= form.start_date) {
-    errores.end_date = 'La fecha de fin debe ser posterior a la fecha de inicio.';
-  } else if (maxMeses > 0) {
-    const limite = sumarMeses(form.start_date, maxMeses);
-    if (limite && form.end_date > limite) {
-      errores.end_date = `El contrato no puede superar ${maxMeses} meses (${maxMeses / 12} años).`;
-    }
-  }
+export function validarFechasContrato(form, opciones = {}) {
+  if (!form || typeof form !== 'object') return { general: 'Formulario inválido.' };
+  const opts = opciones && typeof opciones === 'object' ? opciones : {};
+  const maxMeses = typeof opts.maxMeses === 'number' && Number.isFinite(opts.maxMeses) ? opts.maxMeses : 0;
+  const exigirVigente = Boolean(opts.exigirVigente);
 
-  if (exigirVigente && !errores.end_date && form.end_date) {
-    const hoy = new Date();
-    const hoyIso = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-    if (form.end_date < hoyIso) {
-      errores.end_date = 'El contrato debe estar vigente: la fecha de fin no puede ser anterior a hoy.';
+  const errores = {};
+  try {
+    const issueDate = textoFechaSeguro(form.issue_date);
+    const startDate = textoFechaSeguro(form.start_date);
+    const endDate = textoFechaSeguro(form.end_date);
+
+    // El número de contrato ya no se captura: lo asigna el consecutivo del backend.
+    if (!issueDate) errores.issue_date = 'La fecha de emisión es obligatoria.';
+    if (!startDate) errores.start_date = 'La fecha de inicio es obligatoria.';
+    if (!endDate) {
+      errores.end_date = 'La fecha de fin es obligatoria.';
+    } else if (startDate && endDate <= startDate) {
+      errores.end_date = 'La fecha de fin debe ser posterior a la fecha de inicio.';
+    } else if (maxMeses > 0 && startDate) {
+      const limite = sumarMeses(startDate, maxMeses);
+      if (limite && endDate > limite) {
+        errores.end_date = `El contrato no puede superar ${maxMeses} meses (${maxMeses / 12} años).`;
+      }
     }
+
+    if (exigirVigente && !errores.end_date && endDate) {
+      const hoy = new Date();
+      const hoyIso = formatearIso(hoy);
+      if (endDate < hoyIso) {
+        errores.end_date = 'El contrato debe estar vigente: la fecha de fin no puede ser anterior a hoy.';
+      }
+    }
+  } catch {
+    return { general: 'Formulario inválido.' };
   }
 
   return errores;

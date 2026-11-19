@@ -42,8 +42,9 @@ export function asignacionesActivas(detalle, projectUuid) {
 function opcionesUnicas(asignaciones, campo, armar) {
     const vistos = new Set();
     const opciones = [];
+    const lista = Array.isArray(asignaciones) ? asignaciones : [];
 
-    for (const asignacion of asignaciones) {
+    for (const asignacion of lista) {
         const uuid = asignacion?.[campo];
         if (!uuid || vistos.has(uuid)) continue;
         vistos.add(uuid);
@@ -61,9 +62,9 @@ function opcionesUnicas(asignaciones, campo, armar) {
  */
 export function opcionesVehiculos(asignaciones = []) {
     return opcionesUnicas(asignaciones, 'vehicle_uuid', (asignacion) => ({
-        uuid: asignacion.vehicle_uuid,
-        vehicle_license_plate: asignacion.vehicle?.vehicle_license_plate ?? asignacion.vehicle_uuid,
-        internal_number: asignacion.vehicle?.internal_number ?? null,
+        uuid: asignacion?.vehicle_uuid,
+        vehicle_license_plate: asignacion?.vehicle?.vehicle_license_plate ?? asignacion?.vehicle_uuid,
+        internal_number: asignacion?.vehicle?.internal_number ?? null,
     }));
 }
 
@@ -75,11 +76,11 @@ export function opcionesVehiculos(asignaciones = []) {
  */
 export function opcionesConductores(asignaciones = []) {
     return opcionesUnicas(asignaciones, 'third_party_uuid', (asignacion) => ({
-        uuid: asignacion.third_party_uuid,
-        first_name: asignacion.conductor?.first_name ?? '',
-        last_name: asignacion.conductor?.last_name ?? '',
-        company_name: asignacion.conductor?.company_name ?? null,
-        document_number: asignacion.conductor?.document_number ?? null,
+        uuid: asignacion?.third_party_uuid,
+        first_name: asignacion?.conductor?.first_name ?? '',
+        last_name: asignacion?.conductor?.last_name ?? '',
+        company_name: asignacion?.conductor?.company_name ?? null,
+        document_number: asignacion?.conductor?.document_number ?? null,
     }));
 }
 
@@ -91,7 +92,7 @@ export function opcionesConductores(asignaciones = []) {
  * @returns {Object|null}
  */
 export function asignacionDeConductor(asignaciones = [], uuid) {
-    if (!uuid) return null;
+    if (!uuid || !Array.isArray(asignaciones)) return null;
     return asignaciones.find((asignacion) => asignacion?.third_party_uuid === uuid) ?? null;
 }
 
@@ -103,7 +104,7 @@ export function asignacionDeConductor(asignaciones = [], uuid) {
  * @returns {Object|null}
  */
 export function asignacionDeVehiculo(asignaciones = [], uuid) {
-    if (!uuid) return null;
+    if (!uuid || !Array.isArray(asignaciones)) return null;
     return asignaciones.find((asignacion) => asignacion?.vehicle_uuid === uuid) ?? null;
 }
 
@@ -172,13 +173,17 @@ export function resumenCreacion(filas, diasServicio = 1) {
  * @returns {Object} Payload para POST /bulk.
  */
 export function armarPayloadCreacion(formData, cochesSeleccionados) {
+    const dailyRoute = typeof formData?.daily_route === 'string'
+        ? formData.daily_route.trim() || null
+        : null;
+
     return {
         company_uuid: formData?.company_uuid || null,
         project_uuid: formData?.project_uuid || null,
         service_date: formData?.service_date || formData?.start_date || null,
         start_date: formData?.start_date || null,
         end_date: formData?.end_date || null,
-        daily_route: formData?.daily_route?.trim() || null,
+        daily_route: dailyRoute,
         type_of_control_sheet: 'DIRECTO_CON_LA_EMPRESA',
         is_active: formData?.is_active === '0' ? false : true,
         vehicle_uuids: (Array.isArray(cochesSeleccionados) ? cochesSeleccionados : []).filter(Boolean),

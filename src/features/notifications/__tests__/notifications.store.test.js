@@ -5,7 +5,7 @@ import { setActivePinia, createPinia } from 'pinia';
 
 vi.mock('@/services/api/client.js', () => {
     const get = vi.fn();
-    return { default: { global: { get }, forTenant: () => ({ get }) } };
+    return { default: { global: { get } } };
 });
 vi.mock('@/utils/toast.js', () => ({ toast: vi.fn() }));
 vi.mock('@/utils/logger.js', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
@@ -16,7 +16,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import apiClient from '@/services/api/client.js';
-import { useNotificationsStore } from '../store/notifications.store.js';
+import { useNotificationsStore, expiryAlertsShown } from '../store/notifications.store.js';
 
 const respuesta = (per_page) => ({
     data: {
@@ -65,5 +65,69 @@ describe('useNotificationsStore · per_page del listado', () => {
             params: expect.objectContaining({ per_page: 25 }),
         }));
         expect(store.perPage).toBe(15, 'Si el servidor acota (o cambia) el per_page, el lector de filas debe seguirlo');
+    });
+});
+
+describe('useNotificationsStore · alertas de vencimiento en memoria (SPEC-016)', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        vi.clearAllMocks();
+    });
+
+    it('no realiza consultas repetidas a Preferences por cada toast disparado', async () => {
+        const { Preferences } = await import('@capacitor/preferences');
+        const store = useNotificationsStore();
+
+        const notif1 = { uuid: 'notif-1', title: 'SOAT por vencer', message: 'Vence hoy' };
+        const notif2 = { uuid: 'notif-2', title: 'RCE por vencer', message: 'Vence hoy' };
+
+        await store.triggerExpiryToast(notif1);
+        await store.triggerExpiryToast(notif2);
+
+        // No debe llamar Preferences.get con claves individuales expiry_alert_shown_*
+        const llamadasIndividuales = Preferences.get.mock.calls.filter(
+            ([arg]) => arg?.key?.startsWith('expiry_alert_shown_')
+        );
+        expect(llamadasIndividuales.length).toBe(0);
+        expect(store.activeExpiryToasts.length).toBe(2);
+    });
+
+    it('no repite la misma alerta si no han transcurrido 55 minutos', async () => {
+        const store = useNotificationsStore();
+        const notif = { uuid: 'notif-repetida', title: 'Alerta', message: 'Mensaje' };
+
+        await store.triggerExpiryToast(notif);
+        expect(store.activeExpiryToasts.length).toBe(1);
+
+        // Intento inmediato de disparar la misma alerta
+        await store.triggerExpiryToast(notif);
+        expect(store.activeExpiryToasts.length).toBe(1);
+    });
+
+    it('permite la repetición de la alerta si han transcurrido más de 55 minutos (SPEC-016)', async () => {
+        const store = useNotificationsStore();
+        const notif = { uuid: 'notif-repite-55', title: 'Alerta 55m', message: 'Mensaje' };
+
+        await store.triggerExpiryToast(notif);
+        expect(store.activeExpiryToasts.length).toBe(1);
+
+        // Simular que pasaron 56 minutos modificando el timestamp registrado
+        const hace56Min = Date.now() - (56 * 60 * 1000);
+        expiryAlertsShown.set('notif-repite-55', hace56Min);
+        store.activeExpiryToasts = [];
+
+        await store.triggerExpiryToast(notif);
+        expect(store.activeExpiryToasts.length).toBe(1);
+    });
+
+    it('purga automáticamente registros de alertas mostradas mayores a 24 horas (SPEC-016)', async () => {
+        const store = useNotificationsStore();
+        const hace25Horas = Date.now() - (25 * 60 * 60 * 1000);
+        expiryAlertsShown.set('notif-antigua-24h', hace25Horas);
+
+        store.latestNotifications = [];
+        await store.checkAndTriggerExpiryAlerts();
+
+        expect(expiryAlertsShown.has('notif-antigua-24h')).toBe(false);
     });
 });

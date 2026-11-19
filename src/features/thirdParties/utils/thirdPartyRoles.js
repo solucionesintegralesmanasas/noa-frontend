@@ -29,6 +29,7 @@ function aNombres(rolesDisponibles) {
  * enviar nunca un rol inválido al backend.
  */
 export function rolPorDefectoPara(tipo, rolesDisponibles) {
+    if (!tipo || typeof tipo !== "string" || !Object.prototype.hasOwnProperty.call(ROL_POR_DEFECTO_POR_TIPO, tipo)) return null;
     const sugerido = ROL_POR_DEFECTO_POR_TIPO[tipo];
     if (!sugerido) return null;
     return aNombres(rolesDisponibles).has(sugerido) ? sugerido : null;

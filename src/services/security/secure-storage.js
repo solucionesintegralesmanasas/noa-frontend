@@ -15,7 +15,7 @@ const ub64 = (str) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
  * Devuelve true solo si estamos en un contexto seguro (HTTPS / localhost)
  * donde la Web Crypto API (subtle) está disponible.
  */
-const _isSecureContext = () => !!(window?.crypto?.subtle);
+const _isSecureContext = () => typeof window !== "undefined" && !!(window?.crypto?.subtle);
 
 class SecureStorage {
     constructor(prefix = '') {
@@ -115,7 +115,7 @@ class SecureStorage {
     }
 
     async _decrypt(encrypted) {
-        if (!encrypted) return null;
+        if (!encrypted || typeof encrypted !== 'string') return null;
         if (encrypted.startsWith("raw:")) {
             try {
                 return decodeURIComponent(atob(encrypted.slice(4)));
@@ -126,11 +126,17 @@ class SecureStorage {
         if (!encrypted.startsWith("v1:")) return null; // Solo soportamos v1 por seguridad
         if (!_isSecureContext()) return null;
 
-        const [saltB64, ivB64, ctB64] = encrypted.slice(3).split(".");
-        const key = await this._deriveKey(ub64(saltB64));
-        if (!key) return null;
-        const pt = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: ub64(ivB64) }, key, ub64(ctB64));
-        return new TextDecoder().decode(pt);
+        try {
+            const parts = encrypted.slice(3).split(".");
+            if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return null;
+            const [saltB64, ivB64, ctB64] = parts;
+            const key = await this._deriveKey(ub64(saltB64));
+            if (!key) return null;
+            const pt = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: ub64(ivB64) }, key, ub64(ctB64));
+            return new TextDecoder().decode(pt);
+        } catch {
+            return null;
+        }
     }
 
     async setItem(key, value) {

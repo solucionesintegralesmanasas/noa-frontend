@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { toast } from '@/utils/toast.js';
 import apiClient from '@/services/api/client.js';
 import { useUserStore } from '@store/modules/user.js';
+import { useAuthStore } from '@features/auth/store/auth.store.js';
 import { tokenManager } from '@/services/security/token-manager.js';
 import { logger } from '@/utils/logger.js';
 import env from '@/utils/env.js';
@@ -14,6 +15,74 @@ const EXPIRY_TOAST_MAX_VISIBLE = 3;
 
 // Temporizadores por alerta (fuera del estado para no persistirlos en el store).
 const expiryToastTimers = new Map();
+
+// Control reactivo en memoria de alertas mostradas (uuid -> timestamp en ms).
+// Evita repetición antes de 55 minutos sin lecturas lentas a almacenamiento nativo.
+export const expiryAlertsShown = new Map();
+const EXPIRY_REPEAT_INTERVAL_MS = 3300000; // 55 min
+const EXPIRY_PURGE_MAX_AGE_MS = 86400000; // 24 h
+const EXPIRY_STORAGE_KEY = 'expiry_alerts_shown_map';
+let _expiryStorageHydrated = false;
+let _expiryHydrationPromise = null;
+let _legacyCleaned = false;
+let _expirySaveTimeout = null;
+
+async function hydrateExpiryAlertsOnce() {
+    if (_expiryStorageHydrated) return;
+    if (_expiryHydrationPromise) return _expiryHydrationPromise;
+
+    _expiryHydrationPromise = (async () => {
+        try {
+            const { value } = await Preferences.get({ key: EXPIRY_STORAGE_KEY });
+            if (value) {
+                const parsed = JSON.parse(value);
+                const now = Date.now();
+                for (const [uuid, ts] of Object.entries(parsed)) {
+                    if (now - ts < EXPIRY_PURGE_MAX_AGE_MS) {
+                        expiryAlertsShown.set(uuid, ts);
+                    }
+                }
+            }
+        } catch (err) {
+            logger.warn('Error al cargar mapa de alertas de vencimiento:', err);
+        }
+
+        // Migración en segundo plano de claves individuales heredadas (una sola vez)
+        if (!_legacyCleaned) {
+            _legacyCleaned = true;
+            try {
+                const { value: cleaned } = await Preferences.get({ key: 'expiry_alerts_legacy_cleaned' });
+                if (!cleaned) {
+                    const { keys } = await Preferences.keys();
+                    const legacyKeys = keys.filter(k => k.startsWith('expiry_alert_shown_'));
+                    for (const key of legacyKeys) {
+                        await Preferences.remove({ key });
+                    }
+                    await Preferences.set({ key: 'expiry_alerts_legacy_cleaned', value: '1' });
+                }
+            } catch (e) {
+                // Ignorar si el driver de preferencias no soporta keys
+            }
+        }
+
+        _expiryStorageHydrated = true;
+        _expiryHydrationPromise = null;
+    })();
+
+    return _expiryHydrationPromise;
+}
+
+function scheduleSaveExpiryAlerts() {
+    if (_expirySaveTimeout) clearTimeout(_expirySaveTimeout);
+    _expirySaveTimeout = setTimeout(async () => {
+        try {
+            const obj = Object.fromEntries(expiryAlertsShown.entries());
+            await Preferences.set({ key: EXPIRY_STORAGE_KEY, value: JSON.stringify(obj) });
+        } catch (err) {
+            logger.warn('Error al persistir mapa de alertas:', err);
+        }
+    }, 400);
+}
 
 // Resaltado de la sección del desplegable que originó el clump pulsado.
 let seccionTimeout = null;
@@ -67,9 +136,7 @@ export const useNotificationsStore = defineStore('notifications', {
         async fetchNotifications(page = 1, filters = {}, perPage = null) {
             this.loading = true;
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 const filas = Number(perPage) || this.perPage;
 
                 const response = await client.get('/notifications', {
@@ -119,9 +186,7 @@ export const useNotificationsStore = defineStore('notifications', {
         async syncNotifications() {
             this.loading = true;
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 
                 const response = await client.post('/notifications/sync');
                 
@@ -146,9 +211,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         async requestSync() {
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 await client.post('/notifications/sync');
                 // Las dos lecturas no dependen entre sí: en paralelo (antes iban en cadena, una ida y vuelta más).
                 await Promise.all([this.fetchLatestNotifications(), this.fetchNotifications()]);
@@ -162,9 +225,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 const token = await tokenManager.getAccessToken();
                 if (!token) return;
 
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
 
                 const response = await client.get('/notifications/counts');
 
@@ -199,9 +260,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         async markAsRead(uuid) {
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 
                 const response = await client.patch(`/notifications/${uuid}/read`);
                 
@@ -229,9 +288,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         async markAllAsRead() {
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 
                 const response = await client.post('/notifications/read-all');
                 
@@ -258,9 +315,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
         async deleteNotification(uuid) {
             try {
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 
                 const response = await client.delete(`/notifications/${uuid}`);
                 
@@ -293,9 +348,7 @@ export const useNotificationsStore = defineStore('notifications', {
                 const token = await tokenManager.getAccessToken();
                 if (!token) return;
 
-                const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
-                const client = tenantId ? apiClient.forTenant(tenantId) : apiClient.global;
+                const client = apiClient.global;
                 
                 const response = await client.get('/notifications', {
                     params: {
@@ -347,8 +400,9 @@ export const useNotificationsStore = defineStore('notifications', {
             await this.fetchUnreadCounts();
 
             try {
+                const authStore = useAuthStore();
                 const userStore = useUserStore();
-                const tenantId = userStore.company_uuid;
+                const tenantId = authStore.currentTenant?.id || userStore.company_uuid;
 
                 let baseUrl = env.API_BASE_URL;
                 if (baseUrl.endsWith('/')) {
@@ -466,18 +520,14 @@ export const useNotificationsStore = defineStore('notifications', {
             const day = String(today.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
 
+            await hydrateExpiryAlertsOnce();
+
+            // Purgar en memoria registros mayores a 24 horas (sin llamadas secuenciales a disco)
             const now = Date.now();
-            try {
-                const { keys } = await Preferences.keys();
-                const expiryKeys = keys.filter(k => k.startsWith('expiry_alert_shown_'));
-                for (const key of expiryKeys) {
-                    const { value } = await Preferences.get({ key });
-                    if (value && (now - parseInt(value, 10)) > 86400000) {
-                        await Preferences.remove({ key });
-                    }
+            for (const [uuid, ts] of expiryAlertsShown.entries()) {
+                if (now - ts > EXPIRY_PURGE_MAX_AGE_MS) {
+                    expiryAlertsShown.delete(uuid);
                 }
-            } catch (e) {
-                console.error('Error cleaning up alert storage:', e);
             }
 
             // Las ya leídas no vuelven a saltar: solo se avisa lo pendiente.
@@ -499,10 +549,10 @@ export const useNotificationsStore = defineStore('notifications', {
 
         async triggerExpiryToast(notification) {
             const now = Date.now();
-            const storageKey = `expiry_alert_shown_${notification.uuid}`;
-            const { value: lastShown } = await Preferences.get({ key: storageKey });
+            const lastShown = expiryAlertsShown.get(notification.uuid);
 
-            if (lastShown && (now - parseInt(lastShown, 10)) < 3300000) {
+            // Regla de no repetición de 55 min evaluada en memoria
+            if (lastShown && (now - lastShown) < EXPIRY_REPEAT_INTERVAL_MS) {
                 return;
             }
 
@@ -524,7 +574,8 @@ export const useNotificationsStore = defineStore('notifications', {
             };
 
             this.activeExpiryToasts.unshift(newToast);
-            await Preferences.set({ key: storageKey, value: now.toString() });
+            expiryAlertsShown.set(notification.uuid, now);
+            scheduleSaveExpiryAlerts();
 
             // Los avisos son transitorios: tras unos segundos desaparecen y su
             // información queda en los clumps y en la campana (ya no se acoplan).
