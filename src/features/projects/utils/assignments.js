@@ -72,3 +72,37 @@ export function payloadConAlternancia(asignaciones, objetivo) {
 
     return [...resto, fila(objetivo, nuevoEstado)];
 }
+
+/**
+ * Agrupa asignaciones por vehículo para que los relevos no repitan el coche
+ * en el listado principal, sino que queden anidados bajo su conductor principal.
+ */
+export function agruparAsignacionesPorVehiculo(asignaciones = []) {
+    const grupos = [];
+    const indicePorVehiculo = new Map();
+
+    (asignaciones || []).forEach((asignacion, idx) => {
+        if (!asignacion) return;
+        const clave = asignacion.vehicle_uuid || `sin-vehiculo-${asignacion.uuid || idx}`;
+        if (!indicePorVehiculo.has(clave)) {
+            indicePorVehiculo.set(clave, grupos.length);
+            grupos.push({ key: clave, items: [] });
+        }
+        grupos[indicePorVehiculo.get(clave)].items.push(asignacion);
+    });
+
+    return grupos.map(({ key, items }) => {
+        const principal = items.find((a) => a.is_active !== false) || items[0];
+        const relevos = items.filter((a) => a !== principal);
+        const relevosActivosCount = relevos.filter((a) => a.is_active !== false).length;
+
+        return {
+            key,
+            principal,
+            relevos,
+            tieneRelevos: relevos.length > 0,
+            relevosActivosCount,
+            todas: [principal, ...relevos],
+        };
+    });
+}

@@ -160,85 +160,161 @@
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        <div v-if="asignacionesFiltradas.length" class="assignments-list">
-                            <div v-for="assignment in asignacionesFiltradas" :key="assignment.uuid"
-                                class="assignment-row d-flex flex-wrap align-items-center">
-                                <div class="row w-100 g-2 g-md-3 align-items-center">
-                                    <!-- Conductor -->
-                                    <div class="col-12 col-md-5 d-flex align-items-center gap-2">
-                                        <div class="assignment-avatar assignment-avatar-driver">
-                                            <i class="fad fa-user" style="font-size: 14px;" />
+                        <div v-if="gruposAsignacionesFiltrados.length" class="assignments-list">
+                            <div v-for="grupo in gruposAsignacionesFiltrados" :key="grupo.key"
+                                class="assignment-row"
+                                :class="{
+                                    'assignment-row--has-relays': grupo.tieneRelevos,
+                                    'assignment-row--expanded': grupo.tieneRelevos && estaExpandido(grupo),
+                                }">
+                                <div class="d-flex align-items-center gap-2 w-100">
+                                    <!-- Pequeña viñeta lateral solo cuando el vehículo tiene relevo(s) -->
+                                    <button
+                                        v-if="grupo.tieneRelevos"
+                                        type="button"
+                                        class="assignment-relay-bullet"
+                                        :class="{ 'is-open': estaExpandido(grupo) }"
+                                        :aria-expanded="estaExpandido(grupo)"
+                                        :aria-controls="`relevos-${grupo.key}`"
+                                        :title="estaExpandido(grupo)
+                                            ? 'Ocultar relevos de este vehículo'
+                                            : `Haz clic para ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''}`"
+                                        :aria-label="estaExpandido(grupo)
+                                            ? `Ocultar relevos de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`
+                                            : `Ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''} de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`"
+                                        @click="toggleExpandGrupo(grupo.key)">
+                                        <i class="fal fa-chevron-right assignment-relay-bullet__icon" aria-hidden="true" />
+                                        <span class="assignment-relay-bullet__count">{{ grupo.relevos.length }}</span>
+                                    </button>
+
+                                    <div class="row flex-grow-1 g-2 g-md-3 align-items-center m-0">
+                                        <!-- Conductor principal -->
+                                        <div class="col-12 col-md-5 d-flex align-items-center gap-2">
+                                            <div class="assignment-avatar assignment-avatar-driver">
+                                                <i class="fad fa-user" style="font-size: 14px;" aria-hidden="true" />
+                                            </div>
+                                            <div class="min-w-0 flex-grow-1">
+                                                <div class="fw-semibold text-dark d-flex align-items-center gap-1 flex-wrap">
+                                                    <span>{{ driverName(grupo.principal.conductor) }}</span>
+                                                    <span v-if="grupo.tieneRelevos"
+                                                        class="badge assignment-badge-relay-hint"
+                                                        title="Tiene relevo asignado. Haz clic en la viñeta lateral para desplegar">
+                                                        Principal · +{{ grupo.relevos.length }} relevo{{ grupo.relevos.length !== 1 ? 's' : '' }}
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted d-flex align-items-center gap-1">
+                                                    <i class="fad fa-id-card" style="font-size:11px;" aria-hidden="true" />
+                                                    {{ grupo.principal.conductor?.document_number || 'Sin documento' }}
+                                                </small>
+                                            </div>
+                                            <span v-if="grupo.principal.is_active"
+                                                class="badge assignment-badge-active flex-shrink-0">
+                                                Activo
+                                            </span>
+                                            <span v-else class="badge assignment-badge-inactive flex-shrink-0">
+                                                Retirado
+                                            </span>
+                                        </div>
+
+                                        <!-- Conexión -->
+                                        <div class="col-auto d-none d-lg-flex align-items-center justify-content-center text-muted">
+                                            <i class="fad fa-arrow-right" style="font-size: 16px;" aria-hidden="true" />
+                                        </div>
+
+                                        <!-- Vehículo del conductor -->
+                                        <div class="col-12 col-md d-flex align-items-center gap-2">
+                                            <div class="assignment-avatar assignment-avatar-vehicle">
+                                                <i class="fad fa-truck" style="font-size: 14px;" aria-hidden="true" />
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold font-monospace text-dark">
+                                                    {{ grupo.principal.vehicle?.vehicle_license_plate || '—' }}
+                                                </div>
+                                                <small v-if="grupo.principal.vehicle?.internal_number" class="text-muted d-block">
+                                                    No. interno: {{ grupo.principal.vehicle.internal_number }}
+                                                </small>
+                                                <small v-else-if="grupo.principal.vehicle?.model" class="text-muted d-block">
+                                                    {{ grupo.principal.vehicle.model }}
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Acciones -->
+                                        <div v-if="can('projects.update')" class="col-auto ms-auto flex-shrink-0 d-flex gap-2">
+                                            <button v-if="grupo.principal.is_active && grupo.principal.relevo && can('service_delivery_control_sheets.update')"
+                                                type="button" class="btn btn-sm assignment-action"
+                                                aria-haspopup="dialog"
+                                                title="Aplicar relevo de turno"
+                                                @click="toggleRelevo(grupo.principal)">
+                                                <i class="fad fa-right-left text-primary" aria-hidden="true" />
+                                                Relevo
+                                            </button>
+                                            <button type="button"
+                                                class="btn btn-sm assignment-action"
+                                                :class="grupo.principal.is_active ? 'assignment-action-retirar' : 'assignment-action-reactivar'"
+                                                :disabled="togglingUuid === grupo.principal.uuid"
+                                                :title="grupo.principal.is_active ? 'Retirar asignación' : 'Reactivar asignación'"
+                                                @click="toggleAssignment(grupo.principal)">
+                                                <i v-if="togglingUuid === grupo.principal.uuid" class="fad fa-spinner fa-spin" aria-hidden="true" />
+                                                <template v-else>
+                                                    <i :class="grupo.principal.is_active ? 'fad fa-user-slash text-danger' : 'fad fa-user-check text-success'" aria-hidden="true" />
+                                                </template>
+                                                {{ grupo.principal.is_active ? 'Retirar' : 'Reactivar' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Expandible interno: conductores de relevo del vehículo -->
+                                <div v-if="grupo.tieneRelevos && estaExpandido(grupo)"
+                                    :id="`relevos-${grupo.key}`"
+                                    class="assignment-relays-drawer">
+                                    <div v-for="relevoItem in grupo.relevos" :key="relevoItem.uuid"
+                                        class="assignment-relay-item d-flex flex-wrap align-items-center gap-2">
+                                        <span class="assignment-relay-branch" aria-hidden="true"></span>
+                                        <div class="assignment-avatar assignment-avatar-relay">
+                                            <i class="fad fa-user-clock" style="font-size: 13px;" aria-hidden="true" />
                                         </div>
                                         <div class="min-w-0 flex-grow-1">
-                                            <div class="fw-semibold text-dark">{{ driverName(assignment.conductor) }}</div>
+                                            <div class="fw-semibold text-dark d-flex align-items-center gap-1 flex-wrap">
+                                                <span>{{ driverName(relevoItem.conductor) }}</span>
+                                                <span class="badge assignment-badge-relay">Relevo</span>
+                                            </div>
                                             <small class="text-muted d-flex align-items-center gap-1">
-                                                <i class="fad fa-id-card" style="font-size:11px;" />
-                                                {{ assignment.conductor?.document_number || 'Sin documento' }}
+                                                <i class="fad fa-id-card" style="font-size:11px;" aria-hidden="true" />
+                                                {{ relevoItem.conductor?.document_number || 'Sin documento' }}
                                             </small>
                                         </div>
-                                        <span v-if="assignment.is_active"
+                                        <span v-if="relevoItem.is_active"
                                             class="badge assignment-badge-active flex-shrink-0">
                                             Activo
                                         </span>
                                         <span v-else class="badge assignment-badge-inactive flex-shrink-0">
                                             Retirado
                                         </span>
-                                    </div>
-
-                                    <!-- Conexión -->
-                                    <div class="col-auto d-none d-lg-flex align-items-center justify-content-center text-muted">
-                                        <i class="fad fa-arrow-right" style="font-size: 16px;" />
-                                    </div>
-
-                                    <!-- Vehículo del conductor -->
-                                    <div class="col-12 col-md d-flex align-items-center gap-2">
-                                        <div class="assignment-avatar assignment-avatar-vehicle">
-                                            <i class="fad fa-truck" style="font-size: 14px;" />
+                                        <div v-if="can('projects.update')" class="ms-auto flex-shrink-0">
+                                            <button type="button"
+                                                class="btn btn-sm assignment-action"
+                                                :class="relevoItem.is_active ? 'assignment-action-retirar' : 'assignment-action-reactivar'"
+                                                :disabled="togglingUuid === relevoItem.uuid"
+                                                :title="relevoItem.is_active ? 'Retirar relevo' : 'Reactivar relevo'"
+                                                @click="toggleAssignment(relevoItem)">
+                                                <i v-if="togglingUuid === relevoItem.uuid" class="fad fa-spinner fa-spin" aria-hidden="true" />
+                                                <template v-else>
+                                                    <i :class="relevoItem.is_active ? 'fad fa-user-slash text-danger' : 'fad fa-user-check text-success'" aria-hidden="true" />
+                                                </template>
+                                                {{ relevoItem.is_active ? 'Retirar' : 'Reactivar' }}
+                                            </button>
                                         </div>
-                                        <div class="min-w-0">
-                                            <div class="fw-semibold font-monospace text-dark">
-                                                {{ assignment.vehicle?.vehicle_license_plate || '—' }}
-                                            </div>
-                                            <small v-if="assignment.vehicle?.internal_number" class="text-muted d-block">
-                                                No. interno: {{ assignment.vehicle.internal_number }}
-                                            </small>
-                                            <small v-else-if="assignment.vehicle?.model" class="text-muted d-block">
-                                                {{ assignment.vehicle.model }}
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <!-- Acciones -->
-                                    <div v-if="can('projects.update')" class="col-auto ms-auto flex-shrink-0 d-flex gap-2">
-                                        <button v-if="assignment.is_active && assignment.relevo && can('service_delivery_control_sheets.update')"
-                                            type="button" class="btn btn-sm assignment-action"
-                                            aria-haspopup="dialog"
-                                            title="Aplicar relevo de turno"
-                                            @click="toggleRelevo(assignment)">
-                                            <i class="fad fa-right-left text-primary" aria-hidden="true" />
-                                            Relevo
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-sm assignment-action"
-                                            :class="assignment.is_active ? 'assignment-action-retirar' : 'assignment-action-reactivar'"
-                                            :disabled="togglingUuid === assignment.uuid"
-                                            :title="assignment.is_active ? 'Retirar asignación' : 'Reactivar asignación'"
-                                            @click="toggleAssignment(assignment)">
-                                            <i v-if="togglingUuid === assignment.uuid" class="fad fa-spinner fa-spin" />
-                                            <template v-else>
-                                                <i :class="assignment.is_active ? 'fad fa-user-slash text-danger' : 'fad fa-user-check text-success'" />
-                                            </template>
-                                            {{ assignment.is_active ? 'Retirar' : 'Reactivar' }}
-                                        </button>
                                     </div>
                                 </div>
 
                                 <!-- Relevo de turno: modal con el conductor entrante -->
-                                <RelevoForm :visible="relevoAbiertoUuid === assignment.uuid"
-                                    :relevo="assignment.relevo" :project-uuid="project.uuid"
-                                    :vehicle-uuid="assignment.vehicle_uuid"
-                                    :vehicle-label="assignment.vehicle?.vehicle_license_plate || ''"
-                                    :candidatos="candidatosDeRelevo(assignment)"
+                                <RelevoForm :visible="relevoAbiertoUuid === grupo.principal.uuid"
+                                    :relevo="grupo.principal.relevo" :project-uuid="project.uuid"
+                                    :vehicle-uuid="grupo.principal.vehicle_uuid"
+                                    :vehicle-label="grupo.principal.vehicle?.vehicle_license_plate || ''"
+                                    :candidatos="candidatosDeRelevo(grupo.principal)"
                                     :saving="savingRelevo" :server-error="relevoError"
                                     @submit="submitRelevo" @update:visible="cerrarRelevo" />
                             </div>
@@ -532,7 +608,7 @@ import BasePageHeader from '@/components/BasePageHeader.vue';
 import PrimeSelect from '@/components/form/PrimeSelect.vue';
 import { getMediaUrl } from '@/utils/media.js';
 import { claseEstadoServicio, etiquetaEstadoServicio, tituloEstadoServicio } from '@/utils/serviceDeliveryStatus.js';
-import { payloadConAlternancia, payloadConNuevaAsignacion } from '../utils/assignments.js';
+import { agruparAsignacionesPorVehiculo, payloadConAlternancia, payloadConNuevaAsignacion } from '../utils/assignments.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -568,20 +644,45 @@ const inactiveAssignments = computed(() =>
     (project.value?.assignments || []).filter((a) => a.is_active === false)
 );
 
-/** Búsqueda local en la lista de asignaciones (conductor, documento o vehículo). */
+/** Búsqueda local en la lista de asignaciones agrupadas por vehículo (conductor principal, relevos o vehículo). */
 const filtroAsignaciones = ref('');
-const asignacionesFiltradas = computed(() => {
+const gruposExpandidos = ref(new Set());
+
+const coincideAsignacion = (a, q) => [
+    driverName(a?.conductor),
+    a?.conductor?.document_number,
+    a?.vehicle?.vehicle_license_plate,
+    a?.vehicle?.internal_number,
+    a?.vehicle?.model,
+].some((v) => String(v || '').toLowerCase().includes(q));
+
+const gruposAsignaciones = computed(() =>
+    agruparAsignacionesPorVehiculo(project.value?.assignments || [])
+);
+
+const gruposAsignacionesFiltrados = computed(() => {
     const q = filtroAsignaciones.value.trim().toLowerCase();
-    const lista = project.value?.assignments || [];
-    if (!q) return lista;
-    return lista.filter((a) => [
-        driverName(a.conductor),
-        a.conductor?.document_number,
-        a.vehicle?.vehicle_license_plate,
-        a.vehicle?.internal_number,
-        a.vehicle?.model,
-    ].some((v) => String(v || '').toLowerCase().includes(q)));
+    if (!q) return gruposAsignaciones.value;
+    return gruposAsignaciones.value.filter((g) => g.todas.some((a) => coincideAsignacion(a, q)));
 });
+
+const estaExpandido = (grupo) => {
+    if (gruposExpandidos.value.has(grupo.key)) return true;
+    const q = filtroAsignaciones.value.trim().toLowerCase();
+    if (!q) return false;
+    // Si la búsqueda coincide con un relevo y no con el principal/vehículo, se despliega para mostrarlo.
+    return !coincideAsignacion(grupo.principal, q) && grupo.relevos.some((r) => coincideAsignacion(r, q));
+};
+
+const toggleExpandGrupo = (key) => {
+    const next = new Set(gruposExpandidos.value);
+    if (next.has(key)) {
+        next.delete(key);
+    } else {
+        next.add(key);
+    }
+    gruposExpandidos.value = next;
+};
 
 const togglingUuid = ref(null);
 
@@ -638,7 +739,13 @@ const submitRelevo = async (payload) => {
     try {
         await serviceDeliveryControlSheetService.relay(payload);
         await toast('Relevo de conductor', 'El entrante tomó el turno y tiene su hoja de control del día; el anterior sigue vigente.', 'success');
+        const vehiculoRelevado = (project.value?.assignments || []).find((a) => a.uuid === relevoAbiertoUuid.value)?.vehicle_uuid;
         project.value = await store.fetchProfileById(route.params.id);
+        if (vehiculoRelevado) {
+            const next = new Set(gruposExpandidos.value);
+            next.add(vehiculoRelevado);
+            gruposExpandidos.value = next;
+        }
         cerrarRelevo();
     } catch (err) {
         const detalles = err?.response?.data?.error?.details;
@@ -1090,6 +1197,96 @@ dd {
 
 .assignment-row:hover {
     background: #f8fafc;
+}
+
+.assignment-row--expanded {
+    background: #f8fafc;
+}
+
+.assignment-relay-bullet {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.assignment-relay-bullet:hover,
+.assignment-relay-bullet.is-open {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.assignment-relay-bullet__icon {
+    font-size: 0.65rem;
+    transition: transform 0.15s ease;
+}
+
+.assignment-relay-bullet.is-open .assignment-relay-bullet__icon {
+    transform: rotate(90deg);
+}
+
+.assignment-badge-relay-hint {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px !important;
+    font-size: 0.63rem;
+    font-weight: 600;
+}
+
+.assignment-relays-drawer {
+    margin: 10px 0 2px 26px;
+    padding: 8px 12px;
+    border-left: 2px solid #93c5fd;
+    background: #ffffff;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.assignment-relay-item {
+    padding: 6px 4px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.assignment-relay-item:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
+}
+
+.assignment-relay-branch {
+    width: 10px;
+    height: 1px;
+    background: #93c5fd;
+    flex-shrink: 0;
+}
+
+.assignment-avatar-relay {
+    background: #fef3c7;
+    color: #b45309;
+    width: 30px;
+    height: 30px;
+}
+
+.assignment-badge-relay {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    border-radius: 999px !important;
+    font-size: 0.63rem;
+    font-weight: 600;
 }
 
 .assignment-avatar {
