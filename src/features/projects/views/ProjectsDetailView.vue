@@ -168,24 +168,26 @@
                                     'assignment-row--expanded': grupo.tieneRelevos && estaExpandido(grupo),
                                 }">
                                 <div class="d-flex align-items-center gap-2 w-100">
-                                    <!-- Pequeña viñeta lateral solo cuando el vehículo tiene relevo(s) -->
-                                    <button
-                                        v-if="grupo.tieneRelevos"
-                                        type="button"
-                                        class="assignment-relay-bullet"
-                                        :class="{ 'is-open': estaExpandido(grupo) }"
-                                        :aria-expanded="estaExpandido(grupo)"
-                                        :aria-controls="`relevos-${grupo.key}`"
-                                        :title="estaExpandido(grupo)
-                                            ? 'Ocultar relevos de este vehículo'
-                                            : `Haz clic para ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''}`"
-                                        :aria-label="estaExpandido(grupo)
-                                            ? `Ocultar relevos de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`
-                                            : `Ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''} de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`"
-                                        @click="toggleExpandGrupo(grupo.key)">
-                                        <i class="fal fa-chevron-right assignment-relay-bullet__icon" aria-hidden="true" />
-                                        <span class="assignment-relay-bullet__count">{{ grupo.relevos.length }}</span>
-                                    </button>
+                                    <!-- Carril lateral fijo cuando existen relevos para mantener todas las columnas alineadas -->
+                                    <div v-if="hayVehiculosConRelevo" class="assignment-relay-slot">
+                                        <button
+                                            v-if="grupo.tieneRelevos"
+                                            type="button"
+                                            class="assignment-relay-bullet"
+                                            :class="{ 'is-open': estaExpandido(grupo) }"
+                                            :aria-expanded="estaExpandido(grupo)"
+                                            :aria-controls="`relevos-${grupo.key}`"
+                                            :title="estaExpandido(grupo)
+                                                ? 'Ocultar relevos de este vehículo'
+                                                : `Haz clic para ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''}`"
+                                            :aria-label="estaExpandido(grupo)
+                                                ? `Ocultar relevos de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`
+                                                : `Ver ${grupo.relevos.length} relevo${grupo.relevos.length !== 1 ? 's' : ''} de ${grupo.principal.vehicle?.vehicle_license_plate || 'vehículo'}`"
+                                            @click="toggleExpandGrupo(grupo.key)">
+                                            <i class="fal fa-chevron-right assignment-relay-bullet__icon" aria-hidden="true" />
+                                            <span class="assignment-relay-bullet__count">{{ grupo.relevos.length }}</span>
+                                        </button>
+                                    </div>
 
                                     <div class="row flex-grow-1 g-2 g-md-3 align-items-center m-0">
                                         <!-- Conductor principal -->
@@ -665,6 +667,10 @@ const gruposAsignacionesFiltrados = computed(() => {
     if (!q) return gruposAsignaciones.value;
     return gruposAsignaciones.value.filter((g) => g.todas.some((a) => coincideAsignacion(a, q)));
 });
+
+const hayVehiculosConRelevo = computed(() =>
+    gruposAsignacionesFiltrados.value.some((g) => g.tieneRelevos)
+);
 
 const estaExpandido = (grupo) => {
     if (gruposExpandidos.value.has(grupo.key)) return true;
@@ -1203,6 +1209,14 @@ dd {
     background: #f8fafc;
 }
 
+.assignment-relay-slot {
+    width: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .assignment-relay-bullet {
     display: inline-flex;
     align-items: center;
@@ -1246,7 +1260,7 @@ dd {
 }
 
 .assignment-relays-drawer {
-    margin: 10px 0 2px 26px;
+    margin: 10px 0 2px 42px;
     padding: 8px 12px;
     border-left: 2px solid #93c5fd;
     background: #ffffff;
