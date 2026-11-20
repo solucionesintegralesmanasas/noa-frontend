@@ -24,11 +24,19 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    projectUuid: {
+        type: String,
+        default: '',
+    },
     affiliates: {
         type: Array,
         default: () => [],
     },
     branches: {
+        type: Array,
+        default: () => [],
+    },
+    projects: {
         type: Array,
         default: () => [],
     },
@@ -43,6 +51,7 @@ const emit = defineEmits([
     'update:entityFilter',
     'update:serviceType',
     'update:branchUuid',
+    'update:projectUuid',
     'reset',
 ]);
 
@@ -122,6 +131,11 @@ const serviceOptions = [
 const branchOptions = computed(() => [
     { label: 'Todas las Sedes Operativas', value: '' },
     ...(Array.isArray(props.branches) ? props.branches : []),
+]);
+
+const projectOptions = computed(() => [
+    { label: 'Todos los Proyectos', value: '' },
+    ...(Array.isArray(props.projects) ? props.projects : []),
 ]);
 
 const selectCategory = (code) => {
@@ -217,6 +231,21 @@ const selectCategory = (code) => {
                         size="small"
                         class="w-100"
                         @update:model-value="emit('update:branchUuid', $event)"
+                    />
+                </div>
+
+                <div v-if="projects.length > 0" class="flex-grow-1" style="min-width: 210px;">
+                    <label class="visually-hidden" for="f-calendar-project">Proyecto</label>
+                    <PrimeSelect
+                        input-id="f-calendar-project"
+                        :model-value="projectUuid"
+                        :options="projectOptions"
+                        option-label="label"
+                        option-value="value"
+                        filter
+                        size="small"
+                        class="w-100"
+                        @update:model-value="emit('update:projectUuid', $event)"
                     />
                 </div>
 

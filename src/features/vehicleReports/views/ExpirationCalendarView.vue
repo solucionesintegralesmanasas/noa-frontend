@@ -33,6 +33,7 @@ const syncQuery = () => {
             entity: store.entityFilter || undefined,
             service_type: store.serviceType || undefined,
             branch_uuid: store.branchUuid || undefined,
+            project_uuid: store.projectUuid || undefined,
             view: store.viewMode !== 'month' ? store.viewMode : undefined,
             search: store.search || undefined,
         },
@@ -95,6 +96,12 @@ const onBranchChange = async (val) => {
     syncQuery();
 };
 
+const onProjectChange = async (val) => {
+    store.projectUuid = val || '';
+    await store.fetchCalendar();
+    syncQuery();
+};
+
 const onViewModeChange = (mode) => {
     if (mode === 'week') {
         // La semana debe pertenecer al mes mostrado: si la fecha elegida quedó en otro mes, se reubica.
@@ -153,6 +160,7 @@ onMounted(async () => {
         if (q.entity) store.entityFilter = String(q.entity);
         if (q.service_type) store.serviceType = String(q.service_type);
         if (q.branch_uuid) store.branchUuid = String(q.branch_uuid);
+        if (q.project_uuid) store.projectUuid = String(q.project_uuid);
         if (q.view && ['month', 'week', 'agenda'].includes(String(q.view))) {
             store.viewMode = String(q.view);
         }
@@ -236,13 +244,16 @@ onMounted(async () => {
             :entity-filter="store.entityFilter"
             :service-type="store.serviceType"
             :branch-uuid="store.branchUuid"
+            :project-uuid="store.projectUuid"
             :affiliates="store.catalogs.affiliates"
             :branches="store.catalogs.branches"
+            :projects="store.catalogs.projects"
             :has-active-filter="store.hasActiveFilter"
             @update:category="onCategorySelect"
             @update:entity-filter="onEntityFilterChange"
             @update:service-type="onServiceTypeChange"
             @update:branch-uuid="onBranchChange"
+            @update:project-uuid="onProjectChange"
             @reset="onResetFilters"
         />
 

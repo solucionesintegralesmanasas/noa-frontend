@@ -30,6 +30,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             entityFilter: '', // '' | 'propios' | 'terceros' | 'aff:<uuid>'
             serviceType: '', // '' | 'PUBLICO' | 'PARTICULAR'
             branchUuid: '',
+            projectUuid: '',
             search: '',
             loading: false,
             exporting: false,
@@ -56,6 +57,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             catalogs: {
                 affiliates: [],
                 branches: [],
+                projects: [],
             },
         };
     },
@@ -66,6 +68,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             !!s.entityFilter ||
             !!s.serviceType ||
             !!s.branchUuid ||
+            !!s.projectUuid ||
             !!s.search,
 
         calendarParams: (s) => {
@@ -75,6 +78,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
                 category: s.category !== 'ALL' ? s.category : undefined,
                 service_type: s.serviceType || undefined,
                 branch_uuid: s.branchUuid || undefined,
+                project_uuid: s.projectUuid || undefined,
                 search: s.search || undefined,
                 ...parametrosDeEntidad(s.entityFilter),
             };
@@ -88,6 +92,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
                 year: s.year,
                 service_type: s.serviceType || undefined,
                 branch_uuid: s.branchUuid || undefined,
+                project_uuid: s.projectUuid || undefined,
                 search: s.search || undefined,
                 ...parametrosDeEntidad(s.entityFilter),
             };
@@ -149,12 +154,19 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
 
         async loadCatalogs() {
             try {
-                const [affOpts, branchOpts] = await Promise.all([
+                const [affOpts, branchOpts, projectOpts] = await Promise.all([
                     vehicleReportsService.getFilterOptions('affiliate'),
                     vehicleReportsService.getFilterOptions('branch'),
+                    vehicleReportsService.getFilterOptions('project'),
                 ]);
-                this.catalogs.affiliates = affOpts.terceros || [];
-                this.catalogs.branches = branchOpts.branches || [];
+                this.catalogs.affiliates = affOpts?.terceros || [];
+                this.catalogs.branches = branchOpts?.branches || [];
+                this.catalogs.projects = (projectOpts?.proyectos || [])
+                    .filter((p) => p?.uuid)
+                    .map((p) => ({
+                        label: p.project_name || p.name || 'Sin nombre',
+                        value: p.uuid,
+                    }));
             } catch {
                 // Catálogos auxiliares opcionales
             }
@@ -203,6 +215,7 @@ export const useExpirationCalendarStore = defineStore('expirationCalendar', {
             this.entityFilter = '';
             this.serviceType = '';
             this.branchUuid = '';
+            this.projectUuid = '';
             this.search = '';
             await this.fetchCalendar();
         },

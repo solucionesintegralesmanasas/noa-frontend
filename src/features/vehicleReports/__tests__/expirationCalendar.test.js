@@ -187,6 +187,32 @@ describe('Calendario de Vencimientos — Utilidades y Componentes', () => {
         expect(vehicleReportsService.calendar).toHaveBeenCalledTimes(2);
     });
 
+    it('useExpirationCalendarStore incluye project_uuid en calendarParams/exportParams, carga proyectos y restablece el filtro', async () => {
+        vehicleReportsService.calendar.mockResolvedValue({ data: { events: [] } });
+        vehicleReportsService.getFilterOptions.mockImplementation(async (type) => {
+            if (type === 'project') {
+                return { proyectos: [{ uuid: 'proj-1', project_name: 'Proyecto Norte' }] };
+            }
+            if (type === 'branch') {
+                return { branches: [{ label: 'Sede Centro', value: 'branch-1' }] };
+            }
+            return { terceros: [] };
+        });
+
+        const store = useExpirationCalendarStore();
+        await store.loadCatalogs();
+        expect(store.catalogs.projects).toEqual([{ label: 'Proyecto Norte', value: 'proj-1' }]);
+
+        store.projectUuid = 'proj-1';
+        expect(store.hasActiveFilter).toBe(true);
+        expect(store.calendarParams.project_uuid).toBe('proj-1');
+        expect(store.exportParams.project_uuid).toBe('proj-1');
+
+        await store.resetFilters();
+        expect(store.projectUuid).toBe('');
+        expect(store.hasActiveFilter).toBe(false);
+    });
+
     it('ExpirationCalendarToolbar distribuye los botones en el ancho horizontal y emite update:category', async () => {
         const wrapper = mount(ExpirationCalendarToolbar, {
             props: {
@@ -202,8 +228,10 @@ describe('Calendario de Vencimientos — Utilidades y Componentes', () => {
                 entityFilter: '',
                 serviceType: '',
                 branchUuid: '',
+                projectUuid: '',
                 affiliates: [],
                 branches: [],
+                projects: [{ label: 'Proyecto Norte', value: 'proj-1' }],
                 hasActiveFilter: false,
             },
             global: {
@@ -217,6 +245,7 @@ describe('Calendario de Vencimientos — Utilidades y Componentes', () => {
         expect(wrapper.text()).toContain('SOAT');
         expect(wrapper.text()).toContain('4');
         expect(wrapper.text()).toContain('Convenios');
+        expect(wrapper.find('#f-calendar-project').exists() || wrapper.html().includes('f-calendar-project')).toBe(true);
 
         const soatBtn = wrapper.findAll('.noa-cat-btn')[1];
         await soatBtn.trigger('click');
