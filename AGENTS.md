@@ -476,12 +476,8 @@ Las credenciales de prueba ya no se guardan en este archivo. Pídelas al equipo 
 - **Sin commits de relleno:** los ajustes de `AGENTS.md` que documentan un cambio van en el mismo commit de ese cambio (nada de commits `docs` separados para este archivo ni correcciones sucesivas de la misma prosa), y la instalación o actualización de skills va en un único commit.
 - Tipos: feat, fix, refactor, perf, style, docs, test, build, ci, chore.
 
-## Agent skills
+## Agent skills y Setup de Flujos de Trabajo (Multi-Desarrollador)
 
-### Issue tracker
-
-Issues live in this repo's GitHub Issues. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context layout. See `docs/agents/domain.md`.
+- **Setup agnóstico (`../noa-backend/.opencode/skills/noa-agent-setup/SKILL.md`):** guía para que cada desarrollador y su agente diagnostiquen su entorno local y generen sus propios flujos de trabajo (workflows) y skills locales en `../.agents/skills/` (fuera del control de versiones), incorporando los 8 Principios Vigentes del Frontend (`SPEC-008`, `SPEC-009`, `SPEC-016`), las reglas de accesibilidad/rendimiento y la convención de commits de este archivo.
+- **Skills específicas de cada máquina** permanecen en `../.agents/skills/` y no se suben al repositorio.
+- **Referencias de dominio y especificaciones:** ver `../noa-backend/docs/agents/issue-tracker.md` y `../noa-backend/docs/agents/domain.md`.
